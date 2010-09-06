@@ -13,12 +13,12 @@ Node.prototype = {
   display : true,
   
   initialize : function() {
-    this.matrix = Matrix.newIdentity();
     this.material = new Material();
-    this.normalMatrix = Matrix.newIdentity3x3();
-    this.rotation = {angle : 0, axis : [0,1,0]};
-    this.position = [0, 0, 0];
-    this.scaling = [1, 1, 1];
+    this.matrix = mat4.newIdentity();
+    this.normalMatrix = mat3.newIdentity();
+    this.rotation = {angle : 0, axis : vec3.create([0,1,0])};
+    this.position = vec3.create([0, 0, 0]);
+    this.scaling = vec3.create([1, 1, 1]);
     this.frameListeners = [];
     this.childNodes = [];
   },
@@ -65,22 +65,22 @@ Node.prototype = {
   },
   
   updateTransform : function(matrix) {
-    Matrix.copyMatrix(matrix, this.matrix);
+    mat4.set(matrix, this.matrix);
     var p = this.position;
     var s = this.scaling;
     var doScaling = (s[0] != 1) || (s[1] != 1) || (s[2] != 1);
     if (p[0] || p[1] || p[2])
-      Matrix.translateInPlace(p, this.matrix);
+      mat4.translate(p, this.matrix);
     if (this.scaleAfterRotate && doScaling)
-      Matrix.scaleInPlace(s, this.matrix);
+      mat4.scale(s, this.matrix);
     if (this.rotation.angle != 0)
-      Matrix.rotateInPlace(this.rotation.angle, this.rotation.axis, this.matrix);
+      mat4.rotate(this.rotation.angle, this.rotation.axis, this.matrix);
     if (!this.scaleAfterRotate && this.scaling)
-      Matrix.scaleInPlace(s, this.matrix);
+      mat4.scale(s, this.matrix);
     if (this.isBillboard)
-      Matrix.billboardInPlace(this.matrix);
-    Matrix.inverseTo3x3InPlace(this.matrix, this.normalMatrix);
-    Matrix.transpose3x3InPlace(this.normalMatrix);
+      mat4.billboard(this.matrix);
+    mat4.inverseTo3(this.matrix, this.normalMatrix);
+    mat4.transpose3(this.normalMatrix);
     for (var i=0; i<this.childNodes.length; i++)
       this.childNodes[i].updateTransform(this.matrix);
   },
@@ -176,10 +176,10 @@ Material.prototype = {
       } else {
         switch (uf.length) {
           case 4:
-            shader.uniform4f(name, uf[0], uf[1], uf[2], uf[3]);
+            shader.uniform4fv(name, uf);
             break;
           case 3:
-            shader.uniform3f(name, uf[0], uf[1], uf[2]);
+            shader.uniform3fv(name, uf);
             break;
           case 16:
             shader.uniformMatrix4fv(name, uf);
@@ -188,7 +188,7 @@ Material.prototype = {
             shader.uniformMatrix3fv(name, uf);
             break;
           case 2:
-            shader.uniform2f(name, uf[0], uf[1]);
+            shader.uniform2fv(name, uf);
             break;
           default:
             shader.uniform1fv(name, uf);
@@ -207,13 +207,13 @@ Material.prototype = {
       } else {
         switch (uf.length) {
           case 4:
-            shader.uniform4i(name, uf[0], uf[1], uf[2], uf[3]);
+            shader.uniform4iv(name, uf);
             break;
           case 3:
-            shader.uniform3i(name, uf[0], uf[1], uf[2]);
+            shader.uniform3iv(name, uf);
             break;
           case 2:
-            shader.uniform2i(name, uf[0], uf[1]);
+            shader.uniform2iv(name, uf);
             break;
           default:
             shader.uniform1iv(name, uf);
@@ -247,9 +247,10 @@ Camera.prototype = {
   stereoSeparation : 0.025,
 
   initialize : function() {
-    this.position = [5,5,5];
-    this.lookAt = [0,0,0]
-    this.up = [0,1,0];
+    this.position = vec3.create([5,5,5]);
+    this.lookAt = vec3.create([0,0,0]);
+    this.up = vec3.create([0,1,0]);
+    this.matrix = mat4.create();
     this.frameListeners = [];
   },
   addFrameListener : Node.prototype.addFrameListener,
@@ -267,17 +268,18 @@ Camera.prototype = {
   },
   getLookMatrix : function() {
     if (this.useLookAt)
-      return Matrix.lookAt(this.position, this.lookAt, this.up);
+      mat4.lookAt(this.position, this.lookAt, this.up, this.matrix);
     else
-      return Matrix.newIdentity();
+      mat4.identity(this.matrix);
+    return this.matrix;
   },
   drawViewport : function(gl, x, y, width, height, scene) {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
     var perspective = this.ortho ?
-      Matrix.ortho(x, width, -height, -y, this.zNear, this.zFar) :
-      Matrix.perspective(this.fov, width/height, this.zNear, this.zFar);
+      mat4.ortho(x, width, -height, -y, this.zNear, this.zFar) :
+      mat4.perspective(this.fov, width/height, this.zNear, this.zFar);
     scene.updateTransform(this.getLookMatrix());
     var drawList = scene.collectDrawList();
     var state = new GLDrawState();
@@ -290,17 +292,18 @@ Camera.prototype = {
   
   draw : function(gl, width, height, scene) {
     if (this.stereo) {
-      var p = this.position;
-      var rightV = Vec3.cross(this.up, Vec3.sub(this.lookAt, this.position));
-      var sep = Vec3.scale(this.stereoSeparation/2, rightV);
+      var p = vec3.create(this.position);
+      var sep = vec3.create();
+      vec3.cross(this.up, vec3.sub(this.lookAt, this.position), sep);
+      vec3.scale(sep, this.stereoSeparation/2, sep);
 
-      this.position = Vec3.sub(p, sep);
+      vec3.sub(p, sep, this.position);
       this.drawViewport(gl, 0, 0, width/2, height, scene);
       
-      this.position = Vec3.add(p, sep);
+      vec3.add(p, sep, this.position);
       this.drawViewport(gl, width/2, 0, width/2, height, scene);
 
-      this.position = p;
+      vec3.set(p, this.position);
     } else {
       this.drawViewport(gl, 0, 0, width, height, scene);
     }
