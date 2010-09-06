@@ -178,7 +178,7 @@ DefaultMaterial = {
     "{"+
     "  vec3 lightVector;"+
     "  vec4 v = vec4(Vertex, 1.0);"+
-    "  texCoord0 = TexCoord;"+
+    "  texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);"+
     "  normal = normalize(NMatrix * Normal);"+
     "  vec4 worldPos = MVMatrix * v;"+
     "  lightVector = vec3(LightPos - worldPos);"+
@@ -199,23 +199,26 @@ DefaultMaterial = {
     "uniform vec4 MaterialAmbient;"+
     "uniform vec4 GlobalAmbient;"+
     "uniform float MaterialShininess;"+
-    "uniform sampler2D DiffTex, SpecTex;"+
+    "uniform sampler2D DiffTex, SpecTex, EmitTex;"+
     "varying vec3 normal, lightDir, eyeVec;"+
     "varying vec2 texCoord0;"+
     "varying float attenuation;"+
     "void main()"+
     "{"+
     "  vec4 color = GlobalAmbient * MaterialAmbient;"+
-    "  vec4 diffuse = LightDiffuse * MaterialDiffuse;"+
+    "  vec4 matDiff = MaterialDiffuse + texture2D(DiffTex, texCoord0);"+
+    "  vec4 matSpec = MaterialSpecular + texture2D(SpecTex, texCoord0);"+
+    "  vec4 diffuse = LightDiffuse * matDiff;"+
     "  float lambertTerm = dot(normal, lightDir);"+
     "  if (lambertTerm > 0.0) {"+
     "    color += diffuse * lambertTerm * attenuation;"+
     "    vec3 E = normalize(eyeVec);"+
     "    vec3 R = reflect(-lightDir, normal);"+
-    "    float specular = pow( max(dot(R, E), 0.0), MaterialShininess );"+
-    "    color += MaterialSpecular * LightSpecular * specular * attenuation;"+
+    "    float specular = pow( max(dot(R, E), 0.0), MaterialShininess+64.0*matSpec.a );"+
+    "    color += matSpec * LightSpecular * specular * attenuation;"+
     "  }"+
-    "  color.a = MaterialDiffuse.a;"+
+    "  color += texture2D(EmitTex, texCoord0);"+
+    "  color.a = matDiff.a;"+
     "  gl_FragColor = color;"+
     "}"
   ),
@@ -230,10 +233,10 @@ DefaultMaterial = {
     }
     return this.cached.copy();
   },
-  
+
   setupMaterial : function(shader) {
     var m = new Material(shader);
-    m.floats.MaterialSpecular = [0.95, 0.9, 0.9, 1];
+    m.floats.MaterialSpecular = [0.95, 0.9, 0.9, 0];
     m.floats.MaterialDiffuse = [0.60, 0.6, 0.65, 1];
     m.floats.MaterialAmbient = [1, 1, 1, 1];
     m.floats.MaterialShininess = 1.5;
@@ -248,7 +251,7 @@ DefaultMaterial = {
     m.floats.LightQuadraticAtt = 0.0;
     return m;
   }
-      
+
 }
 
         // the goal here is to make simple things simple
