@@ -1,0 +1,24 @@
+<html>
+
+  <head>
+    <title>Demo</title>
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript">
+      init = function() {
+        new Scene($('c'), new Cube().makeBounce());
+      }
+		</script>
+	</head>
+	<body>
+    <canvas id="c" width="500" height="400"></canvas>
+    <p style="font-family:Sans-serif; font-size: small;">
+      FPS <canvas id="fps" width="200" height="20"></canvas>
+    </p>
+    <pre id="stats" style="font-family:Sans-serif; font-size: small;"></pre>
+    <script> init(); </script>
+	</body>
+
+</html>

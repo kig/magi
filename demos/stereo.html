@@ -1,0 +1,119 @@
+<html>
+
+  <head>
+    <title>Demo</title>
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript" src="../src/bin_loader.js"></script>
+    <script type="text/javascript">
+
+      init = function() {
+        var c = $('c');
+        c.style.position = 'fixed';
+        c.style.top = '0px';
+        c.style.left = '0px';
+        c.width = window.innerWidth;
+        c.height = window.innerHeight;
+        $('info').innerHTML = "Loading model (560kB)...";
+        var w = Bin.load('walas.obj.bin');
+        w.flatNormals = false;
+        w.onload = function() {
+          $('info').innerHTML = "Downloaded 560kB in " + w.downloadTime + " ms<br>" +
+                                "Parsed model in " + w.parseTime + " ms<br>" + 
+                                (w.vertices.length / 9) + " triangles";
+          var s = new Scene(c);
+          s.bg = [0,0,0,0];
+          s.drawOnlyWhenChanged = true;
+          s.camera.stereo = true;
+          s.camera.targetFov = 50;
+          s.camera.stereoSeparation = 0.025;
+          s.camera.position = [0, 2, 7];
+          s.camera.lookAt = [0, 0.5, 0];
+          var n = new Node();
+          var sc = 4.0 / (w.boundingBox.diameter);
+          n.scaling = [sc, sc, sc];
+          n.model = w.makeVBO();
+          n.position[1] = 0.5;
+          n.rotation.axis = [1,0,0];
+          n.rotation.angle = -Math.PI/2;
+          n.material = DefaultMaterial.get();
+          n.material.floats.LightDiffuse = [1,1,1,1];
+          n.material.floats.MaterialShininess = 6.0;
+          n.material.floats.MaterialDiffuse = [1,1,1,1];
+
+          var xRot = new Node();
+          xRot.rotation.axis = [0, 1, 0];
+          var yRot = new Node();
+          yRot.rotation.axis = [1, 0, 0];
+          yRot.appendChild(xRot);
+          xRot.appendChild(n);
+          var wheelHandler = function(ev) {
+            var ds = ((ev.detail || ev.wheelDelta) < 0) ? 1.1 : (1 / 1.1);
+            if (ev.shiftKey) {
+              yRot.scaling[0] *= ds;
+              yRot.scaling[1] *= ds;
+              yRot.scaling[2] *= ds;
+            } else {
+              s.camera.targetFov *= ds;
+            }
+            s.changed = true;
+            ev.preventDefault();
+          };
+          s.camera.addFrameListener(function() {
+            if (Math.abs(this.targetFov - this.fov) > 0.01) {
+              s.changed = true;
+            }
+          });
+          c.addEventListener('DOMMouseScroll', wheelHandler, false);
+          c.addEventListener('mousewheel', wheelHandler, false);
+
+          c.addEventListener('mousedown', function(ev){ 
+            this.dragging = true;
+            this.sx = ev.clientX;
+            this.sy = ev.clientY;
+            ev.preventDefault();
+          }, false);
+          window.addEventListener('mousemove', function(ev) {
+            if (c.dragging) {
+              var dx = ev.clientX - c.sx, dy = ev.clientY - c.sy;
+              c.sx = ev.clientX, c.sy = ev.clientY;
+              if (s.mouse.left) {
+                xRot.rotation.angle += dx / 200;
+                yRot.rotation.angle += dy / 200;
+              } else if (s.mouse.middle) {
+                yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
+                yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
+              }
+              ev.preventDefault();
+              s.changed = true;
+            }
+          }, false);
+          window.addEventListener('mouseup', function(ev) {
+            if (c.dragging) {
+              c.dragging = false;
+              ev.preventDefault();
+            }
+          }, false);
+          s.changed = true;
+          s.scene.appendChild(yRot);
+        }
+      }
+    </script>
+    <style>
+      body {
+        overflow : hidden;
+        font-family : sans-serif;
+      }
+    </style>            
+  </head>
+  <body>
+    <center>
+    <canvas id="c" width="800" height="400"></canvas>
+    <p id="info"></p>
+    </center>
+    <script> init(); </script>
+  </body>
+
+</html>

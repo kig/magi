@@ -1,0 +1,137 @@
+<html>
+
+  <head>
+    <title>Demo</title>
+    <script id="ppix-vert" type="text/x-glsl-vs">
+      precision mediump float;
+      attribute vec3 Vertex;
+      attribute vec3 Normal;
+      attribute vec2 TexCoord;
+
+      uniform mat4 PMatrix;
+      uniform mat4 MVMatrix;
+      uniform mat3 NMatrix;
+
+      uniform float LightConstantAtt;
+      uniform float LightLinearAtt;
+      uniform float LightQuadraticAtt;
+
+      uniform vec4 LightPos;
+      
+      varying vec3 normal, lightDir, eyeVec;
+      varying vec2 texCoord0;
+      varying float attenuation;
+
+      void main()
+      {
+        vec3 lightVector;
+        vec4 v = vec4(Vertex, 1.0);
+
+        texCoord0 = TexCoord;
+
+        normal = normalize(NMatrix * Normal);
+
+        vec4 worldPos = MVMatrix * v;
+        lightVector = vec3(LightPos - worldPos);
+        lightDir = normalize(lightVector);
+        float dist = length(lightVector);
+
+        eyeVec = -vec3(worldPos);
+
+        attenuation = 1.0 / (LightConstantAtt + LightLinearAtt*dist + LightQuadraticAtt * dist*dist);
+        
+        gl_Position = PMatrix * worldPos;
+      }
+    </script>
+    <script id="ppix-frag" type="text/x-glsl-fs">
+      precision mediump float;
+      uniform vec4 LightDiffuse;
+      uniform vec4 LightSpecular;
+      uniform vec4 MaterialSpecular;
+      uniform vec4 MaterialDiffuse;
+      uniform vec4 MaterialAmbient;
+      uniform vec4 GlobalAmbient;
+      uniform float MaterialShininess;
+      
+      uniform sampler2D DiffTex, SpecTex;
+      
+      varying vec3 normal, lightDir, eyeVec;
+      varying vec2 texCoord0;
+      varying float attenuation;
+
+      void main()
+      {
+        vec4 color = GlobalAmbient * MaterialAmbient;
+        vec4 tex = texture2D(DiffTex, vec2(texCoord0.s, 1.0-texCoord0.t));
+        vec4 diffuse = tex;
+        
+        float lambertTerm = dot(normal, lightDir);
+
+        if (lambertTerm > 0.0) {
+          color += diffuse * lambertTerm * attenuation;
+
+          vec3 E = normalize(eyeVec);
+          vec3 R = reflect(-lightDir, normal);
+          
+          float specular = pow( max(dot(R, E), 0.0), MaterialShininess );
+
+          color += MaterialSpecular * LightSpecular * specular * attenuation * tex.r;
+        }
+        color.a = MaterialDiffuse.a;
+
+        gl_FragColor = color;
+      }
+    </script>
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript" src="../src/obj_loader.js"></script>
+    <script type="text/javascript">
+
+      init = function() {
+        var s = new Scene($('c'));
+        $('info').innerHTML = 'Loading model (530kB)...';
+        var w = Obj.load('tram.obj');
+        w.onload = function() {
+          s.camera.position = [0, 2, 7];
+          var tex = new Texture();
+          tex.image = new Image();
+          tex.image.src = 'tram.jpg';
+          $('info').innerHTML = 'Loading texture (50kB)...';
+          tex.image.onload = function(){
+            $('info').innerHTML = '';
+            var n = new Node();
+            var sc = 4.0 / (w.boundingBox.diameter);
+            n.scaling = [sc, sc, sc];
+            n.model = w.makeVBO();
+            n.position[1] = 0.5;
+//             n.rotation.axis = [1,0,0];
+//             n.rotation.angle = -Math.PI/2;
+            var sh = new Shader(null, 'ppix-vert', 'ppix-frag');
+            n.material = DefaultMaterial.setupMaterial(sh);
+            n.material.textures.DiffTex = tex;
+
+            s.scene.addFrameListener(function(t,dt){
+              this.rotation.angle += dt / 1000;
+            });
+            s.scene.appendChild(n);
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        overflow : hidden;
+      }
+    </style>            
+  </head>
+  <body>
+    <center>
+    <canvas id="c" width="800" height="400"></canvas>
+    <p id="info"></p>
+    </center>
+    <script> init(); </script>
+  </body>
+
+</html>
