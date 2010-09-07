@@ -1,0 +1,20 @@
+Sketching a small WebGL scene graph library
+
+Goals:
+  - Put together quick presentation graphics
+  - Make simple things simple
+    - Loading and displaying simple textured models
+      - Load archives with model and textures using XMLHttpRequest
+    - Drawing text
+      - Draw text using the 2D canvas
+      - Billboard text
+    - Applying post-processing filters
+      - Perspective and ortho cameras with possible FBO render targets
+      - Material system 
+    - Animation
+      - Animation vocabulary
+      - Transformation tweens
+      - Follow along Bezier curves & Catmull-Rom splines
+    - User inputs
+      - Default camera navigation
+      - Event handlers
