@@ -207,17 +207,18 @@ DefaultMaterial = {
     "{"+
     "  vec4 color = GlobalAmbient * MaterialAmbient;"+
     "  vec4 matDiff = MaterialDiffuse + texture2D(DiffTex, texCoord0);"+
-    "  vec4 matSpec = MaterialSpecular + texture2D(SpecTex, texCoord0);"+
+    "  vec4 matSpec = MaterialSpecular;" +
+    // + texture2D(SpecTex, texCoord0);"+
     "  vec4 diffuse = LightDiffuse * matDiff;"+
     "  float lambertTerm = dot(normal, lightDir);"+
-    "  if (lambertTerm > 0.0) {"+
-    "    color += diffuse * lambertTerm * attenuation;"+
-    "    vec3 E = normalize(eyeVec);"+
-    "    vec3 R = reflect(-lightDir, normal);"+
-    "    float specular = pow( max(dot(R, E), 0.0), MaterialShininess+64.0*matSpec.a );"+
-    "    color += matSpec * LightSpecular * specular * attenuation;"+
-    "  }"+
-    "  color += texture2D(EmitTex, texCoord0);"+
+    "  vec4 lcolor = diffuse * lambertTerm * attenuation;"+
+    "  vec3 E = normalize(eyeVec);"+
+    "  vec3 R = reflect(-lightDir, normal);"+
+    "  float specular = pow( max(dot(R, E), 0.0), MaterialShininess );" +
+    // +64.0*(1.0-matSpec.a) );"+
+    "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
+    "  color += lcolor * step(0.0, lambertTerm);"+
+    // "  color += texture2D(EmitTex, texCoord0);" +
     "  color.a = matDiff.a;"+
     "  gl_FragColor = color;"+
     "}"

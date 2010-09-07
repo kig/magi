@@ -255,6 +255,21 @@ vec3.length = function(vec){
 };
 
 /*
+ * vec3.lengthSquare
+ * Caclulates the square of the length of a vec3
+ *
+ * Params:
+ * vec - vec3 to calculate length of
+ *
+ * Returns:
+ * Square of the length of vec
+ */
+vec3.lengthSquare = function(vec){
+  var x = vec[0], y = vec[1], z = vec[2];
+  return x*x + y*y + z*z;
+};
+
+/*
  * vec3.dot
  * Caclulates the dot product of two vec3s
  *
@@ -399,6 +414,10 @@ mat3.identity = function(dest) {
   return dest;
 };
 
+mat3.newIdentity = function() {
+  return mat3.identity(mat3.create());
+};
+
 /*
  * mat3.toMat4
  * Copies the elements of a mat3 into the upper 3x3 elements of a mat4
@@ -435,6 +454,42 @@ mat3.toMat4 = function(mat, dest) {
   
   return dest;
 }
+
+/*
+ * mat3.transpose
+ * Transposes a mat3 (flips the values over the diagonal)
+ *
+ * Params:
+ * mat - mat3 to transpose
+ * dest - Optional, mat3 receiving transposed values. If not specified result is written to mat
+ *
+ * Returns:
+ * dest is specified, mat otherwise
+ */
+mat3.transpose = function(mat, dest) {
+  // If we are transposing ourselves we can skip a few steps but have to cache some values
+  if(!dest || mat == dest) {
+    var m1 = mat[1], m2 = mat[2], m5 = mat[5];
+    mat[1] = mat[3];
+    mat[2] = mat[6];
+    mat[5] = mat[7];
+    mat[3] = m1;
+    mat[6] = m2;
+    mat[7] = m5;
+    return mat;
+  }
+  
+  dest[0] = mat[0];
+  dest[1] = mat[3];
+  dest[2] = mat[6];
+  dest[3] = mat[1];
+  dest[4] = mat[4];
+  dest[5] = mat[7];
+  dest[6] = mat[2];
+  dest[7] = mat[5];
+  dest[8] = mat[8];
+  return dest;
+};
 
 /*
  * mat3.str

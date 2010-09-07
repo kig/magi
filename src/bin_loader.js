@@ -252,17 +252,17 @@ Bin.prototype = {
   },
 
   find_normal : function(x0,y0,z0, x1,y1,z1, x2,y2,z2) {
-    var u = [x0-x1, y0-y1, z0-z1];
-    var v = [x1-x2, y1-y2, z1-z2];
-    var w = [x2-x0, y2-y0, z2-z0];
-    var n = Vec3.cross(u,v);
-    if (Vec3.lengthSquare(n) == 0)
-      n = Vec3.cross(v,w);
-    if (Vec3.lengthSquare(n) == 0)
-      n = Vec3.cross(w,u);
-    if (Vec3.lengthSquare(n) == 0)
-      n = [0,0,1];
-    return Vec3.normalize(n);
+    var u = vec3.create([x0-x1, y0-y1, z0-z1]);
+    var v = vec3.create([x1-x2, y1-y2, z1-z2]);
+    var w = vec3.create([x2-x0, y2-y0, z2-z0]);
+    var n = vec3.cross(u,v,vec3.create());
+    if (vec3.lengthSquare(n) == 0)
+      vec3.cross(v,w,n);
+    if (vec3.lengthSquare(n) == 0)
+      vec3.cross(w,u,n);
+    if (vec3.lengthSquare(n) == 0)
+      vec3.set([0,0,1], n);
+    return vec3.normalize(n);
   }
 
 }

@@ -65,24 +65,25 @@ Node.prototype = {
   },
   
   updateTransform : function(matrix) {
-    mat4.set(matrix, this.matrix);
+    var m = this.matrix;
+    mat4.set(matrix, m);
     var p = this.position;
     var s = this.scaling;
     var doScaling = (s[0] != 1) || (s[1] != 1) || (s[2] != 1);
     if (p[0] || p[1] || p[2])
-      mat4.translate(p, this.matrix);
+      mat4.translate(m, p);
     if (this.scaleAfterRotate && doScaling)
-      mat4.scale(s, this.matrix);
+      mat4.scale(m, s);
     if (this.rotation.angle != 0)
-      mat4.rotate(this.rotation.angle, this.rotation.axis, this.matrix);
+      mat4.rotate(m, this.rotation.angle, this.rotation.axis);
     if (!this.scaleAfterRotate && this.scaling)
-      mat4.scale(s, this.matrix);
+      mat4.scale(m, s);
     if (this.isBillboard)
-      mat4.billboard(this.matrix);
-    mat4.inverseTo3(this.matrix, this.normalMatrix);
-    mat4.transpose3(this.normalMatrix);
+      mat4.billboard(m);
+    mat4.toInverseMat3(m, this.normalMatrix);
+    mat3.transpose(this.normalMatrix);
     for (var i=0; i<this.childNodes.length; i++)
-      this.childNodes[i].updateTransform(this.matrix);
+      this.childNodes[i].updateTransform(m);
   },
   
   collectDrawList : function(arr) {
@@ -251,6 +252,7 @@ Camera.prototype = {
     this.lookAt = vec3.create([0,0,0]);
     this.up = vec3.create([0,1,0]);
     this.matrix = mat4.create();
+    this.perspectiveMatrix = mat4.create();
     this.frameListeners = [];
   },
   addFrameListener : Node.prototype.addFrameListener,
@@ -277,15 +279,17 @@ Camera.prototype = {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
-    var perspective = this.ortho ?
-      mat4.ortho(x, width, -height, -y, this.zNear, this.zFar) :
-      mat4.perspective(this.fov, width/height, this.zNear, this.zFar);
+    if (this.ortho) {
+      mat4.ortho(x, width, -height, -y, this.zNear, this.zFar, this.perspectiveMatrix);
+    } else {
+      mat4.perspective(this.fov, width/height, this.zNear, this.zFar, this.perspectiveMatrix);
+    }
     scene.updateTransform(this.getLookMatrix());
     var drawList = scene.collectDrawList();
     var state = new GLDrawState();
     for (var i=0; i<drawList.length; i++) {
       var d = drawList[i];
-      d.draw(gl, state, perspective);
+      d.draw(gl, state, this.perspectiveMatrix);
     }
     gl.disable(gl.SCISSOR_TEST);
   },
@@ -294,10 +298,11 @@ Camera.prototype = {
     if (this.stereo) {
       var p = vec3.create(this.position);
       var sep = vec3.create();
-      vec3.cross(this.up, vec3.sub(this.lookAt, this.position), sep);
+      vec3.subtract(this.lookAt, p, sep)
+      vec3.cross(this.up, sep, sep);
       vec3.scale(sep, this.stereoSeparation/2, sep);
 
-      vec3.sub(p, sep, this.position);
+      vec3.subtract(p, sep, this.position);
       this.drawViewport(gl, 0, 0, width/2, height, scene);
       
       vec3.add(p, sep, this.position);
