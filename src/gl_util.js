@@ -1075,97 +1075,97 @@ Shader = Klass({
 
   uniform1fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform1fv(loc, value);
+    if (loc != null) this.gl.uniform1fv(loc, value);
   },
 
   uniform2fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform2fv(loc, value);
+    if (loc != null) this.gl.uniform2fv(loc, value);
   },
 
   uniform3fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform3fv(loc, value);
+    if (loc != null) this.gl.uniform3fv(loc, value);
   },
 
   uniform4fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform4fv(loc, value);
+    if (loc != null) this.gl.uniform4fv(loc, value);
   },
   
   uniform1f : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform1f(loc, value);
+    if (loc != null) this.gl.uniform1f(loc, value);
   },
 
   uniform2f : function(name, v1,v2) {
     var loc = this.uniform(name);
-    this.gl.uniform2f(loc, v1,v2);
+    if (loc != null) this.gl.uniform2f(loc, v1,v2);
   },
 
   uniform3f : function(name, v1,v2,v3) {
     var loc = this.uniform(name);
-    this.gl.uniform3f(loc, v1,v2,v3);
+    if (loc != null) this.gl.uniform3f(loc, v1,v2,v3);
   },
 
   uniform4f : function(name, v1,v2,v3,v4) {
     var loc = this.uniform(name);
-    this.gl.uniform4f(loc, v1, v2, v3, v4);
+    if (loc != null) this.gl.uniform4f(loc, v1, v2, v3, v4);
   },
   
   uniform1iv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform1iv(loc, value);
+    if (loc != null) this.gl.uniform1iv(loc, value);
   },
 
   uniform2iv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform2iv(loc, value);
+    if (loc != null) this.gl.uniform2iv(loc, value);
   },
 
   uniform3iv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform3iv(loc, value);
+    if (loc != null) this.gl.uniform3iv(loc, value);
   },
 
   uniform4iv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform4iv(loc, value);
+    if (loc != null) this.gl.uniform4iv(loc, value);
   },
 
   uniform1i : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniform1i(loc, value);
+    if (loc != null) this.gl.uniform1i(loc, value);
   },
 
   uniform2i : function(name, v1,v2) {
     var loc = this.uniform(name);
-    this.gl.uniform2i(loc, v1,v2);
+    if (loc != null) this.gl.uniform2i(loc, v1,v2);
   },
 
   uniform3i : function(name, v1,v2,v3) {
     var loc = this.uniform(name);
-    this.gl.uniform3i(loc, v1,v2,v3);
+    if (loc != null) this.gl.uniform3i(loc, v1,v2,v3);
   },
 
   uniform4i : function(name, v1,v2,v3,v4) {
     var loc = this.uniform(name);
-    this.gl.uniform4i(loc, v1, v2, v3, v4);
+    if (loc != null) this.gl.uniform4i(loc, v1, v2, v3, v4);
   },
 
   uniformMatrix4fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniformMatrix4fv(loc, false, value);
+    if (loc != null) this.gl.uniformMatrix4fv(loc, false, value);
   },
 
   uniformMatrix3fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniformMatrix3fv(loc, false, value);
+    if (loc != null) this.gl.uniformMatrix3fv(loc, false, value);
   },
 
   uniformMatrix2fv : function(name, value) {
     var loc = this.uniform(name);
-    this.gl.uniformMatrix2fv(loc, false, value);
+    if (loc != null) this.gl.uniformMatrix2fv(loc, false, value);
   },
 
   attrib : function(name) {
@@ -1799,7 +1799,7 @@ GL_CONTEXT_ID = null;
 getGLContext = function(c, args){
   var find=function(a,f){for(var i=0,j;j=a[i],i++<a.length;)if(f(j))return j};
   if (!GL_CONTEXT_ID)
-    GL_CONTEXT_ID = find(['experimental-webgl','webgl'],function(n){try{return c.getContext(n)}catch(e){}});
+    GL_CONTEXT_ID = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n)}catch(e){}});
   if (!GL_CONTEXT_ID) {
     window.logCanvas = c;
     log("No WebGL context found. Click here for more details.");

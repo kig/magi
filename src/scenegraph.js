@@ -73,7 +73,7 @@ Node = Klass({
       mat4.scale(m, s);
     if (this.rotation.angle != 0)
       mat4.rotate(m, this.rotation.angle, this.rotation.axis);
-    if (!this.scaleAfterRotate && this.scaling)
+    if (!this.scaleAfterRotate && doScaling)
       mat4.scale(m, s);
     if (this.isBillboard)
       mat4.billboard(m);
