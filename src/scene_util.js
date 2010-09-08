@@ -40,8 +40,8 @@ Scene.prototype = {
 
   bg : [1,1,1,1],
   clear : true,
-  depthCheck : true,
-  depthWrites : true,
+  depthTest : true,
+  depthMask : true,
   blend : true,
   blendFuncSrc : 'SRC_ALPHA',
   blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
@@ -106,11 +106,11 @@ Scene.prototype = {
     this.gl.clearColor(this.bg[0], this.bg[1], this.bg[2], this.bg[3]);
     if (this.clear)
       this.gl.clear(this.clearBits);
-    if (this.depthCheck)
+    if (this.depthTest)
       this.gl.enable(this.gl.DEPTH_TEST);
     else
       this.gl.disable(this.gl.DEPTH_TEST);
-    if (this.depthWrites)
+    if (this.depthMask)
       this.gl.depthMask(this.gl.TRUE);
     else
       this.gl.depthMask(this.gl.FALSE);
@@ -151,10 +151,12 @@ Cube = function() {
   this.material = DefaultMaterial.get();
 };
 Cube.prototype = new Node;
-Cube.prototype.makeBounce = function() {
+Cube.prototype.makeBounce = function(twirl) {
   this.addFrameListener(function(t, dt) {
     var y = 2*Math.abs(Math.sin(t / 400));
     this.position[1] = y;
+    if (twirl)
+      this.rotation.angle = 6*Math.cos(t / 2400);
   });
   return this;
 };
@@ -163,16 +165,18 @@ Text = Klass(Node, {
   fontSize : 24,
   font : 'Arial',
 
-  initialize : function(content) {
+  initialize : function(content, fontSize, font) {
     Node.initialize.call(this);
     this.canvas = E.canvas(1, 1);
+    if (fontSize) this.fontSize = fontSize;
+    if (font) this.font = font;
     var tex = new Texture();
     tex.generateMipmaps = false;
     tex.image = this.canvas;
     this.textNode = new Node(Geometry.Quad.getCachedVBO());
-    this.textNode.material = DefaultMaterial.get();
-    this.textNode.material.textures.DiffTex = tex;
-    this.textNode.material.floats.MaterialDiffuse = [0,0,0,0];
+    this.textNode.material = FilterMaterial.make();
+    this.textNode.material.textures.Texture0 = tex;
+    this.textNode.depthMask = false;
     this.texture = tex;
     this.appendChild(this.textNode);
     this.setText(content);
@@ -205,6 +209,50 @@ Text = Klass(Node, {
     this.setText(this.text);
   }
 });
+
+FilterMaterial = {
+  vert : (
+    "precision mediump float;"+
+    "attribute vec3 Vertex;"+
+    "attribute vec3 Normal;"+
+    "attribute vec2 TexCoord;"+
+    "uniform mat4 PMatrix;"+
+    "uniform mat4 MVMatrix;"+
+    "uniform mat3 NMatrix;"+
+    "varying vec2 texCoord0;"+
+    "void main()"+
+    "{"+
+    "  vec4 v = vec4(Vertex, 1.0);"+
+    "  texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);"+
+    "  vec4 worldPos = MVMatrix * v;"+
+    "  gl_Position = PMatrix * worldPos;"+
+    "}"
+  ),
+
+  frag : (
+    "precision mediump float;"+
+    "uniform sampler2D Texture0;"+
+    "varying vec2 texCoord0;"+
+    "void main()"+
+    "{"+
+    "  gl_FragColor = texture2D(Texture0, texCoord0);"+
+    "}"
+  ),
+
+  make : function(gl, fragmentShader) {
+    var shader = new Shader(null,
+      {type:'VERTEX_SHADER', text:this.vert},
+      {type:'FRAGMENT_SHADER', text:fragmentShader||this.frag}
+    );
+    return this.setupMaterial(shader);
+  },
+
+  setupMaterial : function(shader) {
+    var m = new Material(shader);
+    m.textures.Texture0 = null;
+    return m;
+  }
+};
 
 DefaultMaterial = {
   vert : (

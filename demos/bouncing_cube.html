@@ -7,13 +7,27 @@
     <script type="text/javascript" src="../src/scenegraph.js"></script>
     <script type="text/javascript" src="../src/scene_util.js"></script>
     <script type="text/javascript">
+      window.onresize = function() {
+        var cv = $('c');
+        cv.width = window.innerWidth;
+        cv.height = window.innerHeight-25;
+      }
       window.onload = function() {
-        var s = new Scene($('c'));
-        var c = new Cube().makeBounce();
-        s.scene.appendChild(c);
-        var txt = new Text("Hello, world!");
-        txt.scaling.set([1/80, 1/80, 1/80]);
-        s.scene.appendChild(txt);
+        var cv = $('c');
+        document.body.style.margin = '5px';
+        cv.style.position = 'relative';
+        cv.style.left = cv.style.top = '0px';
+        cv.width = window.innerWidth-20;
+        cv.height = window.innerHeight-45;
+        
+        var s = new Scene(cv);
+        s.camera.position[2] = 10;
+        var cube = new Cube().makeBounce(true);
+        s.scene.appendChild(cube);
+        var txt = new Text("Hello, world!", 72);
+        vec3.set3(1/144, txt.scaling);
+        txt.position[1] = -1.0;
+        cube.appendChild(txt);
       }
 		</script>
 	</head>

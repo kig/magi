@@ -1445,7 +1445,7 @@ VBO.prototype = {
     var gl = this.gl;
     for (var i=0; i<arguments.length; i++) {
       var arg = arguments[i];
-      if (arg == null) continue;
+      if (arg == null || arg == -1) continue;
       if (!this.vbos[i]) {
         gl.disableVertexAttribArray(arg);
         continue;

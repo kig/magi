@@ -80,6 +80,11 @@ vec3.set = function(vec, dest) {
   return dest;
 };
 
+vec3.set3 = function(value, dest) {
+  dest[0] = dest[1] = dest[2] = value;
+  return dest;
+};
+
 /*
  * vec3.add
  * Performs a vector addition
