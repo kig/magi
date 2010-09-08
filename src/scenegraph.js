@@ -1,8 +1,4 @@
-Node = function(model) {
-  this.model = model;
-  this.initialize();
-}
-Node.prototype = {
+Node = Klass({
   model : null,
   position : null,
   rotation : null,
@@ -12,7 +8,8 @@ Node.prototype = {
   depthMask : true,
   display : true,
   
-  initialize : function() {
+  initialize : function(model) {
+    this.model = model;
     this.material = new Material();
     this.matrix = mat4.newIdentity();
     this.normalMatrix = mat3.newIdentity();
@@ -93,26 +90,19 @@ Node.prototype = {
       this.childNodes[i].collectDrawList(arr);
     return arr;
   }
-};
+});
 
-// image quad with canvas as texture
-// draw text string to canvas, upload with texImage2D
-// material has 
-GLText = function(string, font) {
-}
-GLText.prototype = {
-}
+Material = Klass({
+  initialize : function(shader) {
+    this.shader = shader;
+    this.textures = {};
+    for (var i in this.textures) delete this.textures[i];
+    this.floats = {};
+    for (var i in this.floats) delete this.floats[i];
+    this.ints = {};
+    for (var i in this.ints) delete this.ints[i];
+  },
 
-Material = function(shader) {
-  this.shader = shader;
-  this.textures = {};
-  for (var i in this.textures) delete this.textures[i];
-  this.floats = {};
-  for (var i in this.floats) delete this.floats[i];
-  this.ints = {};
-  for (var i in this.ints) delete this.ints[i];
-};
-Material.prototype = {
   copyValue : function(v){
     if (typeof v == 'number') return v;
     var a = [];
@@ -154,14 +144,18 @@ Material.prototype = {
     var texUnit = 0;
     for (var name in this.textures) {
       var tex = this.textures[name];
-      if (tex && tex.gl == null) tex.gl = gl;
-      if (state.textures[texUnit] != tex) {
-        state.textures[texUnit] = tex;
-        gl.activeTexture(gl.TEXTURE0+texUnit);
-        tex.use();
-        Stats.textureSetCount++;
+      if (tex) {
+        if (tex.gl == null) tex.gl = gl;
+        if (state.textures[texUnit] != tex) {
+          state.textures[texUnit] = tex;
+          gl.activeTexture(gl.TEXTURE0+texUnit);
+          tex.use();
+          Stats.textureSetCount++;
+        }
+        this.shader.uniform1i(name, texUnit);
+      } else {
+        this.shader.uniform1i(name, 0);
       }
-      this.shader.uniform1i(name, texUnit);
       Stats.uniformSetCount++;
       ++texUnit;
     }
@@ -223,21 +217,19 @@ Material.prototype = {
     }
   }
   
-};
+});
 
-GLDrawState = function(){
-  this.textures = [];
-};
-GLDrawState.prototype = {
+GLDrawState = Klass({
   textures : null,
   currentMaterial : null,
-  currentShader : null
-};
+  currentShader : null,
+  
+  initialize: function(){
+    this.textures = [];
+  }
+});
 
-Camera = function() {
-  this.initialize();
-};
-Camera.prototype = {
+Camera = Klass({
   fov : 30,
   targetFov : 30,
   zNear : 1,
@@ -255,7 +247,9 @@ Camera.prototype = {
     this.perspectiveMatrix = mat4.create();
     this.frameListeners = [];
   },
+  
   addFrameListener : Node.prototype.addFrameListener,
+
   update : function(t, dt) {
     var a = [];
     for (var i=0; i<this.frameListeners.length; i++) {
@@ -268,6 +262,7 @@ Camera.prototype = {
     if (this.targetFov && this.fov != this.targetFov)
       this.fov += (this.targetFov - this.fov) * (1-Math.pow(0.7, (dt/30)));
   },
+
   getLookMatrix : function() {
     if (this.useLookAt)
       mat4.lookAt(this.position, this.lookAt, this.up, this.matrix);
@@ -275,6 +270,7 @@ Camera.prototype = {
       mat4.identity(this.matrix);
     return this.matrix;
   },
+
   drawViewport : function(gl, x, y, width, height, scene) {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
@@ -313,5 +309,5 @@ Camera.prototype = {
       this.drawViewport(gl, 0, 0, width, height, scene);
     }
   }
-};
+});
 

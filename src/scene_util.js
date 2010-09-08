@@ -1,9 +1,3 @@
-Mouse = {
-  LEFT : 0,
-  MIDDLE : 1,
-  RIGHT : 2
-}
-
 Scene = function(canvas, scene, cam, args) {
   if (!scene) scene = new Node();
   if (!cam) cam = Scene.getDefaultCamera();
@@ -46,7 +40,11 @@ Scene.prototype = {
 
   bg : [1,1,1,1],
   clear : true,
-  useDepth : true,
+  depthCheck : true,
+  depthWrites : true,
+  blend : true,
+  blendFuncSrc : 'SRC_ALPHA',
+  blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
   
   startFrameLoop : function() {
     this.previousTime = new Date;
@@ -108,10 +106,14 @@ Scene.prototype = {
     this.gl.clearColor(this.bg[0], this.bg[1], this.bg[2], this.bg[3]);
     if (this.clear)
       this.gl.clear(this.clearBits);
-    if (this.useDepth)
+    if (this.depthCheck)
       this.gl.enable(this.gl.DEPTH_TEST);
     else
       this.gl.disable(this.gl.DEPTH_TEST);
+    if (this.depthWrites)
+      this.gl.depthMask(this.gl.TRUE);
+    else
+      this.gl.depthMask(this.gl.FALSE);
     if (this.blend)
       this.gl.enable(this.gl.BLEND);
     else
@@ -126,6 +128,7 @@ Scene.prototype = {
     this.updateFps(this.frameTimes, real_dt);
     if (!this.firstFrameDoneTime) this.firstFrameDoneTime = new Date();
     this.changed = false;
+    throwError(this.gl, "Scene draw loop");
   },
 
   updateFps : function(frames,real_dt) {
@@ -142,8 +145,6 @@ Scene.prototype = {
   }
 };
 
-var $ = function(id){ return document.getElementById(id); };
-
 Cube = function() {
   Node.call(this, Geometry.Cube.getCachedVBO());
   this.position = [0,0,0];
@@ -157,6 +158,53 @@ Cube.prototype.makeBounce = function() {
   });
   return this;
 };
+
+Text = Klass(Node, {
+  fontSize : 24,
+  font : 'Arial',
+
+  initialize : function(content) {
+    Node.initialize.call(this);
+    this.canvas = E.canvas(1, 1);
+    var tex = new Texture();
+    tex.generateMipmaps = false;
+    tex.image = this.canvas;
+    this.textNode = new Node(Geometry.Quad.getCachedVBO());
+    this.textNode.material = DefaultMaterial.get();
+    this.textNode.material.textures.DiffTex = tex;
+    this.textNode.material.floats.MaterialDiffuse = [0,0,0,0];
+    this.texture = tex;
+    this.appendChild(this.textNode);
+    this.setText(content);
+  },
+
+  setText : function(text) {
+    this.text = text;
+    var ctx = this.canvas.getContext('2d');
+    var sf = this.fontSize + 'px ' + this.font;
+    ctx.font = sf;
+    var dims = ctx.measureText(text);
+    this.canvas = E.canvas(dims.width, Math.ceil(this.fontSize*1.2));
+    var ctx = this.canvas.getContext('2d');
+    ctx.font = sf;
+    ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+    ctx.fillText(this.text, 0, this.fontSize);
+    this.textNode.scaling[0] = this.canvas.width / 2;
+    this.textNode.scaling[1] = this.canvas.height / 2;
+    this.texture.image = this.canvas;
+    this.texture.changed = true;
+  },
+
+  setFontSize : function(fontSize) {
+    this.fontSize = fontSize;
+    this.setText(this.text);
+  },
+  
+  setFont : function(font) {
+    this.font = font;
+    this.setText(this.text);
+  }
+});
 
 DefaultMaterial = {
   vert : (
@@ -207,18 +255,16 @@ DefaultMaterial = {
     "{"+
     "  vec4 color = GlobalAmbient * MaterialAmbient;"+
     "  vec4 matDiff = MaterialDiffuse + texture2D(DiffTex, texCoord0);"+
-    "  vec4 matSpec = MaterialSpecular;" +
-    // + texture2D(SpecTex, texCoord0);"+
+    "  vec4 matSpec = MaterialSpecular + texture2D(SpecTex, texCoord0);"+
     "  vec4 diffuse = LightDiffuse * matDiff;"+
     "  float lambertTerm = dot(normal, lightDir);"+
     "  vec4 lcolor = diffuse * lambertTerm * attenuation;"+
     "  vec3 E = normalize(eyeVec);"+
     "  vec3 R = reflect(-lightDir, normal);"+
-    "  float specular = pow( max(dot(R, E), 0.0), MaterialShininess );" +
-    // +64.0*(1.0-matSpec.a) );"+
+    "  float specular = pow( max(dot(R, E), 0.0), MaterialShininess );"+
     "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
     "  color += lcolor * step(0.0, lambertTerm);"+
-    // "  color += texture2D(EmitTex, texCoord0);" +
+    "  color += texture2D(EmitTex, texCoord0);" +
     "  color.a = matDiff.a;"+
     "  gl_FragColor = color;"+
     "}"
@@ -237,6 +283,7 @@ DefaultMaterial = {
 
   setupMaterial : function(shader) {
     var m = new Material(shader);
+    m.textures.DiffTex = m.textures.SpecTex = m.textures.EmitTex = null;
     m.floats.MaterialSpecular = [0.95, 0.9, 0.9, 0];
     m.floats.MaterialDiffuse = [0.60, 0.6, 0.65, 1];
     m.floats.MaterialAmbient = [1, 1, 1, 1];

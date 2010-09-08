@@ -93,7 +93,12 @@ Tar.prototype = {
     xhr.onload = function(){
       h.data[0] = this.responseText;
       h.inputSize = h.outputSize = h.offset = h.data[0].length;
-      try { self.onloadHandler(h); } catch(e) { self.onerror(this, e, h); }
+      try { self.onloadHandler(h); } catch(e) {
+        if (self.onerror)
+          self.onerror(this, e, h);
+        else
+          throw(e);
+      }
     };
     xhr.onprogress = function(){
       h.data[0] = this.responseText;
