@@ -13,7 +13,7 @@ Magi.Scene = Klass({
   depthTest : true,
   depthMask : true,
   blend : true,
-  blendFuncSrc : 'SRC_ALPHA',
+  blendFuncSrc : 'ONE',
   blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
   
   initialize : function(canvas, scene, cam, args) {
@@ -28,8 +28,8 @@ Magi.Scene = Klass({
       Object.extend(defaultArgs, args);
     this.gl = Magi.getGLContext(canvas, defaultArgs);
     this.clearBits = this.gl.COLOR_BUFFER_BIT |
-                    this.gl.DEPTH_BUFFER_BIT |
-                    this.gl.STENCIL_BUFFER_BIT;
+                     this.gl.DEPTH_BUFFER_BIT |
+                     this.gl.STENCIL_BUFFER_BIT;
     this.scene = scene;
     this.camera = cam;
     this.mouse = {
@@ -215,6 +215,7 @@ Magi.Image = Klass(Magi.Node, {
 Magi.Text = Klass(Magi.Node, {
   fontSize : 24,
   font : 'Arial',
+  color : 'black',
 
   initialize : function(content, fontSize, font) {
     Magi.Node.initialize.call(this);
@@ -243,6 +244,7 @@ Magi.Text = Klass(Magi.Node, {
     var ctx = this.canvas.getContext('2d');
     ctx.font = sf;
     ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+    ctx.fillStyle = this.color;
     ctx.fillText(this.text, 0, this.fontSize);
     this.textNode.scaling[0] = this.canvas.width / 2;
     this.textNode.scaling[1] = this.canvas.height / 2;
@@ -258,13 +260,25 @@ Magi.Text = Klass(Magi.Node, {
   setFont : function(font) {
     this.font = font;
     this.setText(this.text);
-  }
+  },
+
+  setColor : function(color) {
+    this.color = color;
+    this.setText(this.text);
+  },
 });
 
 Magi.MeshText = Klass(Magi.Text, {
   initialize : function(content, fontSize, font) {
     Magi.Text.initialize.apply(this, arguments);
     this.textNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
+  }
+});
+
+Magi.MeshImage = Klass(Magi.Image, {
+  initialize : function(image) {
+    Magi.Image.initialize.apply(this, arguments);
+    this.imageNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
   }
 });
 
@@ -292,7 +306,8 @@ Magi.FilterMaterial = {
     "varying vec2 texCoord0;"+
     "void main()"+
     "{"+
-    "  gl_FragColor = texture2D(Texture0, texCoord0);"+
+    "  vec4 c = texture2D(Texture0, texCoord0);"+
+    "  gl_FragColor = c*c.a;"+
     "}"
   )},
 

@@ -984,6 +984,18 @@ Magi.Texture = Klass({
     this.gl = gl;
   },
 
+  defaultTexCache : {},
+  getDefaultTexture : function(gl) {
+    if (!this.defaultTexCache[gl]) {
+      var tex = new this(gl);
+      tex.data = null;
+      tex.generateMipmaps = false;
+      tex.width = tex.height = 1;
+      this.defaultTexCache[gl] = tex;
+    }
+    return this.defaultTexCache[gl];
+  },
+
   upload : function() {
     var gl = this.gl;
     var target = gl[this.target];

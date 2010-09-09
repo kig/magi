@@ -144,18 +144,15 @@ Magi.Material = Klass({
     var texUnit = 0;
     for (var name in this.textures) {
       var tex = this.textures[name];
-      if (tex) {
-        if (tex.gl == null) tex.gl = gl;
-        if (state.textures[texUnit] != tex) {
-          state.textures[texUnit] = tex;
-          gl.activeTexture(gl.TEXTURE0+texUnit);
-          tex.use();
-          Magi.Stats.textureSetCount++;
-        }
-        this.shader.uniform1i(name, texUnit);
-      } else {
-        this.shader.uniform1i(name, 0);
+      if (!tex) tex = Magi.Texture.getDefaultTexture(gl);
+      if (tex.gl == null) tex.gl = gl;
+      if (state.textures[texUnit] != tex) {
+        state.textures[texUnit] = tex;
+        gl.activeTexture(gl.TEXTURE0+texUnit);
+        tex.use();
+        Magi.Stats.textureSetCount++;
       }
+      this.shader.uniform1i(name, texUnit);
       Magi.Stats.uniformSetCount++;
       ++texUnit;
     }
