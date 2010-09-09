@@ -2,6 +2,31 @@
 
   <head>
     <title>Demo</title>
+    <script type="text/x-glsl-vs" id="wave-vert">
+      precision mediump float;
+      attribute vec3 Vertex;
+      attribute vec3 Normal;
+      attribute vec2 TexCoord;
+      uniform mat4 PMatrix;
+      uniform mat4 MVMatrix;
+      uniform mat3 NMatrix;
+      uniform float time;
+      uniform float xScale;
+      uniform float yScale;
+      uniform float magnitude;
+      varying vec2 texCoord0;
+      void main()
+      {
+        vec4 v = vec4(Vertex, 1.0);
+        float dx = xScale*(TexCoord.s-0.5);
+        float dy = yScale*(TexCoord.t-0.5);
+        float d = sqrt(dx*dx + dy*dy);
+        v.z += magnitude * cos(d-time);
+        texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
+        vec4 worldPos = MVMatrix * v;
+        gl_Position = PMatrix * worldPos;
+      }
+    </script>
     <script type="text/javascript" src="../src/matrix.js"></script>
     <script type="text/javascript" src="../src/gl_util.js"></script>
     <script type="text/javascript" src="../src/scenegraph.js"></script>
@@ -9,24 +34,30 @@
     <script type="text/javascript">
       window.onresize = function() {
         var cv = $('c');
-        cv.width = window.innerWidth;
-        cv.height = window.innerHeight-25;
+        cv.width = window.innerWidth-20;
+        cv.height = window.innerHeight-65;
       }
       window.onload = function() {
         var cv = $('c');
         document.body.style.margin = '5px';
         cv.style.position = 'relative';
         cv.style.left = cv.style.top = '0px';
-        cv.width = window.innerWidth-20;
-        cv.height = window.innerHeight-65;
+        window.onresize();
         
         var s = new Magi.Scene(cv);
         s.fpsCanvas = E.canvas(200,20);
         s.camera.position[2] = 10;
         var cube = new Magi.Cube().makeBounce(true);
-        s.scene.appendChild(cube);
+//         s.scene.appendChild(cube);
 
-        var txt = new Magi.Text("Hello, world!", 72);
+        var txt = new Magi.MeshText("Hello, world!", 72);
+        txt.textNode.material.shader = new Magi.Shader(null, 'wave-vert', Magi.FilterMaterial.frag);
+        txt.textNode.material.floats.magnitude = 15.0;
+        txt.addFrameListener(function(t,dt) {
+          txt.textNode.material.floats.xScale = 0.03*txt.canvas.width;
+          txt.textNode.material.floats.yScale = 0.03*txt.canvas.height;
+          this.textNode.material.floats.time = t / 500;
+        });
         vec3.set3(1/144, txt.scaling);
         txt.position[1] = -1.0;
         cube.appendChild(txt);
@@ -42,6 +73,63 @@
         img.addFrameListener(function(){ this.texture.changed = true; });
         img.position[1] = 1.0;
         cube.appendChild(img);
+        
+          var xRot = new Magi.Node();
+          xRot.rotation.axis = [0, 1, 0];
+          var yRot = new Magi.Node();
+          yRot.rotation.axis = [1, 0, 0];
+          yRot.appendChild(xRot);
+          xRot.appendChild(cube);
+          var wheelHandler = function(ev) {
+            var ds = ((ev.detail || ev.wheelDelta) < 0) ? 1.1 : (1 / 1.1);
+            if (ev.shiftKey) {
+              yRot.scaling[0] *= ds;
+              yRot.scaling[1] *= ds;
+              yRot.scaling[2] *= ds;
+            } else {
+              s.camera.targetFov *= ds;
+            }
+            s.changed = true;
+            ev.preventDefault();
+          };
+          s.camera.addFrameListener(function() {
+            if (Math.abs(this.targetFov - this.fov) > 0.01) {
+              s.changed = true;
+            }
+          });
+          c.addEventListener('DOMMouseScroll', wheelHandler, false);
+          c.addEventListener('mousewheel', wheelHandler, false);
+
+          c.addEventListener('mousedown', function(ev){ 
+            this.dragging = true;
+            this.sx = ev.clientX;
+            this.sy = ev.clientY;
+            ev.preventDefault();
+          }, false);
+          window.addEventListener('mousemove', function(ev) {
+            if (c.dragging) {
+              var dx = ev.clientX - c.sx, dy = ev.clientY - c.sy;
+              c.sx = ev.clientX, c.sy = ev.clientY;
+              if (s.mouse.left) {
+                xRot.rotation.angle += dx / 200;
+                yRot.rotation.angle += dy / 200;
+              } else if (s.mouse.middle) {
+                yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
+                yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
+              }
+              ev.preventDefault();
+              s.changed = true;
+            }
+          }, false);
+          window.addEventListener('mouseup', function(ev) {
+            if (c.dragging) {
+              c.dragging = false;
+              ev.preventDefault();
+            }
+          }, false);
+          s.changed = true;
+          s.scene.appendChild(yRot);
+        
       }
 		</script>
 	</head>
