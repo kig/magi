@@ -1,4 +1,4 @@
-Node = Klass({
+Magi.Node = Klass({
   model : null,
   position : null,
   rotation : null,
@@ -10,7 +10,7 @@ Node = Klass({
   
   initialize : function(model) {
     this.model = model;
-    this.material = new Material();
+    this.material = new Magi.Material();
     this.matrix = mat4.newIdentity();
     this.normalMatrix = mat3.newIdentity();
     this.rotation = {angle : 0, axis : vec3.create([0,1,0])};
@@ -92,7 +92,7 @@ Node = Klass({
   }
 });
 
-Material = Klass({
+Magi.Material = Klass({
   initialize : function(shader) {
     this.shader = shader;
     this.textures = {};
@@ -111,7 +111,7 @@ Material = Klass({
   },
   
   copy : function(){
-    var m = new Material();
+    var m = new Magi.Material();
     for (var i in this.floats) m.floats[i] = this.copyValue(this.floats[i]);
     for (var i in this.ints) m.ints[i] = this.copyValue(this.ints[i]);
     for (var i in this.textures) m.textures[i] = this.textures[i];
@@ -125,16 +125,16 @@ Material = Klass({
     if (state.currentShader != shader) {
       shader.use()
       shader.uniformMatrix4fv("PMatrix", perspectiveMatrix);
-      Stats.uniformSetCount++;
+      Magi.Stats.uniformSetCount++;
       state.currentShader = this.shader;
-      Stats.shaderBindCount++;
+      Magi.Stats.shaderBindCount++;
     }
     state.currentShader.uniformMatrix4fv("MVMatrix", matrix);
     state.currentShader.uniformMatrix3fv("NMatrix", normalMatrix);
-    Stats.uniformSetCount += 2;
+    Magi.Stats.uniformSetCount += 2;
     if (state.currentMaterial == this) return;
     state.currentMaterial = this;
-    Stats.materialUpdateCount++;
+    Magi.Stats.materialUpdateCount++;
     this.applyTextures(gl, state);
     this.applyFloats();
     this.applyInts();
@@ -150,13 +150,13 @@ Material = Klass({
           state.textures[texUnit] = tex;
           gl.activeTexture(gl.TEXTURE0+texUnit);
           tex.use();
-          Stats.textureSetCount++;
+          Magi.Stats.textureSetCount++;
         }
         this.shader.uniform1i(name, texUnit);
       } else {
         this.shader.uniform1i(name, 0);
       }
-      Stats.uniformSetCount++;
+      Magi.Stats.uniformSetCount++;
       ++texUnit;
     }
   },
@@ -165,7 +165,7 @@ Material = Klass({
     var shader = this.shader;
     for (var name in this.floats) {
       var uf = this.floats[name];
-      Stats.uniformSetCount++;
+      Magi.Stats.uniformSetCount++;
       if (uf.length == null) {
         shader.uniform1f(name, uf);
       } else {
@@ -196,7 +196,7 @@ Material = Klass({
     var shader = this.shader;
     for (var name in this.ints) {
       var uf = this.ints[name];
-      Stats.uniformSetCount++;
+      Magi.Stats.uniformSetCount++;
       if (uf.length == null) {
         shader.uniform1i(name, uf);
       } else {
@@ -219,7 +219,7 @@ Material = Klass({
   
 });
 
-GLDrawState = Klass({
+Magi.GLDrawState = Klass({
   textures : null,
   currentMaterial : null,
   currentShader : null,
@@ -229,7 +229,7 @@ GLDrawState = Klass({
   }
 });
 
-Camera = Klass({
+Magi.Camera = Klass({
   fov : 30,
   targetFov : 30,
   zNear : 1,
@@ -248,7 +248,7 @@ Camera = Klass({
     this.frameListeners = [];
   },
   
-  addFrameListener : Node.prototype.addFrameListener,
+  addFrameListener : Magi.Node.prototype.addFrameListener,
 
   update : function(t, dt) {
     var a = [];
@@ -282,7 +282,7 @@ Camera = Klass({
     }
     scene.updateTransform(this.getLookMatrix());
     var drawList = scene.collectDrawList();
-    var state = new GLDrawState();
+    var state = new Magi.GLDrawState();
     for (var i=0; i<drawList.length; i++) {
       var d = drawList[i];
       d.draw(gl, state, this.perspectiveMatrix);

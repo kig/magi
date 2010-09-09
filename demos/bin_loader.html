@@ -17,32 +17,32 @@
         c.width = window.innerWidth;
         c.height = window.innerHeight;
         $('info').innerHTML = "Loading model (560kB)...";
-        var w = Bin.load('walas.obj.bin');
+        var w = Magi.Bin.load('walas.obj.bin');
         w.flatNormals = false;
         w.onload = function() {
           $('info').innerHTML = "Downloaded 560kB in " + w.downloadTime + " ms<br>" +
                                 "Parsed model in " + w.parseTime + " ms<br>" + 
                                 (w.vertices.length / 9) + " triangles";
-          var s = new Scene(c, null, null);
+          var s = new Magi.Scene(c, null, null);
           s.bg = [0,0,0,0];
           s.drawOnlyWhenChanged = true;
           s.camera.position = [0, 2, 7];
           s.camera.lookAt = [0, 0.5, 0];
-          var n = new Node();
+          var n = new Magi.Node();
           var sc = 4.0 / (w.boundingBox.diameter);
           n.scaling = [sc, sc, sc];
           n.model = w.makeVBO();
           n.position[1] = 0.5;
           n.rotation.axis = [1,0,0];
           n.rotation.angle = -Math.PI/2;
-          n.material = DefaultMaterial.get();
+          n.material = Magi.DefaultMaterial.get();
           n.material.floats.LightDiffuse = [1,1,1,1];
           n.material.floats.MaterialShininess = 6.0;
           n.material.floats.MaterialDiffuse = [1,1,1,1];
 
-          var xRot = new Node();
+          var xRot = new Magi.Node();
           xRot.rotation.axis = [0, 1, 0];
-          var yRot = new Node();
+          var yRot = new Magi.Node();
           yRot.rotation.axis = [1, 0, 0];
           yRot.appendChild(xRot);
           xRot.appendChild(n);

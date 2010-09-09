@@ -15,10 +15,10 @@
       init = function() {
         $('info').innerHTML = 'Loading .tar of model and texture (&lt;200kB)...<br>';
         var t0 = new Date();
-        Tar.load('tram.obj.tar', function(files) {
-          var w = new Obj();
+        Magi.Tar.load('tram.obj.tar', function(files) {
+          var w = new Magi.Obj();
           w.parse(files['tram.obj'].data);
-          var tex = new Texture();
+          var tex = new Magi.Texture();
           tex.image = new Image();
           var t = new Date;
           tex.image.src = files['tram.jpg'].toDataURL();
@@ -28,14 +28,14 @@
                                 'Parsed texture ('+tex.image.width+'x'+tex.image.height+') in ' + elapsed + ' ms<br>';
           $('info').innerHTML += 'Total time to load assets: ' + (new Date() - t0) + ' ms<br>';
           var t1 = new Date();
-          var s = new Scene($('c'));
+          var s = new Magi.Scene($('c'));
           s.camera.position = [0, 2, 7];
-          var n = new Node();
+          var n = new Magi.Node();
           var sc = 4.0 / (w.boundingBox.diameter);
           n.scaling = [sc, sc, sc];
           n.model = w.makeVBO();
           n.position[1] = 0.5;
-          n.material = DefaultMaterial.get();
+          n.material = Magi.DefaultMaterial.get();
           n.material.floats.MaterialDiffuse = [0,0,0,1];
           n.material.textures.DiffTex = tex;
           var frame = 0;

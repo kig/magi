@@ -1,8 +1,8 @@
-Tar = function(){};
+Magi.Tar = function(){};
 
 // Load and parse archive, calls onload after loading all files.
-Tar.load = function(url, onload, onstream, onerror) {
-  var o = new Tar();
+Magi.Tar.load = function(url, onload, onstream, onerror) {
+  var o = new Magi.Tar();
   o.onload = onload;
   o.onerror = onerror;
   o.onstream = onstream;
@@ -10,8 +10,8 @@ Tar.load = function(url, onload, onstream, onerror) {
   return o;
 }
 
-Tar.loadGZip = function(url, onload, onstream, onerror) {
-  var o = new Tar();
+Magi.Tar.loadGZip = function(url, onload, onstream, onerror) {
+  var o = new Magi.Tar();
   o.onload = onload;
   o.onerror = onerror;
   o.onstream = onstream;
@@ -21,8 +21,8 @@ Tar.loadGZip = function(url, onload, onstream, onerror) {
 
 // Streams an archive from the given url, calling onstream after loading each file in archive.
 // Calls onload after loading all files.
-Tar.stream = function(url, onstream, onload, onerror) {
-  var o = new Tar();
+Magi.Tar.stream = function(url, onstream, onload, onerror) {
+  var o = new Magi.Tar();
   o.onload = onload;
   o.onerror = onerror;
   o.onstream = onstream;
@@ -30,7 +30,7 @@ Tar.stream = function(url, onstream, onload, onerror) {
   return o;
 }
 
-Tar.streamGZip = function(url, onstream, onload, onerror) {
+Magi.Tar.streamGZip = function(url, onstream, onload, onerror) {
   var o = new Tar();
   o.onload = onload;
   o.onerror = onerror;
@@ -39,7 +39,7 @@ Tar.streamGZip = function(url, onstream, onload, onerror) {
   return o;
 }
 
-Tar.prototype = {
+Magi.Tar.prototype = {
   onerror : null,
   onload : null,
   onstream : null,
@@ -210,12 +210,12 @@ Tar.prototype = {
   __toDataURL : function() {
     if (this.data.substring(0,40).match(/^data:[^\/]+\/[^,]+,/)) {
       return this.data;
-    } else if (Tar.prototype.cleanHighByte(this.data.substring(0,10)).match(/\377\330\377\340..JFIF/)) {
-      return 'data:image/jpeg;base64,'+btoa(Tar.prototype.cleanHighByte(this.data));
-    } else if (Tar.prototype.cleanHighByte(this.data.substring(0,6)) == "\211PNG\r\n") {
-      return 'data:image/png;base64,'+btoa(Tar.prototype.cleanHighByte(this.data));
-    } else if (Tar.prototype.cleanHighByte(this.data.substring(0,6)).match(/GIF8[79]a/)) {
-      return 'data:image/gif;base64,'+btoa(Tar.prototype.cleanHighByte(this.data));
+    } else if (Magi.Tar.prototype.cleanHighByte(this.data.substring(0,10)).match(/\377\330\377\340..JFIF/)) {
+      return 'data:image/jpeg;base64,'+btoa(Magi.Tar.prototype.cleanHighByte(this.data));
+    } else if (Magi.Tar.prototype.cleanHighByte(this.data.substring(0,6)) == "\211PNG\r\n") {
+      return 'data:image/png;base64,'+btoa(Magi.Tar.prototype.cleanHighByte(this.data));
+    } else if (Magi.Tar.prototype.cleanHighByte(this.data.substring(0,6)).match(/GIF8[79]a/)) {
+      return 'data:image/gif;base64,'+btoa(Magi.Tar.prototype.cleanHighByte(this.data));
     } else {
       throw("toDataURL: I don't know how to handle " + this.filename);
     }

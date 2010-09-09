@@ -1,4 +1,6 @@
 
+Magi = {};
+
 R = function(start, end) {
   var a = []
   for (var i=start; i<end; i++) a.push(i)
@@ -954,16 +956,15 @@ URL = {
 
 }
 
-
-function checkError(gl, msg) {
+Magi.checkError = function(gl, msg) {
   var e = gl.getError();
   if (e != 0) {
-    log("Error " + e + " at " + msg);
+    Magi.log("Error " + e + " at " + msg);
   }
   return e;
 }
 
-function throwError(gl, msg) {
+Magi.throwError = function(gl, msg) {
   var e = gl.getError();
   if (e != 0) {
     throw(new Error("Error " + e + " at " + msg));
@@ -971,7 +972,7 @@ function throwError(gl, msg) {
 }
 
 
-Texture = Klass({
+Magi.Texture = Klass({
   target : 'TEXTURE_2D',
   generateMipmaps : true,
   width : null,
@@ -990,7 +991,7 @@ Texture = Klass({
       gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
     else
       gl.texImage2D(target, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, this.data);
-    checkError(gl, "Texture.upload");
+    Magi.checkError(gl, "Texture.upload");
   },
   
   regenerateMipmap : function() {
@@ -1007,7 +1008,7 @@ Texture = Klass({
     var gl = this.gl;
     var target = gl[this.target];
     this.textureObject = gl.createTexture();
-    Stats.textureCreationCount++;
+    Magi.Stats.textureCreationCount++;
     gl.bindTexture(target, this.textureObject);
     this.upload();
     gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -1029,7 +1030,7 @@ Texture = Klass({
 });
 
 
-Shader = Klass({
+Magi.Shader = Klass({
   id : null,
   gl : null,
   compiled : false,
@@ -1048,14 +1049,14 @@ Shader = Klass({
 
   destroy : function() {
     if (this.shader != null) 
-      Shader.deleteShader(this.gl, this.shader);
+      Magi.Shader.deleteShader(this.gl, this.shader);
   },
 
   compile : function() {
     if (this.shaders[0].text)
-      this.shader = Shader.getProgramBySourceArray(this.gl, this.shaders);
+      this.shader = Magi.Shader.getProgramBySourceArray(this.gl, this.shaders);
     else
-      this.shader = Shader.getProgramByIdArray(this.gl, this.shaders);
+      this.shader = Magi.Shader.getProgramByIdArray(this.gl, this.shaders);
   },
 
   use : function() {
@@ -1185,7 +1186,7 @@ Shader = Klass({
   }
 });
 
-Shader.createShader = function(gl, type, source) {
+Magi.Shader.createShader = function(gl, type, source) {
   if (typeof type == 'string') type = gl[type];
   var shader = gl.createShader(type);
 
@@ -1200,7 +1201,7 @@ Shader.createShader = function(gl, type, source) {
   return shader;
 }
 
-Shader.getShaderById = function(gl, id) {
+Magi.Shader.getShaderById = function(gl, id) {
   var el = document.getElementById(id);
   if (!el) throw(new Error("getShaderById: No element has id "+id));
   var type, stype = el.getAttribute("type");
@@ -1213,7 +1214,7 @@ Shader.getShaderById = function(gl, id) {
   return this.createShader(gl, type, el.textContent);
 }
 
-Shader.loadShader = function(gl, src, callback, onerror, type) {
+Magi.Shader.loadShader = function(gl, src, callback, onerror, type) {
   if (!type) {
     var a = src.split(".");
     var ext = a[a.length-1].toLowerCase();
@@ -1238,7 +1239,7 @@ Shader.loadShader = function(gl, src, callback, onerror, type) {
   return xhr;
 }
 
-Shader.createProgram = function(gl, shaders) {
+Magi.Shader.createProgram = function(gl, shaders) {
   var id = gl.createProgram();
   var shaderObjs = [];
   for (var i=0; i<shaders.length; ++i) {
@@ -1265,7 +1266,7 @@ Shader.createProgram = function(gl, shaders) {
   }
   return prog;
 }
-Shader.loadProgramArray = function(gl, sources, callback, onerror) {
+Magi.Shader.loadProgramArray = function(gl, sources, callback, onerror) {
   var self = this;
   var sourcesCopy = sources.slice(0);
   var shaders = [];
@@ -1285,30 +1286,30 @@ Shader.loadProgramArray = function(gl, sources, callback, onerror) {
   var src = sourcesCopy.shift();
   self.loadShader(gl, src, iterate, onerror);
 }
-Shader.loadProgram = function(gl, callback) {
+Magi.Shader.loadProgram = function(gl, callback) {
   var sh = [];
   for (var i=1; i<arguments.length; ++i)
     sh.push(arguments[i]);
   return this.loadProgramArray(gl, sh, callback);
 }
-Shader.getProgramBySourceArray = function(gl,shaders) {
+Magi.Shader.getProgramBySourceArray = function(gl,shaders) {
   var self = this;
   var arr = shaders.map(function(sh) { return self.createShader(gl, sh.type, sh.text); });
   return this.createProgram(gl, arr);
 }
-Shader.getProgramByIdArray = function(gl,shaders) {
+Magi.Shader.getProgramByIdArray = function(gl,shaders) {
   var self = this;
   var arr = shaders.map(function(sh) { return self.getShaderById(gl, sh); });
   return this.createProgram(gl, arr);
 }
-Shader.getProgramByIds = function(gl) {
+Magi.Shader.getProgramByIds = function(gl) {
   var sh = [];
   for (var i=1; i<arguments.length; ++i)
     sh.push(arguments[i]);
   return this.getProgramByIdArray(gl, sh);
 }
 
-Shader.deleteShader = function(gl, sh) {
+Magi.Shader.deleteShader = function(gl, sh) {
   gl.useProgram(null);
   sh.shaders.forEach(function(s){
     gl.detachShader(sh.program, s);
@@ -1316,19 +1317,19 @@ Shader.deleteShader = function(gl, sh) {
   });
   gl.deleteProgram(sh.program);
 }
-Shader.load = function(gl, callback) {
+Magi.Shader.load = function(gl, callback) {
   var sh = [];
   for (var i=1; i<arguments.length; ++i)
     sh.push(arguments[i]);
   var s = new Shader(gl);
-  Shader.loadProgramArray(gl, sh, function(p) {
+  Magi.Shader.loadProgramArray(gl, sh, function(p) {
     s.shader = p;
     s.compile = function(){};
     callback(s);
   });
 }
 
-Filter = Klass(Shader, {
+Magi.Filter = Klass(Magi.Shader, {
   initialize : function(gl, shader) {
     Shader.apply(this, arguments);
   },
@@ -1337,31 +1338,31 @@ Filter = Klass(Shader, {
     this.use();
     var va = this.attrib("Vertex");
     var ta = this.attrib("TexCoord");
-    var vbo = Quad.getCachedVBO(this.gl);
+    var vbo = Magi.Geometry.Quad.getCachedVBO(this.gl);
     if (init) init(this);
     vbo.draw(va, null, ta);
   }
 });
 
-VBO = function(gl) {
-  this.gl = gl;
-  this.data = [];
-  this.elementsVBO = null;
-  for (var i=1; i<arguments.length; i++) {
-    if (arguments[i].elements)
-      this.elements = arguments[i];
-    else
-      this.data.push(arguments[i]);
-  }
-}
+Magi.VBO = Klass({
+    initialized : false,
+    length : 0,
+    vbos : null,
+    type : 'TRIANGLES',
+    elementsVBO : null,
+    elements : null,
 
-VBO.prototype = {
-  initialized : false,
-  length : 0,
-  vbos : null,
-  type : 'TRIANGLES',
-  elementsVBO : null,
-  elements : null,
+    initialize : function(gl) {
+      this.gl = gl;
+      this.data = [];
+      this.elementsVBO = null;
+      for (var i=1; i<arguments.length; i++) {
+        if (arguments[i].elements)
+          this.elements = arguments[i];
+        else
+          this.data.push(arguments[i]);
+      }
+    },
 
   setData : function() {
     this.destroy();
@@ -1397,7 +1398,7 @@ VBO.prototype = {
     if (this.elements != null)
       this.elementsVBO = gl.createBuffer();
     try {
-      throwError(gl, "genBuffers");
+      Magi.throwError(gl, "genBuffers");
       for (var i = 0; i<this.data.length; i++) {
         var d = this.data[i];
         var dlen = Math.floor(d.data.length / d.size);
@@ -1406,16 +1407,16 @@ VBO.prototype = {
         if (!d.floatArray)
           d.floatArray = new Float32Array(d.data);
         gl.bindBuffer(gl.ARRAY_BUFFER, vbos[i]);
-        throwError(gl, "bindBuffer");
+        Magi.throwError(gl, "bindBuffer");
         gl.bufferData(gl.ARRAY_BUFFER, d.floatArray, gl.STATIC_DRAW);
-        throwError(gl, "bufferData");
+        Magi.throwError(gl, "bufferData");
       }
       if (this.elementsVBO != null) {
         var d = this.elements;
         this.elementsLength = d.data.length;
         this.elementsType = d.type == gl.UNSIGNED_BYTE ? d.type : gl.UNSIGNED_SHORT;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.elementsVBO);
-        throwError(gl, "bindBuffer ELEMENT_ARRAY_BUFFER");
+        Magi.throwError(gl, "bindBuffer ELEMENT_ARRAY_BUFFER");
         if (this.elementsType == gl.UNSIGNED_SHORT && !d.ushortArray) {
           d.ushortArray = new Uint16Array(d.data);
           gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d.ushortArray, gl.STATIC_DRAW);
@@ -1423,7 +1424,7 @@ VBO.prototype = {
           d.ubyteArray = new Uint8Array(d.data);
           gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d.ubyteArray, gl.STATIC_DRAW);
         }
-        throwError(gl, "bufferData ELEMENT_ARRAY_BUFFER");
+        Magi.throwError(gl, "bufferData ELEMENT_ARRAY_BUFFER");
       }
     } catch(e) {
       for (var i=0; i<vbos.length; i++)
@@ -1469,21 +1470,22 @@ VBO.prototype = {
       gl.drawArrays(gl[this.type], 0, this.length);
     }
   }
-}
+});
 
-FBO = function(gl, width, height, use_depth) {
-  this.gl = gl;
-  this.width = width;
-  this.height = height;
-  if (use_depth != null)
-    this.useDepth = use_depth;
-}
-FBO.prototype = {
+Magi.FBO = Klass({
   initialized : false,
   useDepth : true,
   fbo : null,
   rbo : null,
   texture : null,
+
+  initialize : function(gl, width, height, use_depth) {
+    this.gl = gl;
+    this.width = width;
+    this.height = height;
+    if (use_depth != null)
+      this.useDepth = use_depth;
+  },
 
   destroy : function() {
     if (this.fbo) this.gl.deleteFramebuffer(this.fbo);
@@ -1498,13 +1500,13 @@ FBO.prototype = {
     var rb;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    checkError(gl, "FBO.init bindFramebuffer");
+    Magi.checkError(gl, "FBO.init bindFramebuffer");
     if (this.useDepth) {
       rb = this.rbo != null ? this.rbo : gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-      checkError(gl, "FBO.init bindRenderbuffer");
+      Magi.checkError(gl, "FBO.init bindRenderbuffer");
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-      checkError(gl, "FBO.init renderbufferStorage");
+      Magi.checkError(gl, "FBO.init renderbufferStorage");
     }
 
     var tex = this.texture != null ? this.texture : gl.createTexture();
@@ -1513,20 +1515,20 @@ FBO.prototype = {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     } catch (e) { // argh, no null texture support
       var tmp = this.getTempCanvas(w,h);
-      gl.texImage2D(gl.TEXTURE_2D, 0, tmp);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tmp);
     }
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    checkError(gl, "FBO.init tex");
+    Magi.checkError(gl, "FBO.init tex");
 
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    checkError(gl, "FBO.init bind tex");
+    Magi.checkError(gl, "FBO.init bind tex");
 
     if (this.useDepth) {
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
-      checkError(gl, "FBO.init bind depth buffer");
+      Magi.checkError(gl, "FBO.init bind depth buffer");
     }
 
     var fbstat = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
@@ -1535,9 +1537,8 @@ FBO.prototype = {
       for (var v in gl) {
         try { glv = gl[v]; } catch (e) { glv = null; }
         if (glv == fbstat) { fbstat = v; break; }}
-        log("Framebuffer status: " + fbstat);
     }
-    checkError(gl, "FBO.init check fbo");
+    Magi.checkError(gl, "FBO.init check fbo");
 
     this.fbo = fbo;
     this.rbo = rb;
@@ -1546,21 +1547,21 @@ FBO.prototype = {
   },
 
   getTempCanvas : function(w, h) {
-    if (!FBO.tempCanvas) {
-      FBO.tempCanvas = document.createElement('canvas');
+    if (!Magi.FBO.tempCanvas) {
+      Magi.FBO.tempCanvas = document.createElement('canvas');
     }
-    FBO.tempCanvas.width = w;
-    FBO.tempCanvas.height = h;
-    return FBO.tempCanvas;
+    Magi.FBO.tempCanvas.width = w;
+    Magi.FBO.tempCanvas.height = h;
+    return Magi.FBO.tempCanvas;
   },
 
   use : function() {
     if (!this.initialized) this.init();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
   }
-}
+});
 
-function makeGLErrorWrapper(gl, fname) {
+Magi.makeGLErrorWrapper = function(gl, fname) {
     return (function() {
         var rv;
         try {
@@ -1576,12 +1577,12 @@ function makeGLErrorWrapper(gl, fname) {
     });
 }
 
-function wrapGLContext(gl) {
+Magi.wrapGLContext = function(gl) {
     var wrap = {};
     for (var i in gl) {
       try {
         if (typeof gl[i] == 'function') {
-            wrap[i] = makeGLErrorWrapper(gl, i);
+            wrap[i] = Magi.makeGLErrorWrapper(gl, i);
         } else {
             wrap[i] = gl[i];
         }
@@ -1593,8 +1594,9 @@ function wrapGLContext(gl) {
     return wrap;
 }
 
+Magi.Geometry = {};
 
-Quad = {
+Magi.Geometry.Quad = {
   vertices : new Float32Array([
     -1,-1,0,
     1,-1,0,
@@ -1621,7 +1623,7 @@ Quad = {
   ]),
   indices : new Float32Array([0,1,2,1,5,2]),
   makeVBO : function(gl) {
-    return new VBO(gl,
+    return new Magi.VBO(gl,
         {size:3, data: this.vertices},
         {size:3, data: this.normals},
         {size:2, data: this.texcoords}
@@ -1634,7 +1636,7 @@ Quad = {
     return this.cache[gl];
   }
 }
-Cube = {
+Magi.Geometry.Cube = {
   vertices : new Float32Array([  0.5, -0.5,  0.5, // +X
                 0.5, -0.5, -0.5,
                 0.5,  0.5, -0.5,
@@ -1720,7 +1722,7 @@ Cube = {
   },
 
   makeVBO : function(gl) {
-    return new VBO(gl,
+    return new Magi.VBO(gl,
         {size:3, data: this.vertices},
         {size:3, data: this.normals},
         {size:2, data: this.texcoords},
@@ -1734,9 +1736,9 @@ Cube = {
     return this.cache[gl];
   }
 }
-Cube.create();
+Magi.Geometry.Cube.create();
 
-Sphere = {
+Magi.Geometry.Sphere = {
   vertices : [],
   normals : [],
   indices : [],
@@ -1772,46 +1774,41 @@ Sphere = {
   }
 }
 
-Sphere.create();
+Magi.Geometry.Sphere.create();
 
-Geometry = {
-  Cube : Cube,
-  Quad : Quad,
-  Sphere : Sphere
-};
 
-log=function(msg) {
+Magi.log=function(msg) {
   if (window.console)
     console.log(msg);
-  if (window.logCanvas) {
-    var c = window.logCanvas;
+  if (this.logCanvas) {
+    var c = this.logCanvas;
     var ctx = c.getContext('2d');
     ctx.font = '14px Sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#c24';
     ctx.fillText(msg,c.width/2,c.height/2,c.width-20);
   }
-  if (window.logElement) {
-    window.logElement.appendChild(P(T(msg)));
+  if (this.logElement) {
+    this.logElement.appendChild(P(T(msg)));
   }
 }
-GL_CONTEXT_ID = null;
-getGLContext = function(c, args){
+Magi.GL_CONTEXT_ID = null;
+Magi.getGLContext = function(c, args){
   var find=function(a,f){for(var i=0,j;j=a[i],i++<a.length;)if(f(j))return j};
-  if (!GL_CONTEXT_ID)
-    GL_CONTEXT_ID = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n)}catch(e){}});
-  if (!GL_CONTEXT_ID) {
-    window.logCanvas = c;
-    log("No WebGL context found. Click here for more details.");
+  if (!this.GL_CONTEXT_ID)
+    this.GL_CONTEXT_ID = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n)}catch(e){}});
+  if (!this.GL_CONTEXT_ID) {
+    this.logCanvas = c;
+    this.log("No WebGL context found. Click here for more details.");
     var a = document.createElement('a');
     a.href = "http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation";
     c.parentNode.insertBefore(a, c);
     a.appendChild(c);
   }
-  else return c.getContext(GL_CONTEXT_ID, args); 
+  else return c.getContext(this.GL_CONTEXT_ID, args); 
 }
 
-Stats = {
+Magi.Stats = {
   shaderBindCount : 0,
   materialUpdateCount : 0,
   uniformSetCount : 0,

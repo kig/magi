@@ -18,24 +18,35 @@
         cv.style.position = 'relative';
         cv.style.left = cv.style.top = '0px';
         cv.width = window.innerWidth-20;
-        cv.height = window.innerHeight-45;
+        cv.height = window.innerHeight-65;
         
-        var s = new Scene(cv);
+        var s = new Magi.Scene(cv);
+        s.fpsCanvas = E.canvas(200,20);
         s.camera.position[2] = 10;
-        var cube = new Cube().makeBounce(true);
+        var cube = new Magi.Cube().makeBounce(true);
         s.scene.appendChild(cube);
-        var txt = new Text("Hello, world!", 72);
+
+        var txt = new Magi.Text("Hello, world!", 72);
         vec3.set3(1/144, txt.scaling);
         txt.position[1] = -1.0;
         cube.appendChild(txt);
+
+        var fps = new Magi.Text("FPS", 20);
+        vec3.set3(1/144, fps.scaling);
+        fps.position[1] = 0.96;
+        fps.position[0] = -1.2;
+        cube.appendChild(fps);
+        
+        var img = new Magi.Image(s.fpsCanvas);
+        vec3.set3(1/100, img.scaling);
+        img.addFrameListener(function(){ this.texture.changed = true; });
+        img.position[1] = 1.0;
+        cube.appendChild(img);
       }
 		</script>
 	</head>
 	<body>
     <canvas id="c" width="500" height="400"></canvas>
-    <p style="font-family:Sans-serif; font-size: small;">
-      FPS <canvas id="fps" width="200" height="20"></canvas>
-    </p>
     <pre id="stats" style="font-family:Sans-serif; font-size: small;"></pre>
 	</body>
 

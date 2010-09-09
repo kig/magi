@@ -1,10 +1,10 @@
-Bin = function(){};
-Bin.load = function(url) {
-  var o = new Bin();
+Magi.Bin = function(){};
+Magi.Bin.load = function(url) {
+  var o = new Magi.Bin();
   o.load(url);
   return o;
 }
-Bin.prototype = {
+Magi.Bin.prototype = {
   load: function(url) {
     var xhr = new XMLHttpRequest();
     var self = this;
@@ -34,13 +34,13 @@ Bin.prototype = {
 
   makeVBO : function(gl) {
     if (this.texcoords) {
-      return new VBO(gl,
+      return new Magi.VBO(gl,
           {size:3, data: this.vertices},
           {size:3, data: this.normals},
           {size:2, data: this.texcoords}
       )
     } else {
-      return new VBO(gl,
+      return new Magi.VBO(gl,
           {size:3, data: this.vertices},
           {size:3, data: this.normals}
       )

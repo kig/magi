@@ -10,25 +10,25 @@
     <script type="text/javascript">
 
       init = function() {
-        var s = new Scene($('c'));
+        var s = new Magi.Scene($('c'));
         $('info').innerHTML = 'Loading model (530kB)...';
-        var w = Obj.load('tram.obj');
+        var w = Magi.Obj.load('tram.obj');
         w.onload = function() {
           s.camera.position = [0, 2, 7];
-          var tex = new Texture();
+          var tex = new Magi.Texture();
           tex.image = new Image();
           tex.image.src = 'tram.jpg';
           $('info').innerHTML = 'Loading texture (50kB)...';
           tex.image.onload = function(){
             $('info').innerHTML = '';
-            var n = new Node();
+            var n = new Magi.Node();
             var sc = 4.0 / (w.boundingBox.diameter);
             n.scaling = [sc, sc, sc];
             n.model = w.makeVBO();
             n.position[1] = 0.5;
 //             n.rotation.axis = [1,0,0];
 //             n.rotation.angle = -Math.PI/2;
-            n.material = DefaultMaterial.get();
+            n.material = Magi.DefaultMaterial.get();
             n.material.floats.MaterialDiffuse = [0,0,0,1];
             n.material.textures.DiffTex = tex;
 

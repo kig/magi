@@ -1,48 +1,12 @@
-Scene = function(canvas, scene, cam, args) {
-  if (!scene) scene = new Node();
-  if (!cam) cam = Scene.getDefaultCamera();
-  this.canvas = canvas;
-  var defaultArgs = {
-    alpha: true, depth: true, stencil: true, antialias: true,
-    premultipliedAlpha: true
-  };
-  if (args)
-    Object.extend(defaultArgs, args);
-  this.gl = getGLContext(canvas, defaultArgs);
-  this.clearBits = this.gl.COLOR_BUFFER_BIT |
-                   this.gl.DEPTH_BUFFER_BIT |
-                   this.gl.STENCIL_BUFFER_BIT;
-  this.scene = scene;
-  this.camera = cam;
-  this.mouse = {
-    x : 0,
-    y : 0,
-    pressure : 1.0,
-    tiltX : 0.0,
-    tiltY : 0.0,
-    deviceType : 0,
-    left: false,
-    middle: false,
-    right: false
-  };
-  this.setupEventListeners();
-  this.startFrameLoop();
-};
-Scene.getDefaultCamera = function() {
-  var cam = new Camera();
-  vec3.set([0, 1.0, 0], cam.lookAt);
-  vec3.set([Math.cos(1)*6, 3, Math.sin(1)*6], cam.position);
-  cam.fov = 45;
-  cam.angle = 1;
-  return cam;
-};
-Scene.prototype = {
+Magi.Scene = Klass({
   frameDuration : 15,
   time : 0,
   timeDir : 1,
   timeSpeed : 1,
   previousTime : 0,
   frameTimes : [],
+
+  fpsCanvas : null,
 
   bg : [1,1,1,1],
   clear : true,
@@ -51,6 +15,46 @@ Scene.prototype = {
   blend : true,
   blendFuncSrc : 'SRC_ALPHA',
   blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
+  
+  initialize : function(canvas, scene, cam, args) {
+    if (!scene) scene = new Magi.Node();
+    if (!cam) cam = Magi.Scene.getDefaultCamera();
+    this.canvas = canvas;
+    var defaultArgs = {
+      alpha: true, depth: true, stencil: true, antialias: true,
+      premultipliedAlpha: true
+    };
+    if (args)
+      Object.extend(defaultArgs, args);
+    this.gl = Magi.getGLContext(canvas, defaultArgs);
+    this.clearBits = this.gl.COLOR_BUFFER_BIT |
+                    this.gl.DEPTH_BUFFER_BIT |
+                    this.gl.STENCIL_BUFFER_BIT;
+    this.scene = scene;
+    this.camera = cam;
+    this.mouse = {
+      x : 0,
+      y : 0,
+      pressure : 1.0,
+      tiltX : 0.0,
+      tiltY : 0.0,
+      deviceType : 0,
+      left: false,
+      middle: false,
+      right: false
+    };
+    this.setupEventListeners();
+    this.startFrameLoop();
+  },
+
+  getDefaultCamera : function() {
+    var cam = new Magi.Camera();
+    vec3.set([0, 1.0, 0], cam.lookAt);
+    vec3.set([Math.cos(1)*6, 3, Math.sin(1)*6], cam.position);
+    cam.fov = 45;
+    cam.angle = 1;
+    return cam;
+  },
   
   startFrameLoop : function() {
     this.previousTime = new Date;
@@ -143,53 +147,85 @@ Scene.prototype = {
     this.updateFps(this.frameTimes, real_dt);
     if (!this.firstFrameDoneTime) this.firstFrameDoneTime = new Date();
     this.changed = false;
-    throwError(this.gl, "Scene draw loop");
+    Magi.throwError(this.gl, "Scene draw loop");
   },
 
   updateFps : function(frames,real_dt) {
-    var fps = document.getElementById('fps');
+    var fps = this.fpsCanvas || document.getElementById('fps');
     if (!fps) return;
     var ctx = fps.getContext('2d');
     ctx.clearRect(0,0,fps.width,fps.height);
+    var h = fps.height;
     frames.push(1000 / (1+real_dt));
-    if (frames.length > 200) 
-      frames.shift();
-    for (var i=0; i<frames.length; i++) {
-      ctx.fillRect(i,fps.height,1,-frames[i]/3);
+    if (frames.length > 1000)
+      frames.splice(200);
+    var start = Math.max(0,frames.length-200);
+    for (var i=start; i<frames.length; i++) {
+      ctx.fillRect(i-start,h,1,-frames[i]/3);
     }
   }
-};
+});
 
-Cube = function() {
-  Node.call(this, Geometry.Cube.getCachedVBO());
-  this.position = [0,0,0];
-  this.material = DefaultMaterial.get();
-};
-Cube.prototype = new Node;
-Cube.prototype.makeBounce = function(twirl) {
-  this.addFrameListener(function(t, dt) {
-    var y = 2*Math.abs(Math.sin(t / 400));
-    this.position[1] = y;
-    if (twirl)
-      this.rotation.angle = 6*Math.cos(t / 2400);
-  });
-  return this;
-};
+Magi.Cube = Klass(Magi.Node, {
+  initialize : function() {
+    Magi.Node.initialize.call(this, Magi.Geometry.Cube.getCachedVBO());
+    this.position = [0,0,0];
+    this.material = Magi.DefaultMaterial.get();
+  },
 
-Text = Klass(Node, {
+  makeBounce : function(twirl) {
+    this.addFrameListener(function(t, dt) {
+      var y = 2*Math.abs(Math.sin(t / 400));
+      this.position[1] = y;
+      if (twirl)
+        this.rotation.angle = 6*Math.cos(t / 2400);
+    });
+    return this;
+  }
+});
+
+Magi.Image = Klass(Magi.Node, {
+  initialize : function(src) {
+    Magi.Node.initialize.call(this);
+    var tex = new Magi.Texture();
+    tex.generateMipmaps = false;
+    this.imageNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
+    this.imageNode.material = Magi.FilterMaterial.make();
+    this.imageNode.material.textures.Texture0 = tex;
+    this.imageNode.depthMask = false;
+    this.texture = tex;
+    this.appendChild(this.imageNode);
+    this.setImage(src);
+  },
+
+  setImage : function(src) {
+    var image = src;
+    if (typeof src == 'string') {
+      image = new Image();
+      image.src = src;
+    }
+    this.image = image;
+    this.imageNode.scaling[0] = this.image.width / 2;
+    this.imageNode.scaling[1] = this.image.height / 2;
+    this.texture.image = this.image;
+    this.texture.changed = true;
+  }
+});
+
+Magi.Text = Klass(Magi.Node, {
   fontSize : 24,
   font : 'Arial',
 
   initialize : function(content, fontSize, font) {
-    Node.initialize.call(this);
+    Magi.Node.initialize.call(this);
     this.canvas = E.canvas(1, 1);
     if (fontSize) this.fontSize = fontSize;
     if (font) this.font = font;
-    var tex = new Texture();
+    var tex = new Magi.Texture();
     tex.generateMipmaps = false;
     tex.image = this.canvas;
-    this.textNode = new Node(Geometry.Quad.getCachedVBO());
-    this.textNode.material = FilterMaterial.make();
+    this.textNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
+    this.textNode.material = Magi.FilterMaterial.make();
     this.textNode.material.textures.Texture0 = tex;
     this.textNode.depthMask = false;
     this.texture = tex;
@@ -225,7 +261,7 @@ Text = Klass(Node, {
   }
 });
 
-FilterMaterial = {
+Magi.FilterMaterial = {
   vert : (
     "precision mediump float;"+
     "attribute vec3 Vertex;"+
@@ -255,7 +291,7 @@ FilterMaterial = {
   ),
 
   make : function(gl, fragmentShader) {
-    var shader = new Shader(null,
+    var shader = new Magi.Shader(null,
       {type:'VERTEX_SHADER', text:this.vert},
       {type:'FRAGMENT_SHADER', text:fragmentShader||this.frag}
     );
@@ -263,13 +299,13 @@ FilterMaterial = {
   },
 
   setupMaterial : function(shader) {
-    var m = new Material(shader);
+    var m = new Magi.Material(shader);
     m.textures.Texture0 = null;
     return m;
   }
 };
 
-DefaultMaterial = {
+Magi.DefaultMaterial = {
   vert : (
     "precision mediump float;"+
     "attribute vec3 Vertex;"+
@@ -335,7 +371,7 @@ DefaultMaterial = {
 
   get : function(gl) {
     if (!this.cached) {
-      var shader = new Shader(null,
+      var shader = new Magi.Shader(null,
         {type:'VERTEX_SHADER', text:this.vert},
         {type:'FRAGMENT_SHADER', text:this.frag}
       );
@@ -345,7 +381,7 @@ DefaultMaterial = {
   },
 
   setupMaterial : function(shader) {
-    var m = new Material(shader);
+    var m = new Magi.Material(shader);
     m.textures.DiffTex = m.textures.SpecTex = m.textures.EmitTex = null;
     m.floats.MaterialSpecular = [0.95, 0.9, 0.9, 0];
     m.floats.MaterialDiffuse = [0.60, 0.6, 0.65, 1];
@@ -391,7 +427,7 @@ DefaultMaterial = {
         });
         */
 
-Curves = {
+Magi.Curves = {
 
   angularDistance : function(a, b) {
     var pi2 = Math.PI*2;
@@ -606,7 +642,7 @@ Curves = {
 /**
   Color helper functions.
   */
-Colors = {
+Magi.Colors = {
 
   /**
     Converts an HSL color to its corresponding RGB color.
