@@ -175,10 +175,10 @@ Magi.Cube = Klass(Magi.Node, {
 
   makeBounce : function(twirl) {
     this.addFrameListener(function(t, dt) {
-      var y = 2*Math.abs(Math.sin(t / 400));
+      var y = 2*Math.abs(Math.sin(t / 500));
       this.position[1] = y;
       if (twirl)
-        this.rotation.angle = 6*Math.cos(t / 2400);
+        this.rotation.angle = 6*Math.cos(t / 7200);
     });
     return this;
   }
@@ -190,7 +190,7 @@ Magi.Image = Klass(Magi.Node, {
     var tex = new Magi.Texture();
     tex.generateMipmaps = false;
     this.imageNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.imageNode.material = Magi.FilterMaterial.make();
+    this.imageNode.material = Magi.FilterMaterial.get();
     this.imageNode.material.textures.Texture0 = tex;
     this.imageNode.depthMask = false;
     this.texture = tex;
@@ -225,7 +225,7 @@ Magi.Text = Klass(Magi.Node, {
     tex.generateMipmaps = false;
     tex.image = this.canvas;
     this.textNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.textNode.material = Magi.FilterMaterial.make();
+    this.textNode.material = Magi.FilterMaterial.get();
     this.textNode.material.textures.Texture0 = tex;
     this.textNode.depthMask = false;
     this.texture = tex;
@@ -261,11 +261,17 @@ Magi.Text = Klass(Magi.Node, {
   }
 });
 
+Magi.MeshText = Klass(Magi.Text, {
+  initialize : function(content, fontSize, font) {
+    Magi.Text.initialize.apply(this, arguments);
+    this.textNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
+  }
+});
+
 Magi.FilterMaterial = {
-  vert : (
+  vert : {type: 'VERTEX_SHADER', text: (
     "precision mediump float;"+
     "attribute vec3 Vertex;"+
-    "attribute vec3 Normal;"+
     "attribute vec2 TexCoord;"+
     "uniform mat4 PMatrix;"+
     "uniform mat4 MVMatrix;"+
@@ -278,9 +284,9 @@ Magi.FilterMaterial = {
     "  vec4 worldPos = MVMatrix * v;"+
     "  gl_Position = PMatrix * worldPos;"+
     "}"
-  ),
+  )},
 
-  frag : (
+  frag : {type: 'FRAGMENT_SHADER', text: (
     "precision mediump float;"+
     "uniform sampler2D Texture0;"+
     "varying vec2 texCoord0;"+
@@ -288,14 +294,17 @@ Magi.FilterMaterial = {
     "{"+
     "  gl_FragColor = texture2D(Texture0, texCoord0);"+
     "}"
-  ),
+  )},
 
   make : function(gl, fragmentShader) {
-    var shader = new Magi.Shader(null,
-      {type:'VERTEX_SHADER', text:this.vert},
-      {type:'FRAGMENT_SHADER', text:fragmentShader||this.frag}
-    );
+    var shader = new Magi.Filter(null, this.vert, fragmentShader||this.frag);
     return this.setupMaterial(shader);
+  },
+
+  get : function(gl) {
+    if (!this.cached)
+      this.cached = this.make(gl);
+    return this.cached.copy();
   },
 
   setupMaterial : function(shader) {
@@ -306,7 +315,7 @@ Magi.FilterMaterial = {
 };
 
 Magi.DefaultMaterial = {
-  vert : (
+  vert : {type: 'VERTEX_SHADER', text: (
     "precision mediump float;"+
     "attribute vec3 Vertex;"+
     "attribute vec3 Normal;"+
@@ -335,9 +344,9 @@ Magi.DefaultMaterial = {
     "  attenuation = 1.0 / (LightConstantAtt + LightLinearAtt*dist + LightQuadraticAtt * dist*dist);"+
     "  gl_Position = PMatrix * worldPos;"+
     "}"
-  ),
+  )},
 
-  frag : (
+  frag : {type: 'FRAGMENT_SHADER', text: (
     "precision mediump float;"+
     "uniform vec4 LightDiffuse;"+
     "uniform vec4 LightSpecular;"+
@@ -367,14 +376,11 @@ Magi.DefaultMaterial = {
     "  color.a = matDiff.a;"+
     "  gl_FragColor = color;"+
     "}"
-  ),
+  )},
 
   get : function(gl) {
     if (!this.cached) {
-      var shader = new Magi.Shader(null,
-        {type:'VERTEX_SHADER', text:this.vert},
-        {type:'FRAGMENT_SHADER', text:this.frag}
-      );
+      var shader = new Magi.Shader(null, this.vert, this.frag);
       this.cached = this.setupMaterial(shader);
     }
     return this.cached.copy();

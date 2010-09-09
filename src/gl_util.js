@@ -1053,10 +1053,7 @@ Magi.Shader = Klass({
   },
 
   compile : function() {
-    if (this.shaders[0].text)
-      this.shader = Magi.Shader.getProgramBySourceArray(this.gl, this.shaders);
-    else
-      this.shader = Magi.Shader.getProgramByIdArray(this.gl, this.shaders);
+    this.shader = Magi.Shader.getProgramByMixedArray(this.gl, this.shaders);
   },
 
   use : function() {
@@ -1302,6 +1299,16 @@ Magi.Shader.getProgramByIdArray = function(gl,shaders) {
   var arr = shaders.map(function(sh) { return self.getShaderById(gl, sh); });
   return this.createProgram(gl, arr);
 }
+Magi.Shader.getProgramByMixedArray = function(gl,shaders) {
+  var self = this;
+  var arr = shaders.map(function(sh) {
+    if (sh.type)
+      return self.createShader(gl, sh.type, sh.text);
+    else
+      return self.getShaderById(gl, sh);
+  });
+  return this.createProgram(gl, arr);
+}
 Magi.Shader.getProgramByIds = function(gl) {
   var sh = [];
   for (var i=1; i<arguments.length; ++i)
@@ -1331,7 +1338,7 @@ Magi.Shader.load = function(gl, callback) {
 
 Magi.Filter = Klass(Magi.Shader, {
   initialize : function(gl, shader) {
-    Shader.apply(this, arguments);
+    Magi.Shader.initialize.apply(this, arguments);
   },
 
   apply : function(init) {
@@ -1636,6 +1643,48 @@ Magi.Geometry.Quad = {
     return this.cache[gl];
   }
 }
+
+Magi.Geometry.QuadMesh = {
+  makeVBO : function(gl) {
+    var vertices = [], normals = [], texcoords = [];
+    var xCount = 100;
+    var yCount = 100;
+    for (var x=0; x<xCount; x++) {
+      for (var y=0; y<yCount; y++) {
+        vertices.push((x-(xCount/2)) / (xCount/2), (y-(yCount/2)) / (yCount/2), 0);
+        vertices.push(((x+1)-(xCount/2)) / (xCount/2), (y-(yCount/2)) / (yCount/2), 0);
+        vertices.push((x-(xCount/2)) / (xCount/2), ((y+1)-(yCount/2)) / (yCount/2), 0);
+        vertices.push(((x+1)-(xCount/2)) / (xCount/2), (y-(yCount/2)) / (yCount/2), 0);
+        vertices.push(((x+1)-(xCount/2)) / (xCount/2), ((y+1)-(yCount/2)) / (yCount/2), 0);
+        vertices.push((x-(xCount/2)) / (xCount/2), ((y+1)-(yCount/2)) / (yCount/2), 0);
+        normals.push(0,0,-1);
+        normals.push(0,0,-1);
+        normals.push(0,0,-1);
+        normals.push(0,0,-1);
+        normals.push(0,0,-1);
+        normals.push(0,0,-1);
+        texcoords.push(x/xCount, y/yCount);
+        texcoords.push((x+1)/xCount, y/yCount);
+        texcoords.push(x/xCount, (y+1)/yCount);
+        texcoords.push((x+1)/xCount, y/yCount);
+        texcoords.push((x+1)/xCount, (y+1)/yCount);
+        texcoords.push(x/xCount, (y+1)/yCount);
+      }
+    }
+    return new Magi.VBO(gl,
+        {size:3, data: new Float32Array(vertices)},
+        {size:3, data: new Float32Array(normals)},
+        {size:2, data: new Float32Array(texcoords)}
+    )
+  },
+  cache: {},
+  getCachedVBO : function(gl) {
+    if (!this.cache[gl])
+      this.cache[gl] = this.makeVBO(gl);
+    return this.cache[gl];
+  }
+}
+
 Magi.Geometry.Cube = {
   vertices : new Float32Array([  0.5, -0.5,  0.5, // +X
                 0.5, -0.5, -0.5,
