@@ -162,10 +162,10 @@
         fs.LightDiffuse = [1,1,0.5,1];
         fs.LightSpecular = [0.5,1,1,1];
         fs.LightAmbient = [0.3,0,0.2,1];
-        cb.depthMask = false;
+        cb.transparent = true;
         
         var ncb = new Magi.Cube();
-        ncb.depthMask = false;
+        ncb.transparent = true;
         ncb.material = cb.material.copy();
         ncb.material.floats.MaterialDiffuse = [1,0.95,0.8,0.7];
         var fs = ncb.material.floats;

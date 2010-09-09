@@ -5,11 +5,14 @@ Magi.Node = Klass({
   scaling : null,
   polygonOffset : null,
   scaleAfterRotate : false,
-  depthMask : true,
+  depthMask : null,
+  depthTest : null,
   display : true,
+  transparent : false,
 
   initialize : function(model) {
     this.model = model;
+    this.renderPasses = {normal: true};
     this.material = new Magi.Material();
     this.matrix = mat4.newIdentity();
     this.normalMatrix = mat3.newIdentity();
@@ -25,32 +28,71 @@ Magi.Node = Klass({
     if (this.material)
       this.material.apply(gl, state, perspectiveMatrix, this.matrix, this.normalMatrix);
     if (this.model.gl == null) this.model.gl = gl;
-    if (this.polygonOffset)
-      gl.polygonOffset(this.polygonOffset.factor, this.polygonOffset.units);
-    if (this.depthMask == false)
-      gl.depthMask(false);
     var psrc = state.blendFuncSrc;
     var pdst = state.blendFuncDst;
+    var dm = state.depthMask;
+    var dt = state.depthTest;
+    var poly = state.polygonOffset;
+    var bl = state.blend;
+    if (this.polygonOffset) {
+      state.polygonOffset = this.polygonOffset;
+      gl.polygonOffset(this.polygonOffset.factor, this.polygonOffset.units);
+    }
+    if (this.depthMask != null) {
+      state.depthMask = this.depthMask;
+      gl.depthMask(this.depthMask);
+    }
+    if (this.depthTest != null) {
+      state.depthTest = this.depthTest;
+      if (this.depthTest)
+        gl.enable(gl.DEPTH_TEST);
+      else
+        gl.disable(gl.DEPTH_TEST);
+    }
     if (this.blendFuncSrc && this.blendFuncDst) {
       gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
-      state.blendFuncSrc = gl[this.blendFuncSrc];
-      state.blendFuncDst = gl[this.blendFuncDst];
+      state.blendFuncSrc = this.blendFuncSrc;
+      state.blendFuncDst = this.blendFuncDst;
     }
+    if (this.blend != null) {
+      state.blend = this.blend;
+      if (this.blend) gl.enable(gl.BLEND);
+      else gl.disable(gl.BLEND);
+    }
+
+
     this.model.draw(
       state.currentShader.attrib('Vertex'),
       state.currentShader.attrib('Normal'),
       state.currentShader.attrib('TexCoord')
     );
+
+
+    if (this.blend != null) {
+      state.blend = bl;
+      if (bl) gl.enable(gl.BLEND);
+      else gl.disable(gl.BLEND);
+    }
     if (this.blendFuncSrc && this.blendFuncDst) {
-      if (psrc && pdst)
-        gl.blendFunc(psrc, pdst);
+      gl.blendFunc(gl[psrc], gl[pdst]);
       state.blendFuncSrc = psrc;
       state.blendFuncDst = pdst;
     }
-    if (this.depthMask == false)
-      gl.depthMask(true);
-    if (this.polygonOffset)
-      gl.polygonOffset(0.0, 0.0);
+    if (this.depthTest != null) {
+      state.depthTest = dt;
+      if (dt)
+        gl.enable(gl.DEPTH_TEST);
+      else
+        gl.disable(gl.DEPTH_TEST);
+    }
+    if (this.depthMask != null) {
+      state.depthMask = dm;
+      gl.depthMask(dm);
+    }
+    if (this.polygonOffset) {
+      state.polygonOffset = poly;
+      gl.polygonOffset(poly.factor, poly.units);
+    }
   },
   
   addFrameListener : function(f) {
@@ -233,6 +275,12 @@ Magi.GLDrawState = Klass({
   textures : null,
   currentMaterial : null,
   currentShader : null,
+  polygonOffset : {factor: 0, units: 0},
+  blendFuncSrc : 'ONE',
+  blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
+  depthMask : true,
+  depthTest : true,
+  blend : true,
   
   initialize: function(){
     this.textures = [];
@@ -248,6 +296,10 @@ Magi.Camera = Klass({
   ortho : false,
   stereo : false,
   stereoSeparation : 0.025,
+  renderPass : 'normal',
+  blend : true,
+  blendFuncSrc : 'ONE',
+  blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
 
   initialize : function() {
     this.position = vec3.create([5,5,5]);
@@ -281,7 +333,7 @@ Magi.Camera = Klass({
     return this.matrix;
   },
 
-  drawViewport : function(gl, x, y, width, height, scene, state) {
+  drawViewport : function(gl, x, y, width, height, scene) {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
@@ -292,15 +344,55 @@ Magi.Camera = Klass({
     }
     scene.updateTransform(this.getLookMatrix());
     var drawList = scene.collectDrawList();
-    state = state || new Magi.GLDrawState();
+    var transparents = [];
+    var st = new Magi.GLDrawState();
+
+    gl.depthFunc(gl.LESS);
+    gl.disable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.frontFace(gl.CCW);
+    gl.enable(gl.DEPTH_TEST);
+
+    if (this.blend) {
+      gl.enable(gl.BLEND);
+    } else {
+      gl.disable(gl.BLEND);
+    }
+    st.blend = true;
+
+    if (this.blendFuncSrc && this.blendFuncDst) {
+      st.blendFuncSrc = gl[this.blendFuncSrc];
+      st.blendFuncDst = gl[this.blendFuncDst];
+      gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
+    }
+    
+    gl.depthMask(true);
+    st.depthMask = true;
     for (var i=0; i<drawList.length; i++) {
       var d = drawList[i];
-      d.draw(gl, state, this.perspectiveMatrix);
+      if (!d.renderPasses[this.renderPass])
+        continue;
+      if (d.transparent) {
+        transparents.push(d);
+      } else {
+        d.draw(gl, st, this.perspectiveMatrix);
+      }
     }
+    transparents.sort(function(a,b) {
+      return a.matrix[14] - b.matrix[14];
+    });
+    var st = new Magi.GLDrawState();
+    gl.depthMask(false);
+    st.depthMask = false;
+    for (var i=0; i<transparents.length; i++) {
+      var d = transparents[i];
+      d.draw(gl, st, this.perspectiveMatrix);
+    }
+    gl.depthMask(true);
     gl.disable(gl.SCISSOR_TEST);
   },
   
-  draw : function(gl, width, height, scene, state) {
+  draw : function(gl, width, height, scene) {
     if (this.stereo) {
       var p = vec3.create(this.position);
       var sep = vec3.create();
@@ -309,14 +401,14 @@ Magi.Camera = Klass({
       vec3.scale(sep, this.stereoSeparation/2, sep);
 
       vec3.subtract(p, sep, this.position);
-      this.drawViewport(gl, 0, 0, width/2, height, scene, Object.clone(state));
+      this.drawViewport(gl, 0, 0, width/2, height, scene);
       
       vec3.add(p, sep, this.position);
       this.drawViewport(gl, width/2, 0, width/2, height, scene, Object.clone(state));
 
       vec3.set(p, this.position);
     } else {
-      this.drawViewport(gl, 0, 0, width, height, scene, Object.clone(state));
+      this.drawViewport(gl, 0, 0, width, height, scene);
     }
   }
 });

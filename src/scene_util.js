@@ -10,11 +10,6 @@ Magi.Scene = Klass({
 
   bg : [1,1,1,1],
   clear : true,
-  depthTest : true,
-  depthMask : true,
-  blend : true,
-  blendFuncSrc : 'ONE',
-  blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
   
   initialize : function(canvas, scene, cam, args) {
     if (!scene) scene = new Magi.Node();
@@ -111,42 +106,15 @@ Magi.Scene = Klass({
     this.camera.update(this.time, dt);
     this.scene.update(this.time, dt);
 
-    var state = new Magi.GLDrawState;
-
     if (this.drawOnlyWhenChanged && !this.changed) return;
 
     if (this.clear) {
+      this.gl.depthMask(true);
       this.gl.clearColor(this.bg[0], this.bg[1], this.bg[2], this.bg[3]);
       this.gl.clear(this.clearBits);
     }
 
-    this.gl.depthFunc(this.gl.LESS);
-    this.gl.disable(this.gl.CULL_FACE);
-    this.gl.cullFace(this.gl.BACK);
-    this.gl.frontFace(this.gl.CCW);
-    if (this.depthTest) {
-      this.gl.enable(this.gl.DEPTH_TEST);
-    } else {
-      this.gl.disable(this.gl.DEPTH_TEST);
-    }
-    if (this.depthMask) {
-      this.gl.depthMask(true);
-    } else {
-      this.gl.depthMask(false);
-    }
-    if (this.blend) {
-      this.gl.enable(this.gl.BLEND);
-    } else {
-      this.gl.disable(this.gl.BLEND);
-    }
-
-    if (this.blendFuncSrc && this.blendFuncDst) {
-      state.blendFuncSrc = this.gl[this.blendFuncSrc];
-      state.blendFuncDst = this.gl[this.blendFuncDst];
-      this.gl.blendFunc(this.gl[this.blendFuncSrc], this.gl[this.blendFuncDst]);
-    }
-    
-    this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.scene, state);
+    this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.scene);
     
     this.updateFps(this.frameTimes, real_dt);
     if (!this.firstFrameDoneTime) this.firstFrameDoneTime = new Date();
@@ -206,7 +174,7 @@ Magi.Image = Klass(Magi.Node, {
     this.imageNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
     this.imageNode.material = Magi.FilterMaterial.get();
     this.imageNode.material.textures.Texture0 = tex;
-    this.imageNode.depthMask = false;
+    this.imageNode.transparent = true;
     this.texture = tex;
     this.appendChild(this.imageNode);
     this.setImage(src);
@@ -242,7 +210,7 @@ Magi.Text = Klass(Magi.Node, {
     this.textNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
     this.textNode.material = Magi.FilterMaterial.get();
     this.textNode.material.textures.Texture0 = tex;
-    this.textNode.depthMask = false;
+    this.textNode.transparent = true;
     this.texture = tex;
     this.appendChild(this.textNode);
     this.setText(content);
