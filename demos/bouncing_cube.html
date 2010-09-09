@@ -104,7 +104,7 @@
         s.fpsCanvas = E.canvas(200,20);
         s.camera.position[2] = 7;
         s.camera.position[0] = -1.5;
-        s.camera.targetFov = 60;
+        s.camera.targetFov = 55;
         s.bg = [0.9,0.3,0.7,1];
 
         var grad = new Magi.FilterQuad('bg-frag');
@@ -262,7 +262,7 @@
           ringSeg.advance = 0;
           ringSeg.addFrameListener(function(t,dt) {
             if (this.advance) {
-              this.position[1] = this.origY - this.advance*10;
+              this.position[1] = this.origY - this.advance*15;
               this.advance--;
             } else {
               this.position[1] = this.origY;
@@ -270,7 +270,7 @@
           });
           ringSeg.blendFuncSrc = 'ONE';
           ringSeg.blendFuncDst = 'ONE';
-          ringSeg.makeRotate(0.2 + i*0.05 + 0.5*Math.random());
+          ringSeg.makeRotate(0.5 + i*0.2 + Math.random());
           rings.appendChild(ringSeg);
         }
         input.addEventListener('keydown', function() {
