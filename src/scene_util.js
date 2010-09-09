@@ -138,21 +138,37 @@ Magi.Scene = Klass({
   }
 });
 
-Magi.Cube = Klass(Magi.Node, {
-  initialize : function() {
-    Magi.Node.initialize.call(this, Magi.Geometry.Cube.getCachedVBO());
-    this.position = [0,0,0];
-    this.material = Magi.DefaultMaterial.get();
-  },
-
-  makeBounce : function(twirl) {
+Magi.Motion = {
+  makeBounce : function() {
     this.addFrameListener(function(t, dt) {
       var y = 2*Math.abs(Math.sin(t / 500));
       this.position[1] = y;
-      if (twirl)
-        this.rotation.angle = 6*Math.cos(t / 7200);
     });
     return this;
+  },
+
+  makeRotate : function(speed) {
+    speed = speed || 0.2;
+    this.addFrameListener(function(t,dt) {
+      this.rotation.angle = (Math.PI*2*t / (1000/speed)) % (Math.PI*2);
+    });
+    return this;
+  }
+};
+
+Magi.Cube = Klass(Magi.Node, Magi.Motion, {
+  initialize : function() {
+    Magi.Node.initialize.call(this, Magi.Geometry.Cube.getCachedVBO());
+    this.material = Magi.DefaultMaterial.get();
+  }
+});
+
+Magi.Ring = Klass(Magi.Node, Magi.Motion, {
+  initialize : function(height, angle, segments, yCount) {
+    Magi.Node.initialize.call(this,
+      Magi.Geometry.Ring.getCachedVBO(null, height, segments, yCount, angle)
+    );
+    this.material = Magi.DefaultMaterial.get();
   }
 });
 
@@ -391,8 +407,9 @@ Magi.DefaultMaterial = {
     "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
     "  color += lcolor * step(0.0, lambertTerm);"+
     "  color += texture2D(EmitTex, texCoord0);" +
+    "  color *= matDiff.a;"+
     "  color.a = matDiff.a;"+
-    "  gl_FragColor = color*color.a;"+
+    "  gl_FragColor = color;"+
     "}"
   )},
 

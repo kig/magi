@@ -150,6 +150,7 @@
         });
         cube.appendChild(cubes);
 
+
         var cb = new Magi.Cube();
         vec3.set3(0.8, cb.scaling);
         cube.appendChild(cb);
@@ -179,9 +180,9 @@
           var dd = d*d;
           vec3.set3(0.75-0.2*dd*dd*dd*dd*dd, this.scaling);
         });
-        cb.appendChild(ncb);
         ncb.blendFuncSrc = 'SRC_ALPHA';
         ncb.blendFuncDst = 'ONE';
+        cb.appendChild(ncb);
 
         var txt = new Magi.MeshText(input.value, 72);
         txt.setColor('#ffffff');
@@ -242,6 +243,42 @@
           date.textNode.material.floats.time = t / 500;
         });
 
+        var rings = new Magi.Node();
+        vec3.set3(0.05, rings.scaling);
+        rings.rotation.axis = [0,0,1];
+        rings.rotation.angle = Math.PI/2;
+        rings.position[0] = -1.5;
+        rings.position[1] = -0;
+        rings.counter = 0;
+        for (var i=0; i<8; i++) {
+          var ringSeg = new Magi.Ring(0.01+0.08*Math.random(), Math.PI*1.5);
+          vec3.set3(24+i*0.25+12*Math.random(), ringSeg.scaling);
+          vec3.set([0,i*5,0], ringSeg.position);
+          ringSeg.material.floats.MaterialDiffuse[3] = 0.3;
+          ringSeg.transparent = true;
+          ringSeg.makeRotate();
+          ringSeg.idx = i;
+          ringSeg.origY = i*5;
+          ringSeg.advance = 0;
+          ringSeg.addFrameListener(function(t,dt) {
+            if (this.advance) {
+              this.position[1] = this.origY - this.advance*10;
+              this.advance--;
+            } else {
+              this.position[1] = this.origY;
+            }
+          });
+          ringSeg.blendFuncSrc = 'ONE';
+          ringSeg.blendFuncDst = 'ONE';
+          ringSeg.makeRotate(0.2 + i*0.05 + 0.5*Math.random());
+          rings.appendChild(ringSeg);
+        }
+        input.addEventListener('keydown', function() {
+        console.log('hi');
+          rings.counter = (rings.counter + 1) % rings.childNodes.length;
+          rings.childNodes[rings.counter].advance = 10;
+        }, false);
+
           var xRot = new Magi.Node();
           xRot.rotation.axis = [0, 1, 0];
           var yRot = new Magi.Node();
@@ -250,8 +287,9 @@
           yRot.appendChild(xRot);
           xRot.appendChild(top);
           xRot.appendChild(date);
+          cube.appendChild(rings);
           var wheelHandler = function(ev) {
-            var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.1 : (1 / 1.1);
+            var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.3 : (1 / 1.3);
             if (ev.shiftKey) {
               yRot.scaling[0] *= ds;
               yRot.scaling[1] *= ds;

@@ -786,13 +786,11 @@ Magi.Geometry.Quad = {
       this.cache[gl] = this.makeVBO(gl);
     return this.cache[gl];
   }
-}
+};
 
 Magi.Geometry.QuadMesh = {
-  makeVBO : function(gl) {
+  makeVBO : function(gl, xCount, yCount) {
     var vertices = [], normals = [], texcoords = [];
-    var xCount = 100;
-    var yCount = 100;
     for (var x=0; x<xCount; x++) {
       for (var y=0; y<yCount; y++) {
         vertices.push((x-(xCount/2)) / (xCount/2), (y-(yCount/2)) / (yCount/2), 0);
@@ -822,12 +820,19 @@ Magi.Geometry.QuadMesh = {
     )
   },
   cache: {},
-  getCachedVBO : function(gl) {
-    if (!this.cache[gl])
-      this.cache[gl] = this.makeVBO(gl);
-    return this.cache[gl];
+  getCachedVBO : function(gl, xCount, yCount) {
+    xCount = xCount || 100;
+    yCount = yCount || 100;
+    var k = xCount +":"+ yCount;
+    if (!this.cache[gl]) {
+      this.cache[gl] = {};
+    }
+    if (!this.cache[gl][k]) {
+      this.cache[gl][k] = this.makeVBO(gl, xCount, yCount);
+    }
+    return this.cache[gl][k];
   }
-}
+};
 
 Magi.Geometry.Cube = {
   vertices : new Float32Array([  0.5, -0.5,  0.5, // +X
@@ -928,7 +933,7 @@ Magi.Geometry.Cube = {
       this.cache[gl] = this.makeVBO(gl);
     return this.cache[gl];
   }
-}
+};
 Magi.Geometry.Cube.create();
 
 Magi.Geometry.Sphere = {
@@ -965,9 +970,70 @@ Magi.Geometry.Sphere = {
       }
     }
   }
-}
-
+};
 Magi.Geometry.Sphere.create();
+
+
+Magi.Geometry.Ring = {
+  makeXZQuad : function(x,y,z,x2,y2,z2,vertices) {
+    vertices.push(x, y, z);
+    vertices.push(x2, y, z2);
+    vertices.push(x, y2, z);
+    vertices.push(x2, y, z2);
+    vertices.push(x2, y2, z2);
+    vertices.push(x, y2, z);
+  },
+  makeVBO : function(gl, height, segments, yCount, angle) {
+    var vertices = [], normals = [], texcoords = [];
+    for (var s=0; s<segments; s++) {
+      var ra1 = s/segments;
+      var ra2 = (s+1)/segments;
+      var a1 = ra1 * angle;
+      var a2 = ra2 * angle;
+      var x1 = Math.cos(a1);
+      var x2 = Math.cos(a2);
+      var z1 = Math.sin(a1);
+      var z2 = Math.sin(a2);
+      for (var y=0; y<yCount; y++) {
+        var y1 = 2 * height * (-0.5 + y/yCount);
+        var y2 = 2 * height * (-0.5 + (y+1)/yCount);
+        this.makeXZQuad(x1,y1,z1,x2,y2,z2,vertices);
+        normals.push(z1, 0, -x1);
+        normals.push(z2, 0, -x2);
+        normals.push(z1, 0, -x1);
+        normals.push(z2, 0, -x2);
+        normals.push(z2, 0, -x2);
+        normals.push(z1, 0, -x1);
+        texcoords.push(ra1, y1);
+        texcoords.push(ra2, y1);
+        texcoords.push(ra1, y2);
+        texcoords.push(ra2, y1);
+        texcoords.push(ra2, y2);
+        texcoords.push(ra1, y2);
+      }
+    }
+    return new Magi.VBO(gl,
+        {size:3, data: new Float32Array(vertices)},
+        {size:3, data: new Float32Array(normals)},
+        {size:2, data: new Float32Array(texcoords)}
+    )
+  },
+  cache: {},
+  getCachedVBO : function(gl, height, segments, yCount, angle) {
+    height = height || 0.1;
+    segments = segments || 256;
+    yCount = yCount || 10;
+    angle = angle || Math.PI*2;
+    var k = segments +":"+ yCount + ":" + angle + ":" + height;
+    if (!this.cache[gl]) {
+      this.cache[gl] = {};
+    }
+    if (!this.cache[gl][k]) {
+      this.cache[gl][k] = this.makeVBO(gl, height, segments, yCount, angle);
+    }
+    return this.cache[gl][k];
+  }
+}
 
 
 Magi.log=function(msg) {
