@@ -19,7 +19,7 @@ Magi.Node = Klass({
     this.frameListeners = [];
     this.childNodes = [];
   },
-  
+
   draw : function(gl, state, perspectiveMatrix) {
     if (!this.model || !this.display) return;
     if (this.material)
@@ -29,11 +29,24 @@ Magi.Node = Klass({
       gl.polygonOffset(this.polygonOffset.factor, this.polygonOffset.units);
     if (this.depthMask == false)
       gl.depthMask(false);
+    var psrc = state.blendFuncSrc;
+    var pdst = state.blendFuncDst;
+    if (this.blendFuncSrc && this.blendFuncDst) {
+      gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
+      state.blendFuncSrc = gl[this.blendFuncSrc];
+      state.blendFuncDst = gl[this.blendFuncDst];
+    }
     this.model.draw(
       state.currentShader.attrib('Vertex'),
       state.currentShader.attrib('Normal'),
       state.currentShader.attrib('TexCoord')
     );
+    if (this.blendFuncSrc && this.blendFuncDst) {
+      if (psrc && pdst)
+        gl.blendFunc(psrc, pdst);
+      state.blendFuncSrc = psrc;
+      state.blendFuncDst = pdst;
+    }
     if (this.depthMask == false)
       gl.depthMask(true);
     if (this.polygonOffset)
@@ -268,7 +281,7 @@ Magi.Camera = Klass({
     return this.matrix;
   },
 
-  drawViewport : function(gl, x, y, width, height, scene) {
+  drawViewport : function(gl, x, y, width, height, scene, state) {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
@@ -279,7 +292,7 @@ Magi.Camera = Klass({
     }
     scene.updateTransform(this.getLookMatrix());
     var drawList = scene.collectDrawList();
-    var state = new Magi.GLDrawState();
+    state = state || new Magi.GLDrawState();
     for (var i=0; i<drawList.length; i++) {
       var d = drawList[i];
       d.draw(gl, state, this.perspectiveMatrix);
@@ -287,7 +300,7 @@ Magi.Camera = Klass({
     gl.disable(gl.SCISSOR_TEST);
   },
   
-  draw : function(gl, width, height, scene) {
+  draw : function(gl, width, height, scene, state) {
     if (this.stereo) {
       var p = vec3.create(this.position);
       var sep = vec3.create();
@@ -296,14 +309,14 @@ Magi.Camera = Klass({
       vec3.scale(sep, this.stereoSeparation/2, sep);
 
       vec3.subtract(p, sep, this.position);
-      this.drawViewport(gl, 0, 0, width/2, height, scene);
+      this.drawViewport(gl, 0, 0, width/2, height, scene, Object.clone(state));
       
       vec3.add(p, sep, this.position);
-      this.drawViewport(gl, width/2, 0, width/2, height, scene);
+      this.drawViewport(gl, width/2, 0, width/2, height, scene, Object.clone(state));
 
       vec3.set(p, this.position);
     } else {
-      this.drawViewport(gl, 0, 0, width, height, scene);
+      this.drawViewport(gl, 0, 0, width, height, scene, Object.clone(state));
     }
   }
 });

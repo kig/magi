@@ -18,10 +18,10 @@
       void main()
       {
         vec4 v = vec4(Vertex, 1.0);
-        float dx = xScale*(TexCoord.s-0.5);
+        float dx = xScale*(TexCoord.s);
         float dy = yScale*(TexCoord.t-0.5);
         float d = sqrt(dx*dx + dy*dy);
-        v.z += magnitude * cos(d-time);
+        v.z += magnitude * (2.0*cos(time+3.14*0.1*TexCoord.s*xScale))*yScale;
         texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
         vec4 worldPos = MVMatrix * v;
         gl_Position = PMatrix * worldPos;
@@ -60,9 +60,9 @@
       void main()
       {
         float dx = texCoord0.s * aspect;
-        float dy = texCoord0.t * aspect;
+        float dy = texCoord0.t / aspect;
         float d = sqrt(dx*dx + dy*dy);
-        vec4 c = vec4(0.06,0.0,0.08, 0.8-0.8*d);
+        vec4 c = vec4(0.76,0.2,0.48, 0.5-0.8*d);
         gl_FragColor = c*c.a;
       }
     </script>
@@ -108,14 +108,14 @@
         s.bg = [0.9,0.3,0.7,1];
 
         var grad = new Magi.FilterQuad('bg-frag');
-        grad.material.floats.aspect = cv.width / cv.height;
+        grad.material.floats.aspect = 4/3;
         s.scene.appendChild(grad);
 
         var top = new Magi.Node();
-        var a = [0,0,0];
-        var b = [-4,3,3];
-        var c = [4,2, 2];
-        var d = [0, -2, -4];
+        var a = [1,0,5];
+        var b = [-4,3,1];
+        var c = [4,2, -2];
+        var d = [4, -1, 1];
         top.addFrameListener(function(t,dt) {
           Magi.Curves.cubicPoint(a,b,c,d, 0.5+0.5*Math.cos(t/1600), this.position);
         });
@@ -128,14 +128,6 @@
         cube.rotation.axis[1] = -0.7;
         cube.rotation.axis[2] = -0.25;
         top.appendChild(cube);
-
-        var cb = new Magi.Cube();
-        vec3.set3(0.8, cb.scaling);
-        cube.appendChild(cb);
-        vec3.set([0.4,0.6,-1], cb.rotation.axis);
-        cb.addFrameListener(function(t,dt) {
-          this.rotation.angle = t/400 % (Math.PI*2);
-        });
 
         var cubes = new Magi.Node();
         for (var i=0; i<20; i++) {
@@ -158,6 +150,39 @@
         });
         cube.appendChild(cubes);
 
+        var cb = new Magi.Cube();
+        vec3.set3(0.8, cb.scaling);
+        cube.appendChild(cb);
+        vec3.set([0.4,0.6,-1], cb.rotation.axis);
+        cb.addFrameListener(function(t,dt) {
+          this.rotation.angle = t/400 % (Math.PI*2);
+        });
+        cb.material.floats.MaterialDiffuse = [0.8,0.9, 1.0, 0.8];
+        var fs = cb.material.floats;
+        fs.LightDiffuse = [1,1,0.5,1];
+        fs.LightSpecular = [0.5,1,1,1];
+        fs.LightAmbient = [0.3,0,0.2,1];
+        cb.depthMask = false;
+        
+        var ncb = new Magi.Cube();
+        ncb.depthMask = false;
+        ncb.material = cb.material.copy();
+        ncb.material.floats.MaterialDiffuse = [1,0.95,0.8,0.7];
+        var fs = ncb.material.floats;
+        fs.LightDiffuse = [1,1,0.8,1];
+        fs.LightSpecular = [1,0.95,0.8,1];
+        fs.LightAmbient = [0.2,0.1,0.0,1];
+        vec3.set3(0.75, ncb.scaling);
+        ncb.addFrameListener(function(t,dt) {
+          var p = Math.sin(-0.5+Math.PI*t / 1000);
+          var d = p*p;
+          var dd = d*d;
+          vec3.set3(0.75-0.2*dd*dd*dd*dd*dd, this.scaling);
+        });
+        cb.appendChild(ncb);
+        ncb.blendFuncSrc = 'SRC_ALPHA';
+        ncb.blendFuncDst = 'ONE';
+
         var txt = new Magi.MeshText(input.value, 72);
         txt.setColor('#ffffff');
         txt.textNode.material.shader = new Magi.Shader(null, 'wave-vert', Magi.FilterMaterial.frag);
@@ -174,6 +199,7 @@
         txt.position[1] = -0.1;
         cube.appendChild(txt);
 
+        s.fpsCanvas.getContext('2d').fillStyle = '#000000';
         var img = new Magi.Image(s.fpsCanvas);
         vec3.set3(1/100, img.scaling);
         img.addFrameListener(function(){ this.texture.changed = true; });
@@ -190,13 +216,13 @@
 
         var date = new Magi.MeshText("", 400);
         date.setColor('rgba(255,255,255,0.1)');
-        date.setFont("URW Gothic L, Optima, Trebuchet MS");
+        date.setFont("Avant Garde, Century Gothic, URW Gothic L");
         date.rotation.angle = 0.5;
         date.rotation.axis[0] = -0.5;
         date.textNode.material.shader = new Magi.Shader(null, 'bend-vert', Magi.FilterMaterial.frag);
         vec3.set3(1/32, date.scaling);
         date.position[0] = -6;
-        date.position[1] = -6;
+        date.position[1] = -5.7;
         date.textNode.material.floats.magnitude = 3.0;
         date.addFrameListener(function(t,dt) {
           var sec = parseInt(t / 60000);

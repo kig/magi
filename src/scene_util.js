@@ -111,6 +111,8 @@ Magi.Scene = Klass({
     this.camera.update(this.time, dt);
     this.scene.update(this.time, dt);
 
+    var state = new Magi.GLDrawState;
+
     if (this.drawOnlyWhenChanged && !this.changed) return;
 
     if (this.clear) {
@@ -139,10 +141,12 @@ Magi.Scene = Klass({
     }
 
     if (this.blendFuncSrc && this.blendFuncDst) {
+      state.blendFuncSrc = this.gl[this.blendFuncSrc];
+      state.blendFuncDst = this.gl[this.blendFuncDst];
       this.gl.blendFunc(this.gl[this.blendFuncSrc], this.gl[this.blendFuncDst]);
     }
     
-    this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.scene);
+    this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.scene, state);
     
     this.updateFps(this.frameTimes, real_dt);
     if (!this.firstFrameDoneTime) this.firstFrameDoneTime = new Date();
@@ -395,6 +399,7 @@ Magi.DefaultMaterial = {
     "precision mediump float;"+
     "uniform vec4 LightDiffuse;"+
     "uniform vec4 LightSpecular;"+
+    "uniform vec4 LightAmbient;"+
     "uniform vec4 MaterialSpecular;"+
     "uniform vec4 MaterialDiffuse;"+
     "uniform vec4 MaterialAmbient;"+
@@ -406,7 +411,7 @@ Magi.DefaultMaterial = {
     "varying float attenuation;"+
     "void main()"+
     "{"+
-    "  vec4 color = GlobalAmbient * MaterialAmbient;"+
+    "  vec4 color = GlobalAmbient * LightAmbient * MaterialAmbient;"+
     "  vec4 matDiff = MaterialDiffuse + texture2D(DiffTex, texCoord0);"+
     "  vec4 matSpec = MaterialSpecular + texture2D(SpecTex, texCoord0);"+
     "  vec4 diffuse = LightDiffuse * matDiff;"+
@@ -419,7 +424,7 @@ Magi.DefaultMaterial = {
     "  color += lcolor * step(0.0, lambertTerm);"+
     "  color += texture2D(EmitTex, texCoord0);" +
     "  color.a = matDiff.a;"+
-    "  gl_FragColor = color;"+
+    "  gl_FragColor = color*color.a;"+
     "}"
   )},
 
@@ -434,16 +439,16 @@ Magi.DefaultMaterial = {
   setupMaterial : function(shader) {
     var m = new Magi.Material(shader);
     m.textures.DiffTex = m.textures.SpecTex = m.textures.EmitTex = null;
-    m.floats.MaterialSpecular = [0.95, 0.9, 0.9, 0];
-    m.floats.MaterialDiffuse = [0.60, 0.6, 0.65, 1];
+    m.floats.MaterialSpecular = [1, 1, 1, 0];
+    m.floats.MaterialDiffuse = [0.5, 0.5, 0.5, 1];
     m.floats.MaterialAmbient = [1, 1, 1, 1];
     m.floats.MaterialShininess = 1.5;
 
     m.floats.LightPos = [7, 7, 7, 1.0];
-    m.floats.GlobalAmbient = [0.1, 0.1, 0.2, 1];
-    m.floats.LightSpecular = [0.9, 1.0, 1.0, 1];
-    m.floats.LightDiffuse = [0.8, 0.9, 0.95, 1];
-    m.floats.LightAmbient = [0.1, 0.1, 0.1, 1];
+    m.floats.GlobalAmbient = [1, 1, 1, 1];
+    m.floats.LightSpecular = [0.8, 0.8, 0.95, 1];
+    m.floats.LightDiffuse = [0.7, 0.6, 0.9, 1];
+    m.floats.LightAmbient = [0.1, 0.10, 0.2, 1];
     m.floats.LightConstantAtt = 0.0;
     m.floats.LightLinearAtt = 0.1;
     m.floats.LightQuadraticAtt = 0.0;
