@@ -1013,29 +1013,35 @@ mat4.scale = function(mat, vec, dest) {
 };
 
 mat4.billboard = function(mat, dest) {
+  var a = mat[0], b = mat[5], c = mat[10];
+  a = a*a; b = b*b; c = c*c;
+  var sc = a > b ? a : b;
+  sc = sc > c ? sc : c;
+  sc = Math.sqrt(sc);
+  // this should really do rotate mat3 = inverse of view matrix rotate mat3
   if (!dest || mat === dest) {
-    mat[0] = 1;
+    mat[0] = sc;
     mat[1] = 0;
     mat[2] = 0;
     mat[4] = 0;
-    mat[5] = 1;
+    mat[5] = sc;
     mat[6] = 0;
     mat[8] = 0;
     mat[9] = 0;
-    mat[10] = 1;
+    mat[10] = sc;
     return mat;
   }
-  dest[0] = 1;
+  dest[0] = sc;
   dest[1] = 0;
   dest[2] = 0;
   dest[3] = mat[3];
   dest[4] = 0;
-  dest[5] = 1;
+  dest[5] = sc;
   dest[6] = 0;
   dest[7] = mat[7];
   dest[8] = 0;
   dest[9] = 0;
-  dest[10] = 1;
+  dest[10] = sc;
   dest[11] = mat[11];
   dest[12] = mat[12];
   dest[13] = mat[13];
