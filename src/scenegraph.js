@@ -7,7 +7,7 @@ Magi.Node = Klass({
   scaleAfterRotate : false,
   depthMask : true,
   display : true,
-  
+
   initialize : function(model) {
     this.model = model;
     this.material = new Magi.Material();

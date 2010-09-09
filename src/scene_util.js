@@ -184,6 +184,16 @@ Magi.Cube = Klass(Magi.Node, {
   }
 });
 
+Magi.FilterQuad = Klass(Magi.Node, {
+  identityTransform : true,
+  depthMask : false,
+
+  initialize : function(frag) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Quad.getCachedVBO());
+    this.material = Magi.FilterQuadMaterial.make(null, frag);
+  }
+});
+
 Magi.Image = Klass(Magi.Node, {
   initialize : function(src) {
     Magi.Node.initialize.call(this);
@@ -240,7 +250,8 @@ Magi.Text = Klass(Magi.Node, {
     var sf = this.fontSize + 'px ' + this.font;
     ctx.font = sf;
     var dims = ctx.measureText(text);
-    this.canvas = E.canvas(dims.width, Math.ceil(this.fontSize*1.2));
+    this.canvas.width = Math.min(2048, dims.width);
+    this.canvas.height = Math.min(2048, Math.ceil(this.fontSize*1.2));
     var ctx = this.canvas.getContext('2d');
     ctx.font = sf;
     ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
@@ -248,6 +259,8 @@ Magi.Text = Klass(Magi.Node, {
     ctx.fillText(this.text, 0, this.fontSize);
     this.textNode.scaling[0] = this.canvas.width / 2;
     this.textNode.scaling[1] = this.canvas.height / 2;
+    this.textNode.position[0] = this.canvas.width/2;
+    this.textNode.position[1] = this.canvas.height/2;
     this.texture.image = this.canvas;
     this.texture.changed = true;
   },
@@ -328,6 +341,23 @@ Magi.FilterMaterial = {
     return m;
   }
 };
+
+Magi.FilterQuadMaterial = Object.clone(Magi.FilterMaterial);
+Magi.FilterQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
+  "precision mediump float;"+
+  "attribute vec3 Vertex;"+
+  "attribute vec2 TexCoord;"+
+  "uniform mat4 PMatrix;"+
+  "uniform mat4 MVMatrix;"+
+  "uniform mat3 NMatrix;"+
+  "varying vec2 texCoord0;"+
+  "void main()"+
+  "{"+
+  "  vec4 v = vec4(Vertex, 1.0);"+
+  "  texCoord0 = vec2(TexCoord.s, TexCoord.t);"+
+  "  gl_Position = v;"+
+  "}"
+)};
 
 Magi.DefaultMaterial = {
   vert : {type: 'VERTEX_SHADER', text: (

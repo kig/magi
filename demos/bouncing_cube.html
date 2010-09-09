@@ -27,6 +27,45 @@
         gl_Position = PMatrix * worldPos;
       }
     </script>
+    <script type="text/x-glsl-vs" id="bend-vert">
+      precision mediump float;
+      attribute vec3 Vertex;
+      attribute vec3 Normal;
+      attribute vec2 TexCoord;
+      uniform mat4 PMatrix;
+      uniform mat4 MVMatrix;
+      uniform mat3 NMatrix;
+      uniform float time;
+      uniform float xScale;
+      uniform float yScale;
+      uniform float magnitude;
+      varying vec2 texCoord0;
+      void main()
+      {
+        vec4 v = vec4(Vertex, 1.0);
+        float dx = xScale*(TexCoord.s-0.5);
+        float dy = yScale*(TexCoord.t-0.5);
+        float d = sqrt(dx*dx + dy*dy);
+        v.z += magnitude * (+pow(1.60, d));
+        texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
+        vec4 worldPos = MVMatrix * v;
+        gl_Position = PMatrix * worldPos;
+      }
+    </script>
+    <script type="text/x-glsl-fs" id="bg-frag">
+      precision mediump float;
+      uniform sampler2D Texture0;
+      uniform float aspect;
+      varying vec2 texCoord0;
+      void main()
+      {
+        float dx = texCoord0.s * aspect;
+        float dy = texCoord0.t * aspect;
+        float d = sqrt(dx*dx + dy*dy);
+        vec4 c = vec4(0.06,0.0,0.08, 0.8-0.8*d);
+        gl_FragColor = c*c.a;
+      }
+    </script>
     <script type="text/javascript" src="../src/matrix.js"></script>
     <script type="text/javascript" src="../src/gl_util.js"></script>
     <script type="text/javascript" src="../src/scenegraph.js"></script>
@@ -42,54 +81,149 @@
         cv.style.position = 'absolute';
         cv.style.left = cv.style.top = '0px';
         window.onresize();
-        
+
+        var input = TEXT("Hello, world!", {
+          style: {
+            position: 'absolute',
+            zIndex: 5,
+            right: '20px',
+            top: '10px',
+            width: '300px',
+            fontSize: '18px',
+            color: 'white',
+            textAlign: 'right',
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            padding: '4px',
+            paddingRight: '8px',
+            border: '0px'
+          }
+        });
+        document.body.appendChild(input);
+
         var s = new Magi.Scene(cv);
         s.fpsCanvas = E.canvas(200,20);
-        s.camera.position[2] = 10;
-        s.bg = [0.3,0.3,0.3,1];
-        var cube = new Magi.Cube();
+        s.camera.position[2] = 7;
+        s.camera.position[0] = -1.5;
+        s.camera.targetFov = 60;
+        s.bg = [0.9,0.3,0.7,1];
+
+        var grad = new Magi.FilterQuad('bg-frag');
+        grad.material.floats.aspect = cv.width / cv.height;
+        s.scene.appendChild(grad);
+
+        var top = new Magi.Node();
         var a = [0,0,0];
         var b = [-4,3,3];
         var c = [4,2, 2];
         var d = [0, -2, -4];
-        cube.addFrameListener(function(t,dt) {
+        top.addFrameListener(function(t,dt) {
           Magi.Curves.cubicPoint(a,b,c,d, 0.5+0.5*Math.cos(t/1600), this.position);
         });
 
-        var txt = new Magi.MeshText("Hello, world!", 72);
+        var cube = new Magi.Node();
+        cube.position[0] = -2.0;
+        cube.position[1] = 0.5;
+        cube.rotation.angle = -0.5;
+        cube.rotation.axis[0] = 0.75;
+        cube.rotation.axis[1] = -0.7;
+        cube.rotation.axis[2] = -0.25;
+        top.appendChild(cube);
+
+        var cb = new Magi.Cube();
+        vec3.set3(0.8, cb.scaling);
+        cube.appendChild(cb);
+        vec3.set([0.4,0.6,-1], cb.rotation.axis);
+        cb.addFrameListener(function(t,dt) {
+          this.rotation.angle = t/400 % (Math.PI*2);
+        });
+
+        var cubes = new Magi.Node();
+        for (var i=0; i<20; i++) {
+          var cb = new Magi.Cube();
+          vec3.set3(0.1, cb.scaling);
+          cb.position[0] = Math.sin(i/20 * Math.PI*2);
+          cb.position[2] = Math.cos(i/20 * Math.PI*2);
+          cb.phase = i/20 * Math.PI*2;
+          vec3.set([1,1,0], cb.rotation.axis);
+          cb.addFrameListener(function(t,dt) {
+            this.position[1] = 0.2*Math.sin(2*this.phase + t / 200);
+            vec3.set3(0.1+0.05*Math.cos(1*this.phase + t / 200), this.scaling);
+            this.rotation.angle = t/600 % (Math.PI*2);
+          });
+          cubes.appendChild(cb);
+        }
+        vec3.set([1,1,1], cubes.rotation.axis);
+        cubes.addFrameListener(function(t,dt) {
+          this.rotation.angle = t/500 % (Math.PI*2);
+        });
+        cube.appendChild(cubes);
+
+        var txt = new Magi.MeshText(input.value, 72);
         txt.setColor('#ffffff');
         txt.textNode.material.shader = new Magi.Shader(null, 'wave-vert', Magi.FilterMaterial.frag);
-        txt.textNode.material.floats.magnitude = 15.0;
+        txt.textNode.material.floats.magnitude = 5.0;
         txt.addFrameListener(function(t,dt) {
+          if (input.value != this.text)
+            this.setText(input.value);
           txt.textNode.material.floats.xScale = 0.03*txt.canvas.width;
           txt.textNode.material.floats.yScale = 0.03*txt.canvas.height;
           txt.textNode.material.floats.time = t / 500;
         });
         vec3.set3(1/144, txt.scaling);
-        txt.position[1] = -1.0;
+        txt.position[0] = 1.35;
+        txt.position[1] = -0.1;
         cube.appendChild(txt);
 
         var img = new Magi.Image(s.fpsCanvas);
         vec3.set3(1/100, img.scaling);
         img.addFrameListener(function(){ this.texture.changed = true; });
-        img.position[1] = 1.0;
+        img.position[0] = 2.7;
+        img.position[1] = -0.2;
         cube.appendChild(img);
-//         img.isBillboard = true;
         
         var fps = new Magi.Text("FPS", 20);
         fps.setColor('#ffffff');
         vec3.set3(100/144, fps.scaling);
-        fps.position[0] = -120;
-        fps.position[1] = -3.5;
+        fps.position[0] = -132;
+        fps.position[1] = -12;
         img.appendChild(fps);
-        
-        
+
+        var date = new Magi.MeshText("", 400);
+        date.setColor('rgba(255,255,255,0.1)');
+        date.setFont("URW Gothic L, Optima, Trebuchet MS");
+        date.rotation.angle = 0.5;
+        date.rotation.axis[0] = -0.5;
+        date.textNode.material.shader = new Magi.Shader(null, 'bend-vert', Magi.FilterMaterial.frag);
+        vec3.set3(1/32, date.scaling);
+        date.position[0] = -6;
+        date.position[1] = -6;
+        date.textNode.material.floats.magnitude = 3.0;
+        date.addFrameListener(function(t,dt) {
+          var sec = parseInt(t / 60000);
+          if (sec != this.lastSec) {
+            this.lastSec = sec;
+            var d = new Date();
+            var pad = function(s) { if (s.length == 1) return '0'+s; return s; };
+            this.setText(
+              pad(d.getHours().toString())+":"+
+              pad(d.getMinutes().toString())
+            );
+            this.w = this.canvas.width;
+            this.h = this.canvas.height;
+          }
+          date.textNode.material.floats.xScale = 0.03*this.w/2;
+          date.textNode.material.floats.yScale = 0.03*this.h/2;
+          date.textNode.material.floats.time = t / 500;
+        });
+
           var xRot = new Magi.Node();
           xRot.rotation.axis = [0, 1, 0];
           var yRot = new Magi.Node();
           yRot.rotation.axis = [1, 0, 0];
+          yRot.rotation.angle = -0.2;
           yRot.appendChild(xRot);
-          xRot.appendChild(cube);
+          xRot.appendChild(top);
+          xRot.appendChild(date);
           var wheelHandler = function(ev) {
             var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.1 : (1 / 1.1);
             if (ev.shiftKey) {
@@ -114,6 +248,7 @@
             this.dragging = true;
             this.sx = ev.clientX;
             this.sy = ev.clientY;
+            cv.focus();
             ev.preventDefault();
           }, false);
           window.addEventListener('mousemove', function(ev) {
@@ -139,12 +274,12 @@
           }, false);
           s.changed = true;
           s.scene.appendChild(yRot);
-        
+          
       }
 		</script>
 	</head>
 	<body>
-    <canvas id="c" width="500" height="400"></canvas>
+    <canvas id="c" width="500" height="400" tabindex="-1"></canvas>
     <pre id="stats" style="font-family:Sans-serif; font-size: small;"></pre>
 	</body>
 
