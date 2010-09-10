@@ -109,6 +109,9 @@ Magi.Scene = Klass({
     this.camera.update(this.time, dt);
     this.scene.update(this.time, dt);
 
+    var t = new Date();
+    this.updateTime = t - newTime;
+
     if (this.drawOnlyWhenChanged && !this.changed) return;
 
     if (this.clear) {
@@ -118,11 +121,19 @@ Magi.Scene = Klass({
     }
 
     this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.scene);
-    
+    this.gl.flush();
+
+    this.drawTime = new Date() - t;
+
     this.updateFps(this.frameTimes, real_dt);
     if (!this.firstFrameDoneTime) this.firstFrameDoneTime = new Date();
     this.changed = false;
     Magi.throwError(this.gl, "Scene draw loop");
+    var stats = $('stats');
+    if (stats) {
+      Magi.Stats.print(stats);
+      Magi.Stats.reset();
+    }
   },
 
   updateFps : function(frames,real_dt) {
@@ -224,7 +235,7 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
     var tex = new Magi.Texture();
     tex.generateMipmaps = false;
     this.alignedNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.alignedNode.material = Magi.FilterMaterial.get();
+    this.alignedNode.material = Magi.FilterMaterial.get().copy();
     this.alignedNode.material.textures.Texture0 = tex;
     this.alignedNode.transparent = true;
     this.texture = tex;
@@ -263,7 +274,7 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
     tex.generateMipmaps = false;
     tex.image = this.canvas;
     this.alignedNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.alignedNode.material = Magi.FilterMaterial.get();
+    this.alignedNode.material = Magi.FilterMaterial.get().copy();
     this.alignedNode.material.textures.Texture0 = tex;
     this.alignedNode.transparent = true;
     this.texture = tex;
@@ -464,16 +475,16 @@ Magi.DefaultMaterial = {
   setupMaterial : function(shader) {
     var m = new Magi.Material(shader);
     m.textures.DiffTex = m.textures.SpecTex = m.textures.EmitTex = null;
-    m.floats.MaterialSpecular = [1, 1, 1, 0];
-    m.floats.MaterialDiffuse = [0.5, 0.5, 0.5, 1];
-    m.floats.MaterialAmbient = [1, 1, 1, 1];
+    m.floats.MaterialSpecular = vec4.create([1, 1, 1, 0]);
+    m.floats.MaterialDiffuse = vec4.create([0.5, 0.5, 0.5, 1]);
+    m.floats.MaterialAmbient = vec4.create([1, 1, 1, 1]);
     m.floats.MaterialShininess = 1.5;
 
-    m.floats.LightPos = [7, 7, 7, 1.0];
-    m.floats.GlobalAmbient = [1, 1, 1, 1];
-    m.floats.LightSpecular = [0.8, 0.8, 0.95, 1];
-    m.floats.LightDiffuse = [0.7, 0.6, 0.9, 1];
-    m.floats.LightAmbient = [0.1, 0.10, 0.2, 1];
+    m.floats.LightPos = vec4.create([7, 7, 7, 1.0]);
+    m.floats.GlobalAmbient = vec4.create([1, 1, 1, 1]);
+    m.floats.LightSpecular = vec4.create([0.8, 0.8, 0.95, 1]);
+    m.floats.LightDiffuse = vec4.create([0.7, 0.6, 0.9, 1]);
+    m.floats.LightAmbient = vec4.create([0.1, 0.10, 0.2, 1]);
     m.floats.LightConstantAtt = 0.0;
     m.floats.LightLinearAtt = 0.1;
     m.floats.LightQuadraticAtt = 0.0;

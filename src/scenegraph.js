@@ -25,8 +25,9 @@ Magi.Node = Klass({
 
   draw : function(gl, state, perspectiveMatrix) {
     if (!this.model || !this.display) return;
-    if (this.material)
+    if (this.material) {
       this.material.apply(gl, state, perspectiveMatrix, this.matrix, this.normalMatrix);
+    }
     if (this.model.gl == null) this.model.gl = gl;
     var psrc = state.blendFuncSrc;
     var pdst = state.blendFuncDst;
@@ -60,13 +61,11 @@ Magi.Node = Klass({
       else gl.disable(gl.BLEND);
     }
 
-
     this.model.draw(
       state.currentShader.attrib('Vertex'),
       state.currentShader.attrib('Normal'),
       state.currentShader.attrib('TexCoord')
     );
-
 
     if (this.blend != null) {
       state.blend = bl;
@@ -212,11 +211,25 @@ Magi.Material = Klass({
       ++texUnit;
     }
   },
+
+  cmp : function(a, b) {
+    var rv = false;
+    if (a && b && a.length && b.length && a.length === b.length) {
+      rv = true;
+      for (var i=0; i<a.length; i++)
+        rv = rv && (a[i] === b[i]);
+    }
+    return rv;
+  },
   
   applyFloats : function() {
     var shader = this.shader;
     for (var name in this.floats) {
       var uf = this.floats[name];
+      var s = shader.uniform(name);
+      if (s.current === uf || this.cmp(s.current,uf))
+        continue;
+      s.current = uf;
       Magi.Stats.uniformSetCount++;
       if (uf.length == null) {
         shader.uniform1f(name, uf);
@@ -248,6 +261,10 @@ Magi.Material = Klass({
     var shader = this.shader;
     for (var name in this.ints) {
       var uf = this.ints[name];
+      var s = shader.uniform(name);
+      if (s.current === uf || this.cmp(s.current,uf))
+        continue;
+      s.current = uf;
       Magi.Stats.uniformSetCount++;
       if (uf.length == null) {
         shader.uniform1i(name, uf);
@@ -343,8 +360,6 @@ Magi.Camera = Klass({
       mat4.perspective(this.fov, width/height, this.zNear, this.zFar, this.perspectiveMatrix);
     }
     scene.updateTransform(this.getLookMatrix());
-    var drawList = scene.collectDrawList();
-    var transparents = [];
     var st = new Magi.GLDrawState();
 
     gl.depthFunc(gl.LESS);
@@ -365,9 +380,13 @@ Magi.Camera = Klass({
       st.blendFuncDst = gl[this.blendFuncDst];
       gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
     }
-    
+
     gl.depthMask(true);
     st.depthMask = true;
+
+    var t = new Date();
+    var drawList = scene.collectDrawList();
+    var transparents = [];
     for (var i=0; i<drawList.length; i++) {
       var d = drawList[i];
       if (!d.renderPasses[this.renderPass])
@@ -378,6 +397,7 @@ Magi.Camera = Klass({
         d.draw(gl, st, this.perspectiveMatrix);
       }
     }
+    this.normalDrawTime = new Date() - t;
     transparents.sort(function(a,b) {
       return a.matrix[14] - b.matrix[14];
     });
@@ -389,7 +409,10 @@ Magi.Camera = Klass({
       d.draw(gl, st, this.perspectiveMatrix);
     }
     gl.depthMask(true);
+    this.transparentDrawTime = new Date() - t - this.normalDrawTime;
     gl.disable(gl.SCISSOR_TEST);
+    this.drawTime = new Date() - t;
+
   },
   
   draw : function(gl, width, height, scene) {
@@ -404,7 +427,7 @@ Magi.Camera = Klass({
       this.drawViewport(gl, 0, 0, width/2, height, scene);
       
       vec3.add(p, sep, this.position);
-      this.drawViewport(gl, width/2, 0, width/2, height, scene, Object.clone(state));
+      this.drawViewport(gl, width/2, 0, width/2, height, scene);
 
       vec3.set(p, this.position);
     } else {

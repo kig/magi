@@ -61,6 +61,52 @@ vec3.create = function(vec) {
   return dest;
 };
 
+vec4 = {};
+vec4.create = function(vec) {
+  var dest = new glMatrixArrayType(4);
+  
+  if(vec) {
+    dest[0] = vec[0];
+    dest[1] = vec[1];
+    dest[2] = vec[2];
+    dest[3] = vec[3];
+  }
+  
+  return dest;
+};
+vec4.set = function(vec, dest) {
+  dest[0] = vec[0];
+  dest[1] = vec[1];
+  dest[2] = vec[2];
+  dest[3] = vec[3];
+};
+vec4.setLeft = function(dest, vec) {
+  dest[0] = vec[0];
+  dest[1] = vec[1];
+  dest[2] = vec[2];
+  dest[3] = vec[3];
+};
+
+vec2 = {};
+vec2.create = function(vec) {
+  var dest = new glMatrixArrayType(2);
+  
+  if(vec) {
+    dest[0] = vec[0];
+    dest[1] = vec[1];
+  }
+  
+  return dest;
+};
+vec2.set = function(vec, dest) {
+  dest[0] = vec[0];
+  dest[1] = vec[1];
+};
+vec2.setLeft = function(dest, vec) {
+  dest[0] = vec[0];
+  dest[1] = vec[1];
+};
+
 /*
  * vec3.set
  * Copies the values of one vec3 to another
@@ -73,6 +119,14 @@ vec3.create = function(vec) {
  * dest
  */
 vec3.set = function(vec, dest) {
+  dest[0] = vec[0];
+  dest[1] = vec[1];
+  dest[2] = vec[2];
+  
+  return dest;
+};
+
+vec3.setLeft = function(dest, vec) {
   dest[0] = vec[0];
   dest[1] = vec[1];
   dest[2] = vec[2];

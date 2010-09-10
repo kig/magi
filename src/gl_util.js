@@ -216,104 +216,104 @@ Magi.Shader = Klass({
   },
 
   uniform1fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform1fv(loc, value);
   },
 
   uniform2fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform2fv(loc, value);
   },
 
   uniform3fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform3fv(loc, value);
   },
 
   uniform4fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform4fv(loc, value);
   },
   
   uniform1f : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform1f(loc, value);
   },
 
   uniform2f : function(name, v1,v2) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform2f(loc, v1,v2);
   },
 
   uniform3f : function(name, v1,v2,v3) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform3f(loc, v1,v2,v3);
   },
 
   uniform4f : function(name, v1,v2,v3,v4) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform4f(loc, v1, v2, v3, v4);
   },
   
   uniform1iv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform1iv(loc, value);
   },
 
   uniform2iv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform2iv(loc, value);
   },
 
   uniform3iv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform3iv(loc, value);
   },
 
   uniform4iv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform4iv(loc, value);
   },
 
   uniform1i : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform1i(loc, value);
   },
 
   uniform2i : function(name, v1,v2) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform2i(loc, v1,v2);
   },
 
   uniform3i : function(name, v1,v2,v3) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform3i(loc, v1,v2,v3);
   },
 
   uniform4i : function(name, v1,v2,v3,v4) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform4i(loc, v1, v2, v3, v4);
   },
 
   uniformMatrix4fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniformMatrix4fv(loc, false, value);
   },
 
   uniformMatrix3fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniformMatrix3fv(loc, false, value);
   },
 
   uniformMatrix2fv : function(name, value) {
-    var loc = this.uniform(name);
+    var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniformMatrix2fv(loc, false, value);
   },
 
   attrib : function(name) {
     if (this.attribLocations[name] == null) {
       var loc = this.gl.getAttribLocation(this.shader.program, name);
-      this.attribLocations[name] = loc;
+      this.attribLocations[name] = {index: loc, current: null};
     }
     return this.attribLocations[name];
   },
@@ -321,7 +321,7 @@ Magi.Shader = Klass({
   uniform : function(name) {
     if (this.uniformLocations[name] == null) {
       var loc = this.gl.getUniformLocation(this.shader.program, name);
-      this.uniformLocations[name] = loc;
+      this.uniformLocations[name] = {index: loc, current: null};
     }
     return this.uniformLocations[name];
   }
@@ -558,6 +558,7 @@ Magi.VBO = Klass({
         if (!d.floatArray)
           d.floatArray = new Float32Array(d.data);
         gl.bindBuffer(gl.ARRAY_BUFFER, vbos[i]);
+        Magi.Stats.bindBufferCount++;
         Magi.throwError(gl, "bindBuffer");
         gl.bufferData(gl.ARRAY_BUFFER, d.floatArray, gl.STATIC_DRAW);
         Magi.throwError(gl, "bufferData");
@@ -567,6 +568,7 @@ Magi.VBO = Klass({
         this.elementsLength = d.data.length;
         this.elementsType = d.type == gl.UNSIGNED_BYTE ? d.type : gl.UNSIGNED_SHORT;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.elementsVBO);
+        Magi.Stats.bindBufferCount++;
         Magi.throwError(gl, "bindBuffer ELEMENT_ARRAY_BUFFER");
         if (this.elementsType == gl.UNSIGNED_SHORT && !d.ushortArray) {
           d.ushortArray = new Uint16Array(d.data);
@@ -585,6 +587,8 @@ Magi.VBO = Klass({
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    Magi.Stats.bindBufferCount++;
+    Magi.Stats.bindBufferCount++;
 
     this.length = length;
     this.vbos = vbos;
@@ -597,17 +601,24 @@ Magi.VBO = Klass({
     var gl = this.gl;
     for (var i=0; i<arguments.length; i++) {
       var arg = arguments[i];
-      if (arg == null || arg == -1) continue;
-      if (!this.vbos[i]) {
-        gl.disableVertexAttribArray(arg);
+      var vbo = this.vbos[i];
+      if (arg == null || arg.index == null || arg.index == -1) continue;
+      if (!vbo) {
+        gl.disableVertexAttribArray(arg.index);
         continue;
       }
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.vbos[i]);
-      gl.vertexAttribPointer(arg, this.data[i].size, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(arg);
+      if (Magi.VBO[arg.index] !== vbo) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.vertexAttribPointer(arg.index, this.data[i].size, gl.FLOAT, false, 0, 0);
+        Magi.Stats.bindBufferCount++;
+        Magi.Stats.vertexAttribPointerCount++;
+      }
+      gl.enableVertexAttribArray(arg.index);
+      Magi.VBO[arg.index] = vbo;
     }
     if (this.elementsVBO != null) {
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.elementsVBO);
+      Magi.Stats.bindBufferCount++;
     }
   },
 
@@ -617,8 +628,10 @@ Magi.VBO = Klass({
     var gl = this.gl;
     if (this.elementsVBO != null) {
       gl.drawElements(gl[this.type], this.elementsLength, this.elementsType, 0);
+      Magi.Stats.drawElementsCount++;
     } else {
       gl.drawArrays(gl[this.type], 0, this.length);
+      Magi.Stats.drawArraysCount++;
     }
   }
 });
@@ -925,7 +938,7 @@ Magi.Geometry.Cube = {
         {size:3, data: this.normals},
         {size:2, data: this.texcoords},
         {elements: true, data: this.indices}
-    )
+    );
   },
   cache : {},
   getCachedVBO : function(gl) {
@@ -1073,20 +1086,33 @@ Magi.Stats = {
   uniformSetCount : 0,
   textureSetCount : 0,
   textureCreationCount : 0,
+  vertexAttribPointerCount : 0,
+  bindBufferCount : 0,
+  drawElementsCount : 0,
+  drawArraysCount : 0,
   reset : function(){
     this.shaderBindCount = 0;
     this.materialUpdateCount = 0;
     this.uniformSetCount = 0;
     this.textureSetCount = 0;
     this.textureCreationCount = 0;
+    this.vertexAttribPointerCount = 0;
+    this.bindBufferCount = 0;
+    this.drawElementsCount = 0;
+    this.drawArraysCount = 0;
   },
   print : function(elem) {
-    elem.textContent = 'Shader bind count: ' + this.shaderBindCount + '\n' +
-                       'Material update count: ' + this.materialUpdateCount + '\n' +
-                       'Uniform set count: ' + this.uniformSetCount + '\n' +
-                       'Texture creation count: ' + this.textureCreationCount + '\n' +
-                       'Texture set count: ' + this.textureSetCount + '\n' +
-                       '';
+    elem.textContent =
+      'Shader bind count: ' + this.shaderBindCount + '\n' +
+      'Material update count: ' + this.materialUpdateCount + '\n' +
+      'Uniform set count: ' + this.uniformSetCount + '\n' +
+      'Texture creation count: ' + this.textureCreationCount + '\n' +
+      'Texture set count: ' + this.textureSetCount + '\n' +
+      'VertexAttribPointer count: ' + this.vertexAttribPointerCount + '\n' +
+      'Bind buffer count: ' + this.bindBufferCount + '\n' +
+      'Draw elements count: ' + this.drawElementsCount + '\n' +
+      'Draw arrays count: ' + this.drawArraysCount + '\n' +
+      '';
   }
 }
 
