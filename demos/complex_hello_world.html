@@ -89,7 +89,7 @@
         float dx = texCoord0.s * aspect;
         float dy = texCoord0.t / aspect;
         float d = sqrt(dx*dx + dy*dy);
-        vec4 c = vec4(0.76,0.2,0.48, 0.5-0.8*d);
+        vec4 c = vec4(0.76,0.72,0.78, 0.5-0.8*d);
         gl_FragColor = c*c.a;
       }
     </script>
@@ -128,12 +128,25 @@
         document.body.appendChild(input);
 
         var s = new Magi.Scene(cv);
+        s.useDefaultCameraControls();
         App = s;
         s.fpsCanvas = E.canvas(200,20);
         s.camera.position[2] = 7;
         s.camera.position[0] = -1.5;
         s.camera.targetFov = 55;
-        s.bg = [0.9,0.3,0.7,1];
+        vec4.setLeft(s.bg, [0.6, 0.6, 0.6, 1]);
+        s.scene.addFrameListener(function(t,dt) {
+          var rgb = Magi.Colors.hsv2rgb((t/100)%360, 0.8, 0.9);
+          vec3.set(rgb, s.bg);
+        });
+        
+//         s.clearBits ^= s.gl.COLOR_BUFFER_BIT;
+//         var a = 0.7;
+//         var bg = new Magi.ColorQuad(0.9*a,0.3*a,0.7*a,a);
+//         bg.identityTransform = true;
+//         bg.depthMask = false;
+//         bg.transparent = false;
+//         s.scene.appendChild(bg);
 
         var grad = new Magi.FilterQuad('bg-frag');
         grad.material.floats.aspect = 4/3;
@@ -175,11 +188,11 @@
         var ncb = new Magi.Cube();
         ncb.transparent = true;
         ncb.material = cb.material.copy();
-        ncb.material.floats.MaterialDiffuse = [1,0.95,0.8,0.7];
+        vec4.setLeft(ncb.material.floats.MaterialDiffuse, [1,0.95,0.8,0.7]);
         var fs = ncb.material.floats;
-        fs.LightDiffuse = [1,1,0.8,1];
-        fs.LightSpecular = [1,0.95,0.8,1];
-        fs.LightAmbient = [0.2,0.1,0.0,1];
+        vec4.setLeft(fs.LightDiffuse, [1,1,0.8,1]);
+        vec4.setLeft(fs.LightSpecular, [1,0.95,0.8,1]);
+        vec4.setLeft(fs.LightAmbient, [0.2,0.1,0.0,1]);
         vec3.set3(0.75, ncb.scaling);
         ncb.addFrameListener(function(t,dt) {
           var p = Math.sin(-0.5+Math.PI*t / 1000);
@@ -192,8 +205,8 @@
         cb.appendChild(ncb);
 
 
-        var mat = cb.material.copy();
-        vec4.set([1,0,1,1], mat.floats.MaterialDiffuse);
+        var mat = ncb.material.copy();
+        vec4.setLeft(mat.floats.MaterialDiffuse, [1,0,1,1]);
         var cubes = new Magi.Node();
         for (var i=0; i<20; i++) {
           var cb = new Magi.Cube();
@@ -236,19 +249,27 @@
 
         var fps = new Magi.Text("FPS", 20);
         fps.setColor('#ffffff');
-        fps.setAlign(fps.leftAlign, fps.bottomAlign);
+        fps.setAlign(fps.rightAlign, fps.bottomAlign);
         vec3.set3(1/144, fps.scaling);
-        fps.position[0] = 1.35;
-        fps.position[1] = -0.25;
+        fps.position[0] = 2.0;
+        fps.position[1] = -0.32;
         cube.appendChild(fps);
 
         s.fpsCanvas.getContext('2d').fillStyle = '#000000';
         var img = new Magi.Image(s.fpsCanvas);
         img.setAlign(img.leftAlign, img.bottomAlign);
         img.addFrameListener(function(){ this.texture.changed = true; });
-        img.position[0] = fps.width + 4;
+        img.position[0] = 4;
         img.position[1] = fps.fontSize*0.2;
         fps.appendChild(img);
+        fps.addFrameListener(function(t,dt) {
+          var sc = parseInt(t/200);
+          if (sc != fps.lastUpdate) {
+            var ft = s.frameTimes[s.frameTimes.length-1];
+            fps.setText(parseInt(ft * 10) / 10 + " FPS");
+            fps.lastUpdate = sc;
+          }
+        });
         
         var date = new Magi.MeshText("", 300);
         date.setAlign(date.leftAlign, date.bottomAlign);
@@ -317,65 +338,10 @@
           rings.childNodes[rings.counter].advance = 10;
         }, false);
         cube.appendChild(rings);
+        
+        s.scene.appendChild(top);
+        s.scene.appendChild(date);
 
-          var xRot = new Magi.Node();
-          vec3.set([0,1,0], xRot.rotation.axis);
-          var yRot = new Magi.Node();
-          vec3.set([1,0,0], yRot.rotation.axis);
-          yRot.rotation.angle = -0.2;
-          yRot.appendChild(xRot);
-          xRot.appendChild(top);
-          xRot.appendChild(date);
-          var wheelHandler = function(ev) {
-            var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.3 : (1 / 1.3);
-            if (ev.shiftKey) {
-              yRot.scaling[0] *= ds;
-              yRot.scaling[1] *= ds;
-              yRot.scaling[2] *= ds;
-            } else {
-              s.camera.targetFov *= ds;
-            }
-            s.changed = true;
-            ev.preventDefault();
-          };
-          s.camera.addFrameListener(function() {
-            if (Math.abs(this.targetFov - this.fov) > 0.01) {
-              s.changed = true;
-            }
-          });
-          cv.addEventListener('DOMMouseScroll', wheelHandler, false);
-          cv.addEventListener('mousewheel', wheelHandler, false);
-
-          cv.addEventListener('mousedown', function(ev){
-            this.dragging = true;
-            this.sx = ev.clientX;
-            this.sy = ev.clientY;
-            ev.preventDefault();
-          }, false);
-          window.addEventListener('mousemove', function(ev) {
-            if (cv.dragging) {
-              var dx = ev.clientX - cv.sx, dy = ev.clientY - cv.sy;
-              cv.sx = ev.clientX, cv.sy = ev.clientY;
-              if (s.mouse.left) {
-                xRot.rotation.angle += dx / 200;
-                yRot.rotation.angle += dy / 200;
-              } else if (s.mouse.middle) {
-                yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
-                yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
-              }
-              ev.preventDefault();
-              s.changed = true;
-            }
-          }, false);
-          window.addEventListener('mouseup', function(ev) {
-            if (cv.dragging) {
-              cv.dragging = false;
-              ev.preventDefault();
-            }
-          }, false);
-          s.changed = true;
-          s.scene.appendChild(yRot);
-          
       }
 		</script>
 	</head>
