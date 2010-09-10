@@ -1,5 +1,5 @@
 Magi.Scene = Klass({
-  frameDuration : 15,
+  frameDuration : 16,
   time : 0,
   timeDir : 1,
   timeSpeed : 1,
@@ -12,6 +12,7 @@ Magi.Scene = Klass({
   clear : true,
 
   paused : false,
+  showStats : false,
   
   initialize : function(canvas, scene, cam, args) {
     if (!scene) scene = new Magi.Node();
@@ -28,6 +29,7 @@ Magi.Scene = Klass({
                      this.gl.DEPTH_BUFFER_BIT |
                      this.gl.STENCIL_BUFFER_BIT;
     this.scene = scene;
+    this.root = scene;
     this.camera = cam;
     this.mouse = {
       x : 0,
@@ -120,7 +122,7 @@ Magi.Scene = Klass({
       this.gl.clear(this.clearBits);
     }
 
-    this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.scene);
+    this.camera.draw(this.gl, this.canvas.width, this.canvas.height, this.root);
     this.gl.flush();
 
     this.drawTime = new Date() - t;
@@ -129,10 +131,12 @@ Magi.Scene = Klass({
     if (!this.firstFrameDoneTime) this.firstFrameDoneTime = new Date();
     this.changed = false;
     Magi.throwError(this.gl, "Scene draw loop");
-    var stats = $('stats');
-    if (stats) {
-      Magi.Stats.print(stats);
-      Magi.Stats.reset();
+    if (this.showStats) {
+      var stats = $('stats');
+      if (stats) {
+        Magi.Stats.print(stats);
+        Magi.Stats.reset();
+      }
     }
   },
 
@@ -149,6 +153,70 @@ Magi.Scene = Klass({
     for (var i=start; i<frames.length; i++) {
       ctx.fillRect(i-start,h,1,-frames[i]/3);
     }
+  },
+
+  useDefaultCameraControls : function() {
+    var s = this;
+    var cv = this.canvas;
+
+    var yRot = new Magi.Node();
+    vec3.set([1,0,0], yRot.rotation.axis);
+
+    var xRot = new Magi.Node();
+    vec3.set([0,1,0], xRot.rotation.axis);
+
+    yRot.appendChild(xRot);
+    xRot.appendChild(this.scene);
+    this.root = yRot;
+
+    var wheelHandler = function(ev) {
+      var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.2 : (1 / 1.2);
+      if (ev.shiftKey) {
+        yRot.scaling[0] *= ds;
+        yRot.scaling[1] *= ds;
+        yRot.scaling[2] *= ds;
+      } else {
+        s.camera.targetFov *= ds;
+      }
+      s.changed = true;
+      ev.preventDefault();
+    };
+    s.camera.addFrameListener(function() {
+      if (Math.abs(this.targetFov - this.fov) > 0.01) {
+        s.changed = true;
+      }
+    });
+    cv.addEventListener('DOMMouseScroll', wheelHandler, false);
+    cv.addEventListener('mousewheel', wheelHandler, false);
+
+    cv.addEventListener('mousedown', function(ev){
+      s.dragging = true;
+      s.sx = ev.clientX;
+      s.sy = ev.clientY;
+      ev.preventDefault();
+    }, false);
+    window.addEventListener('mousemove', function(ev) {
+      if (s.dragging) {
+        var dx = ev.clientX - s.sx, dy = ev.clientY - s.sy;
+        s.sx = ev.clientX, s.sy = ev.clientY;
+        if (s.mouse.left) {
+          xRot.rotation.angle += dx / 200;
+          yRot.rotation.angle += dy / 200;
+        } else if (s.mouse.middle) {
+          yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
+          yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
+        }
+        ev.preventDefault();
+        s.changed = true;
+      }
+    }, false);
+    window.addEventListener('mouseup', function(ev) {
+      if (s.dragging) {
+        s.dragging = false;
+        ev.preventDefault();
+      }
+    }, false);
+    s.changed = true;
   }
 });
 
@@ -193,6 +261,15 @@ Magi.FilterQuad = Klass(Magi.Node, {
   initialize : function(frag) {
     Magi.Node.initialize.call(this, Magi.Geometry.Quad.getCachedVBO());
     this.material = Magi.FilterQuadMaterial.make(null, frag);
+  }
+});
+
+Magi.ColorQuad = Klass(Magi.Node, {
+  initialize : function(r,g,b,a) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Quad.getCachedVBO());
+    this.material = Magi.ColorQuadMaterial.get(null);
+    this.transparent = this.a < 1;
+    this.material.floats.Color = vec4.create([r,g,b,a]);
   }
 });
 
@@ -265,11 +342,12 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
   font : 'Arial',
   color : 'black',
 
-  initialize : function(content, fontSize, font) {
+  initialize : function(content, fontSize, color, font) {
     Magi.Node.initialize.call(this);
     this.canvas = E.canvas(1, 1);
     if (fontSize) this.fontSize = fontSize;
     if (font) this.font = font;
+    if (color) this.color = color;
     var tex = new Magi.Texture();
     tex.generateMipmaps = false;
     tex.image = this.canvas;
@@ -395,6 +473,29 @@ Magi.FilterQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
   "  vec4 v = vec4(Vertex, 1.0);"+
   "  texCoord0 = vec2(TexCoord.s, TexCoord.t);"+
   "  gl_Position = v;"+
+  "}"
+)};
+
+Magi.ColorQuadMaterial = Object.clone(Magi.FilterMaterial);
+Magi.ColorQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
+  "precision mediump float;"+
+  "attribute vec3 Vertex;"+
+  "attribute vec2 TexCoord;"+
+  "uniform mat4 PMatrix;"+
+  "uniform mat4 MVMatrix;"+
+  "uniform mat3 NMatrix;"+
+  "void main()"+
+  "{"+
+  "  vec4 v = vec4(Vertex, 1.0);"+
+  "  gl_Position = v;"+
+  "}"
+)};
+Magi.ColorQuadMaterial.frag = {type: 'FRAGMENT_SHADER', text: (
+  "precision mediump float;"+
+  "uniform vec4 Color;"+
+  "void main()"+
+  "{"+
+  "  gl_FragColor = Color;"+
   "}"
 )};
 
