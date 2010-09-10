@@ -40,16 +40,43 @@
       uniform float yScale;
       uniform float magnitude;
       varying vec2 texCoord0;
+      varying float z;
       void main()
       {
         vec4 v = vec4(Vertex, 1.0);
-        float dx = xScale*(TexCoord.s-0.5);
-        float dy = yScale*(TexCoord.t-0.5);
+        float dx = xScale*0.02*(TexCoord.s-0.5);
+        float dy = yScale*0.02*(TexCoord.t-0.5);
         float d = sqrt(dx*dx + dy*dy);
         v.z += magnitude * (+pow(1.60, d));
         texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
         vec4 worldPos = MVMatrix * v;
         gl_Position = PMatrix * worldPos;
+        z = gl_Position.z;
+      }
+    </script>
+    <script type="text/x-glsl-fs" id="dot-frag">
+      precision mediump float;
+      uniform float xScale;
+      uniform float yScale;
+      uniform float opacity;
+      varying vec2 texCoord0;
+      varying float z;
+      uniform sampler2D Texture0;
+      void main()
+      {
+        vec2 scale = vec2(xScale/6.0, yScale/6.0);
+        vec2 gridVec = texCoord0 * scale;
+        float gridX = floor(gridVec.s);
+        float gridY = floor(gridVec.t);
+        vec2 gridCenter = vec2((gridX + 0.5), (gridY + 0.5));
+        float d = length(gridVec - gridCenter);
+        vec4 sample = texture2D(Texture0, gridCenter / scale);
+        float a = sample.a;
+        float f = smoothstep(0.01*z+0.3*a, 0.3*a, d);
+        a *= opacity;
+        sample *= f;
+        sample.a = a;
+        gl_FragColor = sample * sample.a;
       }
     </script>
     <script type="text/x-glsl-fs" id="bg-frag">
@@ -224,15 +251,16 @@
         
         var date = new Magi.MeshText("", 300);
         date.setAlign(date.leftAlign, date.bottomAlign);
-        date.setColor('rgba(255,255,255,0.1)');
+        date.setColor('#ffffff');
         date.setFont("Avant Garde, Century Gothic, URW Gothic L, Tahoma");
         date.rotation.angle = 0.5;
         date.rotation.axis[0] = -0.5;
-        date.alignedNode.material.shader = new Magi.Shader(null, 'bend-vert', Magi.FilterMaterial.frag);
+        date.alignedNode.material.shader = new Magi.Shader(null, 'bend-vert', 'dot-frag');
         vec3.set3(1/32, date.scaling);
         date.position[0] = -6;
         date.position[1] = -5;
         date.alignedNode.material.floats.magnitude = 3.0;
+        date.alignedNode.material.floats.opacity = 0.1;
         date.addFrameListener(function(t,dt) {
           var sec = parseInt(t / 60000);
           if (sec != this.lastSec) {
@@ -246,8 +274,8 @@
             this.w = this.canvas.width;
             this.h = this.canvas.height;
           }
-          date.alignedNode.material.floats.xScale = 0.04*this.w/2;
-          date.alignedNode.material.floats.yScale = 0.04*this.h/2;
+          date.alignedNode.material.floats.xScale = this.w;
+          date.alignedNode.material.floats.yScale = this.h;
           date.alignedNode.material.floats.time = t / 500;
         });
 
