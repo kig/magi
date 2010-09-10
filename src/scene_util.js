@@ -188,8 +188,8 @@ Magi.FilterQuad = Klass(Magi.Node, {
 Magi.Alignable = {
   leftAlign : 1,
   rightAlign : -1,
-  topAlign : 1,
-  bottomAlign : -1,
+  topAlign : -1,
+  bottomAlign : 1,
   centerAlign : 0,
 
   align: 0,
@@ -198,7 +198,24 @@ Magi.Alignable = {
   alignQuad : function(node, w, h) {
     node.position[0] = this.align * w/2;
     node.position[1] = this.valign * h/2;
+  },
+
+  updateAlign : function() {
+    this.alignQuad(this.alignedNode, this.width, this.height);
+  },
+
+  setAlign : function(h, v) {
+    this.align = h;
+    if (v != null)
+      this.valign = v;
+    this.updateAlign();
+  },
+
+  setVAlign : function(v) {
+    this.valign = v;
+    this.updateAlign();
   }
+
 };
 
 Magi.Image = Klass(Magi.Node, Magi.Alignable, {
@@ -206,12 +223,12 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
     Magi.Node.initialize.call(this);
     var tex = new Magi.Texture();
     tex.generateMipmaps = false;
-    this.imageNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.imageNode.material = Magi.FilterMaterial.get();
-    this.imageNode.material.textures.Texture0 = tex;
-    this.imageNode.transparent = true;
+    this.alignedNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
+    this.alignedNode.material = Magi.FilterMaterial.get();
+    this.alignedNode.material.textures.Texture0 = tex;
+    this.alignedNode.transparent = true;
     this.texture = tex;
-    this.appendChild(this.imageNode);
+    this.appendChild(this.alignedNode);
     this.setImage(src);
   },
 
@@ -222,9 +239,11 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       image.src = src;
     }
     this.image = image;
-    this.imageNode.scaling[0] = this.image.width / 2;
-    this.imageNode.scaling[1] = this.image.height / 2;
-    this.alignQuad(this.imageNode, this.image.width, this.image.height);
+    this.width = this.image.width;
+    this.height = this.image.height;
+    this.alignedNode.scaling[0] = this.image.width / 2;
+    this.alignedNode.scaling[1] = this.image.height / 2;
+    this.updateAlign();
     this.texture.image = this.image;
     this.texture.changed = true;
   }
@@ -243,12 +262,12 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
     var tex = new Magi.Texture();
     tex.generateMipmaps = false;
     tex.image = this.canvas;
-    this.textNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.textNode.material = Magi.FilterMaterial.get();
-    this.textNode.material.textures.Texture0 = tex;
-    this.textNode.transparent = true;
+    this.alignedNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
+    this.alignedNode.material = Magi.FilterMaterial.get();
+    this.alignedNode.material.textures.Texture0 = tex;
+    this.alignedNode.transparent = true;
     this.texture = tex;
-    this.appendChild(this.textNode);
+    this.appendChild(this.alignedNode);
     this.setText(content);
   },
 
@@ -265,23 +284,13 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
     ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
     ctx.fillStyle = this.color;
     ctx.fillText(this.text, 0, this.fontSize);
-    this.textNode.scaling[0] = this.canvas.width / 2;
-    this.textNode.scaling[1] = this.canvas.height / 2;
-    this.alignQuad(this.textNode, this.canvas.width, this.canvas.height);
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
+    this.alignedNode.scaling[0] = this.canvas.width / 2;
+    this.alignedNode.scaling[1] = this.canvas.height / 2;
+    this.updateAlign();
     this.texture.image = this.canvas;
     this.texture.changed = true;
-  },
-
-  setAlign : function(h, v) {
-    this.align = h;
-    if (v != null)
-      this.valign = v;
-    this.alignQuad(this.textNode, this.canvas.width, this.canvas.height);
-  },
-
-  setVAlign : function(v) {
-    this.valign = v;
-    this.alignQuad(this.textNode, this.canvas.width, this.canvas.height);
   },
 
   setFontSize : function(fontSize) {
@@ -303,14 +312,14 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
 Magi.MeshText = Klass(Magi.Text, {
   initialize : function(content, fontSize, font) {
     Magi.Text.initialize.apply(this, arguments);
-    this.textNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
+    this.alignedNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
   }
 });
 
 Magi.MeshImage = Klass(Magi.Image, {
   initialize : function(image) {
     Magi.Image.initialize.apply(this, arguments);
-    this.imageNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
+    this.alignedNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
   }
 });
 

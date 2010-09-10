@@ -191,46 +191,48 @@
 
         var txt = new Magi.MeshText(input.value, 72);
         txt.setColor('#ffffff');
-        txt.textNode.material.shader = new Magi.Shader(null, 'wave-vert', Magi.FilterMaterial.frag);
-        txt.textNode.material.floats.magnitude = 5.0;
+        txt.setAlign(txt.leftAlign, txt.bottomAlign);
+        txt.alignedNode.material.shader = new Magi.Shader(null, 'wave-vert', Magi.FilterMaterial.frag);
+        txt.alignedNode.material.floats.magnitude = 5.0;
         txt.addFrameListener(function(t,dt) {
           if (input.value != this.text)
             this.setText(input.value);
-          txt.textNode.material.floats.xScale = 0.03*txt.canvas.width;
-          txt.textNode.material.floats.yScale = 0.03*txt.canvas.height;
-          txt.textNode.material.floats.time = t / 500;
+          txt.alignedNode.material.floats.xScale = 0.03*txt.canvas.width;
+          txt.alignedNode.material.floats.yScale = 0.03*txt.canvas.height;
+          txt.alignedNode.material.floats.time = t / 500;
         });
         vec3.set3(1/144, txt.scaling);
         txt.position[0] = 1.35;
         txt.position[1] = -0.1;
         cube.appendChild(txt);
 
-        s.fpsCanvas.getContext('2d').fillStyle = '#000000';
-        var img = new Magi.Image(s.fpsCanvas);
-        vec3.set3(1/100, img.scaling);
-        img.addFrameListener(function(){ this.texture.changed = true; });
-        img.position[0] = 2.7;
-        img.position[1] = -0.2;
-        cube.appendChild(img);
-        
         var fps = new Magi.Text("FPS", 20);
         fps.setColor('#ffffff');
-        vec3.set3(100/144, fps.scaling);
-        fps.position[0] = -132;
-        fps.position[1] = -12;
-        img.appendChild(fps);
+        fps.setAlign(fps.leftAlign, fps.bottomAlign);
+        vec3.set3(1/144, fps.scaling);
+        fps.position[0] = 1.35;
+        fps.position[1] = -0.25;
+        cube.appendChild(fps);
 
+        s.fpsCanvas.getContext('2d').fillStyle = '#000000';
+        var img = new Magi.Image(s.fpsCanvas);
+        img.setAlign(img.leftAlign, img.bottomAlign);
+        img.addFrameListener(function(){ this.texture.changed = true; });
+        img.position[0] = fps.width + 4;
+        img.position[1] = fps.fontSize*0.2;
+        fps.appendChild(img);
+        
         var date = new Magi.MeshText("", 300);
-        DT = date
+        date.setAlign(date.leftAlign, date.bottomAlign);
         date.setColor('rgba(255,255,255,0.1)');
         date.setFont("Avant Garde, Century Gothic, URW Gothic L, Tahoma");
         date.rotation.angle = 0.5;
         date.rotation.axis[0] = -0.5;
-        date.textNode.material.shader = new Magi.Shader(null, 'bend-vert', Magi.FilterMaterial.frag);
+        date.alignedNode.material.shader = new Magi.Shader(null, 'bend-vert', Magi.FilterMaterial.frag);
         vec3.set3(1/32, date.scaling);
         date.position[0] = -6;
         date.position[1] = -5;
-        date.textNode.material.floats.magnitude = 3.0;
+        date.alignedNode.material.floats.magnitude = 3.0;
         date.addFrameListener(function(t,dt) {
           var sec = parseInt(t / 60000);
           if (sec != this.lastSec) {
@@ -244,9 +246,9 @@
             this.w = this.canvas.width;
             this.h = this.canvas.height;
           }
-          date.textNode.material.floats.xScale = 0.04*this.w/2;
-          date.textNode.material.floats.yScale = 0.04*this.h/2;
-          date.textNode.material.floats.time = t / 500;
+          date.alignedNode.material.floats.xScale = 0.04*this.w/2;
+          date.alignedNode.material.floats.yScale = 0.04*this.h/2;
+          date.alignedNode.material.floats.time = t / 500;
         });
 
         var rings = new Magi.Node();
