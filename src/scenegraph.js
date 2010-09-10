@@ -23,6 +23,47 @@ Magi.Node = Klass({
     this.childNodes = [];
   },
 
+  setX : function(x) {
+    this.position[0] = x;
+    return this;
+  },
+
+  setY : function(x) {
+    this.position[1] = x;
+    return this;
+  },
+  
+  setZ : function(x) {
+    this.position[2] = x;
+    return this;
+  },
+
+  setScale : function(x,y,z) {
+    if (x.length != null) {
+      vec3.set(x, this.scaling);
+    } else {
+      if (y == null) {
+        vec3.set3(x, this.scaling)
+      } else {
+        this.scaling[0] = x;
+        this.scaling[1] = y;
+        if (z != null)
+          this.scaling[2] = z;
+      }
+    }
+    return this;
+  },
+
+  setAngle : function(a) {
+    this.rotation.angle = a;
+    return this;
+  },
+
+  setAxis : function(a) {
+    vec3.set(a, this.rotation.axis);
+    return this;
+  },
+
   draw : function(gl, state, perspectiveMatrix) {
     if (!this.model || !this.display) return;
     if (this.material) {
