@@ -36,15 +36,12 @@ Magi.Node = Klass({
     var poly = state.polygonOffset;
     var bl = state.blend;
     if (this.polygonOffset) {
-      state.polygonOffset = this.polygonOffset;
       gl.polygonOffset(this.polygonOffset.factor, this.polygonOffset.units);
     }
-    if (this.depthMask != null) {
-      state.depthMask = this.depthMask;
+    if (this.depthMask != null && this.depthMask != state.depthMask) {
       gl.depthMask(this.depthMask);
     }
-    if (this.depthTest != null) {
-      state.depthTest = this.depthTest;
+    if (this.depthTest != null && this.depthTest != state.depthTest) {
       if (this.depthTest)
         gl.enable(gl.DEPTH_TEST);
       else
@@ -52,11 +49,8 @@ Magi.Node = Klass({
     }
     if (this.blendFuncSrc && this.blendFuncDst) {
       gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
-      state.blendFuncSrc = this.blendFuncSrc;
-      state.blendFuncDst = this.blendFuncDst;
     }
-    if (this.blend != null) {
-      state.blend = this.blend;
+    if (this.blend != null && this.blend != state.blend) {
       if (this.blend) gl.enable(gl.BLEND);
       else gl.disable(gl.BLEND);
     }
@@ -67,29 +61,23 @@ Magi.Node = Klass({
       state.currentShader.attrib('TexCoord')
     );
 
-    if (this.blend != null) {
-      state.blend = bl;
+    if (this.blend != null && this.blend != state.blend) {
       if (bl) gl.enable(gl.BLEND);
       else gl.disable(gl.BLEND);
     }
     if (this.blendFuncSrc && this.blendFuncDst) {
       gl.blendFunc(gl[psrc], gl[pdst]);
-      state.blendFuncSrc = psrc;
-      state.blendFuncDst = pdst;
     }
-    if (this.depthTest != null) {
-      state.depthTest = dt;
+    if (this.depthTest != null && this.depthTest != state.depthTest) {
       if (dt)
         gl.enable(gl.DEPTH_TEST);
       else
         gl.disable(gl.DEPTH_TEST);
     }
-    if (this.depthMask != null) {
-      state.depthMask = dm;
+    if (this.depthMask != null && this.depthMask != state.depthMask) {
       gl.depthMask(dm);
     }
     if (this.polygonOffset) {
-      state.polygonOffset = poly;
       gl.polygonOffset(poly.factor, poly.units);
     }
   },
@@ -139,9 +127,11 @@ Magi.Node = Klass({
   
   collectDrawList : function(arr) {
     if (!arr) arr = [];
-    arr.push(this);
-    for (var i=0; i<this.childNodes.length; i++)
-      this.childNodes[i].collectDrawList(arr);
+    if (this.display) {
+      arr.push(this);
+      for (var i=0; i<this.childNodes.length; i++)
+        this.childNodes[i].collectDrawList(arr);
+    }
     return arr;
   }
 });
@@ -292,7 +282,7 @@ Magi.GLDrawState = Klass({
   textures : null,
   currentMaterial : null,
   currentShader : null,
-  polygonOffset : {factor: 0, units: 0},
+  polygonOffset : null,
   blendFuncSrc : 'ONE',
   blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
   depthMask : true,
@@ -300,6 +290,7 @@ Magi.GLDrawState = Klass({
   blend : true,
   
   initialize: function(){
+    this.polygonOffset = {factor: 0, units: 0},
     this.textures = [];
   }
 });
@@ -361,28 +352,7 @@ Magi.Camera = Klass({
     }
     scene.updateTransform(this.getLookMatrix());
     var st = new Magi.GLDrawState();
-
-    gl.depthFunc(gl.LESS);
-    gl.disable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
-    gl.frontFace(gl.CCW);
-    gl.enable(gl.DEPTH_TEST);
-
-    if (this.blend) {
-      gl.enable(gl.BLEND);
-    } else {
-      gl.disable(gl.BLEND);
-    }
-    st.blend = true;
-
-    if (this.blendFuncSrc && this.blendFuncDst) {
-      st.blendFuncSrc = gl[this.blendFuncSrc];
-      st.blendFuncDst = gl[this.blendFuncDst];
-      gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
-    }
-
-    gl.depthMask(true);
-    st.depthMask = true;
+    this.resetState(gl, st);
 
     var t = new Date();
     var drawList = scene.collectDrawList();
@@ -397,13 +367,18 @@ Magi.Camera = Klass({
         d.draw(gl, st, this.perspectiveMatrix);
       }
     }
+    
     this.normalDrawTime = new Date() - t;
     transparents.sort(function(a,b) {
       return a.matrix[14] - b.matrix[14];
     });
+
     var st = new Magi.GLDrawState();
+    this.resetState(gl, st);
+
     gl.depthMask(false);
     st.depthMask = false;
+    
     for (var i=0; i<transparents.length; i++) {
       var d = transparents[i];
       d.draw(gl, st, this.perspectiveMatrix);
@@ -413,6 +388,28 @@ Magi.Camera = Klass({
     gl.disable(gl.SCISSOR_TEST);
     this.drawTime = new Date() - t;
 
+  },
+
+  resetState : function(gl, st) {
+    gl.depthFunc(gl.LESS);
+    gl.disable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.frontFace(gl.CCW);
+    gl.enable(gl.DEPTH_TEST);
+    st.depthTest = true;
+    if (this.blendFuncSrc && this.blendFuncDst) {
+      st.blendFuncSrc = this.blendFuncSrc;
+      st.blendFuncDst = this.blendFuncDst;
+      gl.blendFunc(gl[this.blendFuncSrc], gl[this.blendFuncDst]);
+    }
+    if (this.blend) {
+      gl.enable(gl.BLEND);
+    } else {
+      gl.disable(gl.BLEND);
+    }
+    st.blend = this.blend;
+    gl.depthMask(true);
+    st.depthMask = true;
   },
   
   draw : function(gl, width, height, scene) {
