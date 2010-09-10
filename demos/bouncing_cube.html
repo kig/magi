@@ -215,15 +215,16 @@
         fps.position[1] = -12;
         img.appendChild(fps);
 
-        var date = new Magi.MeshText("", 400);
+        var date = new Magi.MeshText("", 300);
+        DT = date
         date.setColor('rgba(255,255,255,0.1)');
-        date.setFont("Avant Garde, Century Gothic, URW Gothic L");
+        date.setFont("Avant Garde, Century Gothic, URW Gothic L, Tahoma");
         date.rotation.angle = 0.5;
         date.rotation.axis[0] = -0.5;
         date.textNode.material.shader = new Magi.Shader(null, 'bend-vert', Magi.FilterMaterial.frag);
         vec3.set3(1/32, date.scaling);
         date.position[0] = -6;
-        date.position[1] = -5.7;
+        date.position[1] = -5;
         date.textNode.material.floats.magnitude = 3.0;
         date.addFrameListener(function(t,dt) {
           var sec = parseInt(t / 60000);
@@ -238,8 +239,8 @@
             this.w = this.canvas.width;
             this.h = this.canvas.height;
           }
-          date.textNode.material.floats.xScale = 0.03*this.w/2;
-          date.textNode.material.floats.yScale = 0.03*this.h/2;
+          date.textNode.material.floats.xScale = 0.04*this.w/2;
+          date.textNode.material.floats.yScale = 0.04*this.h/2;
           date.textNode.material.floats.time = t / 500;
         });
 
