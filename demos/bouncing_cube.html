@@ -16,9 +16,9 @@
       window.onload = function() {
         var s = new Magi.Scene($('c'), new Magi.Cube().makeBounce().makeRotate());
         var txt = new Magi.Text("CUBE");
-        txt.setVAlign = txt.bottomAlign;
-        txt.position[1] = 0.75;
-        vec3.set3(1/80, txt.scaling);
+        txt.setAlign(txt.centerAlign, txt.bottomAlign)
+           .setY(0.5)
+           .setScale(1/80);
         s.scene.appendChild(txt);
       }
 		</script>
