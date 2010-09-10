@@ -1,0 +1,293 @@
+<html>
+
+  <head>
+    <title>Demo</title>
+    <script type="text/x-glsl-vs" id="wave-vert">
+      precision mediump float;
+      attribute vec3 Vertex;
+      attribute vec3 Normal;
+      attribute vec2 TexCoord;
+      uniform mat4 PMatrix;
+      uniform mat4 MVMatrix;
+      uniform mat3 NMatrix;
+      uniform float time;
+      uniform float xScale;
+      uniform float yScale;
+      uniform float magnitude;
+      varying vec2 texCoord0;
+      void main()
+      {
+        vec4 v = vec4(Vertex, 1.0);
+        float dx = xScale*(TexCoord.s);
+        float dy = yScale*(TexCoord.t-0.5);
+        float d = sqrt(dx*dx + dy*dy);
+        v.z += magnitude * (2.0*cos(time+3.14*0.1*TexCoord.s*xScale))*yScale;
+        texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
+        vec4 worldPos = MVMatrix * v;
+        gl_Position = PMatrix * worldPos;
+      }
+    </script>
+    <script type="text/x-glsl-vs" id="bend-vert">
+      precision mediump float;
+      attribute vec3 Vertex;
+      attribute vec3 Normal;
+      attribute vec2 TexCoord;
+      uniform mat4 PMatrix;
+      uniform mat4 MVMatrix;
+      uniform mat3 NMatrix;
+      uniform float time;
+      uniform float xScale;
+      uniform float yScale;
+      uniform float magnitude;
+      varying vec2 texCoord0;
+      varying float z;
+      void main()
+      {
+        vec4 v = vec4(Vertex, 1.0);
+        float dx = xScale*0.02*(TexCoord.s-0.5);
+        float dy = yScale*0.02*(TexCoord.t-0.5);
+        float d = sqrt(dx*dx + dy*dy);
+        v.z += magnitude * (+pow(1.60, d));
+        texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
+        vec4 worldPos = MVMatrix * v;
+        gl_Position = PMatrix * worldPos;
+        z = gl_Position.z;
+      }
+    </script>
+    <script type="text/x-glsl-fs" id="dot-frag">
+      precision mediump float;
+      uniform float xScale;
+      uniform float yScale;
+      uniform float opacity;
+      varying vec2 texCoord0;
+      varying float z;
+      uniform sampler2D Texture0;
+      void main()
+      {
+        vec2 scale = vec2(xScale/6.0, yScale/6.0);
+        vec2 gridVec = texCoord0 * scale;
+        float gridX = floor(gridVec.s);
+        float gridY = floor(gridVec.t);
+        vec2 gridCenter = vec2((gridX + 0.5), (gridY + 0.5));
+        float d = length(gridVec - gridCenter);
+        vec4 sample = texture2D(Texture0, gridCenter / scale);
+        float a = sample.a;
+        float f = smoothstep(0.01*z+0.3*a, 0.3*a, d);
+        a *= opacity;
+        sample *= f;
+        sample.a = a;
+        gl_FragColor = sample * sample.a;
+      }
+    </script>
+    <script type="text/x-glsl-fs" id="bg-frag">
+      precision mediump float;
+      uniform sampler2D Texture0;
+      uniform float aspect;
+      varying vec2 texCoord0;
+      void main()
+      {
+        float dx = texCoord0.s * aspect;
+        float dy = texCoord0.t / aspect;
+        float d = sqrt(dx*dx + dy*dy);
+        vec4 c = vec4(0.76,0.2,0.48, 0.5-0.8*d);
+        gl_FragColor = c*c.a;
+      }
+    </script>
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript">
+      Slides = Klass(Magi.Node, {
+        h1FontSize : 80,
+        h2FontSize : 60,
+        listFontSize : 48,
+
+        h1Color : 'white',
+        h2Color : 'white',
+        listColor : 'white',
+      
+        initialize : function(elem) {
+          Magi.Node.initialize.call(this);
+          this.slides = this.parseSlides(elem);
+          this.setSlide(0);
+          this.appendChild(this.slides);
+        },
+
+        setSlide : function(index) {
+          var cc = this.slides.childNodes;
+          var slideCount = cc.length;
+          if (index < 0) index = slideCount+index;
+          this.currentSlide = index % slideCount;
+          for (var i=0; i<slideCount; i++) {
+            if (i == this.currentSlide) {
+              cc[i].display = true;
+            } else {
+              cc[i].display = false;
+            }
+          }
+        },
+
+        nextSlide : function() {
+          this.setSlide(this.currentSlide+1);
+        },
+
+        previousSlide : function() {
+          this.setSlide(this.currentSlide-1);
+        },
+
+        parseSlides : function(elem) {
+          var cn = $A(elem.childNodes);
+          var top = new Magi.Node();
+          var self = this;
+          cn.forEach(function(s) {
+            if (s.tagName) {
+              var slide = self.parseSlide(s);
+              slide.position[1] = slide.height / 2;
+              top.appendChild(slide);
+            }
+          });
+          return top;
+        },
+
+        parseSlide : function(elem, acc) {
+          var cn = $A(elem.childNodes);
+          acc = acc || {top: new Magi.Node(), left: 0, xOffset: 0, offset: 0, counter: 0};
+          var self = this;
+          var origOffset = acc.offset;
+          cn.forEach(function(e) {
+            var node;
+            var xOffset = acc.xOffset;
+            var yOffset = acc.offset;
+            var left = acc.left;
+            switch (e.tagName) {
+              case "H1":
+                sz = self.h1FontSize;
+                node = new Magi.Text(e.textContent, sz, self.h1Color);
+                node.setVAlign(node.topAlign);
+                acc.offset += sz*1.25;
+                break;
+              case "H2":
+                sz = self.h2FontSize;
+                node = new Magi.Text(e.textContent, sz, self.h2Color);
+                node.setVAlign(node.topAlign);
+                acc.offset += sz*1.25;
+                break;
+              case "UL":
+              case "OL":
+                var lt = acc.listType;
+                acc.listType = e.tagName;
+                acc.counter = 1;
+                acc.xOffset += 32;
+                var l = acc.left;
+                acc.left = -300;
+                self.parseSlide(e, acc);
+                acc.left = l;
+                acc.xOffset -= 32;
+                acc.listType = lt;
+                break;
+              case "LI":
+                var prefix = acc.listType == "OL" ? (acc.counter++)+"." : "\u2605";
+                node = new Magi.Text(prefix + " " + e.textContent, self.listFontSize, self.listColor);
+                node.setAlign(node.leftAlign, node.topAlign);
+                acc.offset += self.listFontSize*1.25;
+                break;
+              case "IMG":
+              case "CANVAS":
+                node = new Magi.Image(e);
+                node.setVAlign(node.topAlign);
+                acc.offset += node.height + 8;
+                break;
+            }
+            if (node) {
+              node.position[0] = left + xOffset;
+              node.position[1] = -yOffset;
+              acc.top.appendChild(node);
+            }
+          });
+          acc.top.height = acc.offset - origOffset;
+          return acc.top;
+        }
+      });
+      
+      window.onresize = function() {
+        var cv = $('c');
+        cv.width = window.innerWidth;
+        cv.height = window.innerHeight;
+        if (cv.scene)
+          cv.scene.changed = true;
+      }
+      window.onload = function() {
+        var cv = $('c');
+        cv.style.position = 'absolute';
+        cv.style.left = cv.style.top = '0px';
+        window.onresize();
+
+        var s = new Magi.Scene(cv);
+        s.drawOnlyWhenChanged = true;
+        s.useDefaultCameraControls();
+        vec3.set([0,0,8], s.camera.position);
+        vec3.set([0,0,0], s.camera.lookAt);
+        s.bg = [0, 0, 0, 1];
+        cv.scene = s;
+ 
+        App = new Slides($('slides'));
+        vec3.set3(1/200, App.scaling);
+        s.scene.appendChild(App);
+        $('slides').style.display = 'none';
+
+        var downX=0, downY=0, cancelled=false;
+        cv.onmousedown = function(ev) {
+          downX = ev.clientX;
+          downY = ev.clientY;
+          cancelled = false;
+        };
+        cv.onmousemove = function(ev) {
+          if (Mouse.state[Mouse.LEFT] && !cancelled) {
+            var x = ev.clientX;
+            var y = ev.clientY;
+            var dx = x - downX;
+            var dy = y - downY;
+            var d = Math.sqrt(dx*dx + dy*dy);
+            if (d > 5) cancelled = true;
+          }
+        };
+        cv.onclick = function(ev) {
+          if (!cancelled) {
+            if (ev.shiftKey)
+              App.previousSlide();
+            else
+              App.nextSlide();
+            s.changed = true;
+          }
+          ev.preventDefault();
+        };
+
+      }
+		</script>
+	</head>
+	<body>
+    <canvas id="c" width="500" height="400" tabindex="-1"></canvas>
+    <pre id="stats" style="font-family:Sans-serif; font-size: small;"></pre>
+    <div id="slides">
+      <div>
+        <h1>Welcome to slides!</h1>
+        <ul>
+          <li>Here are</li>
+          <li>Some bullet</li>
+          <ol>
+            <li>And a nested</li>
+            <li>Numbered list</li>
+          </ol>
+          <li>Points!</li>
+        </ul>
+      </div>
+      <div>
+        <h1>And an image</h1>
+        <img src="tram.jpg">
+        <h2>And ???</h2>
+      </div>
+    </div>
+	</body>
+
+</html>
