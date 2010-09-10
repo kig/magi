@@ -101,6 +101,7 @@
         document.body.appendChild(input);
 
         var s = new Magi.Scene(cv);
+        App = s;
         s.fpsCanvas = E.canvas(200,20);
         s.camera.position[2] = 7;
         s.camera.position[0] = -1.5;
@@ -128,28 +129,6 @@
         cube.rotation.axis[1] = -0.7;
         cube.rotation.axis[2] = -0.25;
         top.appendChild(cube);
-
-        var cubes = new Magi.Node();
-        for (var i=0; i<20; i++) {
-          var cb = new Magi.Cube();
-          vec3.set3(0.1, cb.scaling);
-          cb.position[0] = Math.sin(i/20 * Math.PI*2);
-          cb.position[2] = Math.cos(i/20 * Math.PI*2);
-          cb.phase = i/20 * Math.PI*2;
-          vec3.set([1,1,0], cb.rotation.axis);
-          cb.addFrameListener(function(t,dt) {
-            this.position[1] = 0.2*Math.sin(2*this.phase + t / 200);
-            vec3.set3(0.1+0.05*Math.cos(1*this.phase + t / 200), this.scaling);
-            this.rotation.angle = t/600 % (Math.PI*2);
-          });
-          cubes.appendChild(cb);
-        }
-        vec3.set([1,1,1], cubes.rotation.axis);
-        cubes.addFrameListener(function(t,dt) {
-          this.rotation.angle = t/500 % (Math.PI*2);
-        });
-        cube.appendChild(cubes);
-
 
         var cb = new Magi.Cube();
         vec3.set3(0.8, cb.scaling);
@@ -183,6 +162,32 @@
         ncb.blendFuncSrc = 'SRC_ALPHA';
         ncb.blendFuncDst = 'ONE';
         cb.appendChild(ncb);
+
+
+        var mat = cb.material.copy();
+        mat.floats.MaterialDiffuse = [1,0,1,1];
+        var cubes = new Magi.Node();
+        for (var i=0; i<20; i++) {
+          var cb = new Magi.Cube();
+          vec3.set3(0.1, cb.scaling);
+          cb.position[0] = Math.sin(i/20 * Math.PI*2);
+          cb.position[2] = Math.cos(i/20 * Math.PI*2);
+          cb.material = mat;
+          cb.phase = i/20 * Math.PI*2;
+          vec3.set([1,1,0], cb.rotation.axis);
+          cb.addFrameListener(function(t,dt) {
+            this.position[1] = 0.2*Math.sin(2*this.phase + t / 200);
+            vec3.set3(0.1+0.05*Math.cos(1*this.phase + t / 200), this.scaling);
+            this.rotation.angle = t/600 % (Math.PI*2);
+          });
+          cubes.appendChild(cb);
+        }
+        vec3.set([1,1,1], cubes.rotation.axis);
+        cubes.addFrameListener(function(t,dt) {
+          this.rotation.angle = t/500 % (Math.PI*2);
+        });
+        cube.appendChild(cubes);
+
 
         var txt = new Magi.MeshText(input.value, 72);
         txt.setColor('#ffffff');
@@ -275,7 +280,6 @@
           rings.appendChild(ringSeg);
         }
         input.addEventListener('keydown', function() {
-        console.log('hi');
           rings.counter = (rings.counter + 1) % rings.childNodes.length;
           rings.childNodes[rings.counter].advance = 10;
         }, false);

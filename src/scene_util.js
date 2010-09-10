@@ -10,6 +10,8 @@ Magi.Scene = Klass({
 
   bg : [1,1,1,1],
   clear : true,
+
+  paused : false,
   
   initialize : function(canvas, scene, cam, args) {
     if (!scene) scene = new Magi.Node();
@@ -97,6 +99,7 @@ Magi.Scene = Klass({
   },
 
   draw : function() {
+    if (this.paused) return;
     var newTime = new Date;
     var real_dt = newTime - this.previousTime;
     var dt = this.timeDir * this.timeSpeed * real_dt;
