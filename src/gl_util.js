@@ -1,4 +1,4 @@
-Magi = {};
+if (typeof Magi == 'undefined') Magi = {};
 
 if (!window['$A']) {
   /**
