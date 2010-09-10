@@ -297,11 +297,13 @@ Magi.Alignable = {
     if (v != null)
       this.valign = v;
     this.updateAlign();
+    return this;
   },
 
   setVAlign : function(v) {
     this.valign = v;
     this.updateAlign();
+    return this;
   }
 
 };
