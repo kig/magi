@@ -1,7 +1,7 @@
 <html>
 
   <head>
-    <title>Demo</title>
+    <title>WebGL Presentation</title>
     <script type="text/x-glsl-vs" id="wave-vert">
       precision mediump float;
       attribute vec3 Vertex;
@@ -106,12 +106,21 @@
         h1Color : 'white',
         h2Color : 'white',
         listColor : 'white',
-      
+
+        listBullet : "\u2605",
+
         initialize : function(elem) {
           Magi.Node.initialize.call(this);
+          this.setSlideElement(elem);
+        },
+
+        setSlideElement : function(elem) {
+          if (this.slides)
+            this.removeChild(this.slides);
           this.slides = this.parseSlides(elem);
-          this.setSlide(0);
+          this.slideElement = elem;
           this.appendChild(this.slides);
+          this.setSlide(0);
         },
 
         setSlide : function(index) {
@@ -187,7 +196,7 @@
                 acc.listType = lt;
                 break;
               case "LI":
-                var prefix = acc.listType == "OL" ? (acc.counter++)+"." : "\u2605";
+                var prefix = acc.listType == "OL" ? (acc.counter++)+"." : self.listBullet;
                 node = new Magi.Text(prefix + " " + e.textContent, self.listFontSize, self.listColor);
                 node.setAlign(node.leftAlign, node.topAlign);
                 acc.offset += self.listFontSize*1.25;
