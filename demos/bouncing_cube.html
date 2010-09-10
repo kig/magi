@@ -1,19 +1,9 @@
 <html>
-
   <head>
     <title>CUBE</title>
-    <style>
-      body {
-        text-align: center;
-        margin-top: 60px;
-      }
-    </style>
-    <script type="text/javascript" src="../src/matrix.js"></script>
-    <script type="text/javascript" src="../src/gl_util.js"></script>
-    <script type="text/javascript" src="../src/scenegraph.js"></script>
-    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript" src="../src/magi.js"></script>
     <script type="text/javascript">
-      window.onload = function() {
+      Magi.onload = function() {
         var s = new Magi.Scene($('c'), new Magi.Cube().makeBounce().makeRotate());
         var txt = new Magi.Text("CUBE");
         txt.setAlign(txt.centerAlign, txt.bottomAlign)
@@ -21,11 +11,10 @@
            .setScale(1/80);
         s.scene.appendChild(txt);
       }
-		</script>
-	</head>
-	<body>
+    </script>
+  </head>
+  <body style="text-align:center; margin-top:60px;">
     <canvas id="c" width="400" height="400"></canvas>
     <pre id="stats" style="font-family:Sans-serif; font-size: small;"></pre>
-	</body>
-
+  </body>
 </html>
