@@ -47,7 +47,7 @@ Magi.Scene = Klass({
   getDefaultCamera : function() {
     var cam = new Magi.Camera();
     vec3.set([0, 1.0, 0], cam.lookAt);
-    vec3.set([Math.cos(1)*6, 3, Math.sin(1)*6], cam.position);
+    vec3.set([Math.cos(1)*7, 3, Math.sin(1)*7], cam.position);
     cam.fov = 45;
     cam.angle = 1;
     return cam;
@@ -185,7 +185,23 @@ Magi.FilterQuad = Klass(Magi.Node, {
   }
 });
 
-Magi.Image = Klass(Magi.Node, {
+Magi.Alignable = {
+  leftAlign : 1,
+  rightAlign : -1,
+  topAlign : 1,
+  bottomAlign : -1,
+  centerAlign : 0,
+
+  align: 0,
+  valign: 0,
+
+  alignQuad : function(node, w, h) {
+    node.position[0] = this.align * w/2;
+    node.position[1] = this.valign * h/2;
+  }
+};
+
+Magi.Image = Klass(Magi.Node, Magi.Alignable, {
   initialize : function(src) {
     Magi.Node.initialize.call(this);
     var tex = new Magi.Texture();
@@ -208,12 +224,13 @@ Magi.Image = Klass(Magi.Node, {
     this.image = image;
     this.imageNode.scaling[0] = this.image.width / 2;
     this.imageNode.scaling[1] = this.image.height / 2;
+    this.alignQuad(this.imageNode, this.image.width, this.image.height);
     this.texture.image = this.image;
     this.texture.changed = true;
   }
 });
 
-Magi.Text = Klass(Magi.Node, {
+Magi.Text = Klass(Magi.Node, Magi.Alignable, {
   fontSize : 24,
   font : 'Arial',
   color : 'black',
@@ -250,10 +267,21 @@ Magi.Text = Klass(Magi.Node, {
     ctx.fillText(this.text, 0, this.fontSize);
     this.textNode.scaling[0] = this.canvas.width / 2;
     this.textNode.scaling[1] = this.canvas.height / 2;
-    this.textNode.position[0] = this.canvas.width/2;
-    this.textNode.position[1] = this.canvas.height/2;
+    this.alignQuad(this.textNode, this.canvas.width, this.canvas.height);
     this.texture.image = this.canvas;
     this.texture.changed = true;
+  },
+
+  setAlign : function(h, v) {
+    this.align = h;
+    if (v != null)
+      this.valign = v;
+    this.alignQuad(this.textNode, this.canvas.width, this.canvas.height);
+  },
+
+  setVAlign : function(v) {
+    this.valign = v;
+    this.alignQuad(this.textNode, this.canvas.width, this.canvas.height);
   },
 
   setFontSize : function(fontSize) {
