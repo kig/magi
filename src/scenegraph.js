@@ -38,6 +38,22 @@ Magi.Node = Klass({
     return this;
   },
 
+  setPosition : function(x,y,z) {
+    if (x.length != null) {
+      vec3.set(x, this.position);
+    } else {
+      if (y == null) {
+        vec3.set3(x, this.position)
+      } else {
+        this.position[0] = x;
+        this.position[1] = y;
+        if (z != null)
+          this.position[2] = z;
+      }
+    }
+    return this;
+  },
+
   setScale : function(x,y,z) {
     if (x.length != null) {
       vec3.set(x, this.scaling);
@@ -59,8 +75,19 @@ Magi.Node = Klass({
     return this;
   },
 
-  setAxis : function(a) {
-    vec3.set(a, this.rotation.axis);
+  setAxis : function(x,y,z) {
+    if (x.length != null) {
+      vec3.set(x, this.rotation.axis);
+    } else {
+      if (y == null) {
+        vec3.set3(x, this.rotation.axis)
+      } else {
+        this.rotation.axis[0] = x;
+        this.rotation.axis[1] = y;
+        if (z != null)
+          this.rotation.axis[2] = z;
+      }
+    }
     return this;
   },
 
@@ -340,7 +367,7 @@ Magi.Camera = Klass({
   fov : 30,
   targetFov : 30,
   zNear : 1,
-  zFar : 100,
+  zFar : 10000,
   useLookAt : true,
   ortho : false,
   stereo : false,
@@ -410,7 +437,7 @@ Magi.Camera = Klass({
     }
     
     this.normalDrawTime = new Date() - t;
-    transparents.sort(function(a,b) {
+    transparents.stableSort(function(a,b) {
       return a.matrix[14] - b.matrix[14];
     });
 
