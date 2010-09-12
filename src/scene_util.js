@@ -1,5 +1,5 @@
 Magi.Scene = Klass({
-  frameDuration : 16,
+  frameDuration : 13,
   time : 0,
   timeDir : 1,
   timeSpeed : 1,
@@ -401,9 +401,9 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
 });
 
 Magi.MeshText = Klass(Magi.Text, {
-  initialize : function(content, fontSize, font) {
+  initialize : function(content, fontSize, color, font) {
     Magi.Text.initialize.apply(this, arguments);
-    this.alignedNode.model = Magi.Geometry.QuadMesh.getCachedVBO();
+    this.alignedNode.model = Magi.Geometry.QuadMesh.getCachedVBO(null,20,100);
   }
 });
 
