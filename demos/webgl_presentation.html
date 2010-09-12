@@ -1,7 +1,20 @@
 <html>
 
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>WebGL Presentation</title>
+    <style>
+      canvas {
+        position: absolute;
+      }
+      #slides {
+        text-align: center;
+      }
+      #slides div {
+        height: 100%;
+        font-size: 300%;
+      }
+    </style>
     <script type="text/x-glsl-vs" id="wave-vert">
       precision mediump float;
       attribute vec3 Vertex;
@@ -44,10 +57,10 @@
       void main()
       {
         vec4 v = vec4(Vertex, 1.0);
-        float dx = xScale*0.02*(TexCoord.s-0.5);
-        float dy = yScale*0.02*(TexCoord.t-0.5);
+        float dx = xScale*0.06*(TexCoord.s);
+        float dy = yScale*0.06*(TexCoord.t);
         float d = sqrt(dx*dx + dy*dy);
-        v.z += magnitude * (+pow(1.60, d));
+        v.z += magnitude * pow(1.2,d);
         texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);
         vec4 worldPos = MVMatrix * v;
         gl_Position = PMatrix * worldPos;
@@ -64,7 +77,7 @@
       uniform sampler2D Texture0;
       void main()
       {
-        vec2 scale = vec2(xScale/6.0, yScale/6.0);
+        vec2 scale = vec2(xScale, yScale);
         vec2 gridVec = texCoord0 * scale;
         float gridX = floor(gridVec.s);
         float gridY = floor(gridVec.t);
@@ -73,9 +86,8 @@
         vec4 sample = texture2D(Texture0, gridCenter / scale);
         float a = sample.a;
         float f = smoothstep(0.01*z+0.3*a, 0.3*a, d);
-        a *= opacity;
+        sample.a *= opacity;
         sample *= f;
-        sample.a = a;
         gl_FragColor = sample * sample.a;
       }
     </script>
@@ -86,10 +98,10 @@
       varying vec2 texCoord0;
       void main()
       {
-        float dx = texCoord0.s * aspect;
+        float dx = (-0.5+texCoord0.s)*1.5 * aspect;
         float dy = texCoord0.t / aspect;
         float d = sqrt(dx*dx + dy*dy);
-        vec4 c = vec4(0.76,0.2,0.48, 0.5-0.8*d);
+        vec4 c = vec4(0.76,0.72,0.78, -0.5*d);
         gl_FragColor = c*c.a;
       }
     </script>
@@ -99,19 +111,79 @@
     <script type="text/javascript" src="../src/scene_util.js"></script>
     <script type="text/javascript">
       Slides = Klass(Magi.Node, {
-        h1FontSize : 80,
-        h2FontSize : 60,
+        currentSlide : 0,
+      
+        h1FontSize : 100,
+        h2FontSize : 72,
+        h3FontSize : 60,
         listFontSize : 48,
+        pFontSize : 48,
 
         h1Color : 'white',
         h2Color : 'white',
+        h3Color : 'white',
         listColor : 'white',
+        pColor : 'white',
+
+        h1Font : 'URW Gothic L,Tahoma,Arial',
+        h2Font : 'Arial',
+        h3Font : 'Arial',
+        listFont : 'Arial',
+        pFont : 'Arial',
 
         listBullet : "\u2605",
 
+        pulse : 0,
+
         initialize : function(elem) {
           Magi.Node.initialize.call(this);
+          this.scene = new Magi.Node();
+          this.appendChild(this.scene);
+          this.targetPos = vec3.create();
           this.setSlideElement(elem);
+          this.cube = this.makeCube();
+          this.scene.appendChild(this.cube);
+          var d = vec3.create();
+          this.addFrameListener(function(t,dt) {
+            vec3.sub(this.targetPos, this.scene.position, d);
+            if (vec3.lengthSquare(d) > 1) {
+              vec3.scale(d, 0.25);
+              vec3.add(this.scene.position, d);
+            } else {
+              this.visibleSlides(this.currentSlide, this.currentSlide);
+            }
+            vec3.negate(this.targetPos, d);
+            vec3.sub(d, this.cube.position);
+            var dist = vec3.length(d);
+            if (dist > 1) {
+              vec3.scale(d, 0.15);
+              vec3.add(this.cube.position, d);
+              this.cube.outerCube.setScale(Math.max(0.3, Math.min(1.0, 100.0/dist)));
+              this.cube.outerCube.rotationSpeed = Math.min(50, 1+dist/10);
+              if (dist < 80 && dist > 50 && this.pulse == 0) {
+                this.pulse = 10;
+              }
+            } else {
+              this.cube.outerCube.rotationSpeed = 1;
+            }
+            if (this.pulse) {
+              this.cube.innerCube.setScale(0.8-this.pulse*0.02);
+              this.pulse--;
+            }
+          });
+        },
+
+        visibleSlides : function(first, last) {
+          var min = Math.min(first, last);
+          var max = Math.max(first, last);
+          var cc = this.slides.childNodes;
+          for (var i=0; i<cc.length; i++) {
+            if (i < min || i > max) {
+//               cc[i].display = false;
+            } else {
+              cc[i].display = true;
+            }
+          }
         },
 
         setSlideElement : function(elem) {
@@ -119,7 +191,7 @@
             this.removeChild(this.slides);
           this.slides = this.parseSlides(elem);
           this.slideElement = elem;
-          this.appendChild(this.slides);
+          this.scene.appendChild(this.slides);
           this.setSlide(0);
         },
 
@@ -127,14 +199,15 @@
           var cc = this.slides.childNodes;
           var slideCount = cc.length;
           if (index < 0) index = slideCount+index;
+          var before = this.currentSlide
           this.currentSlide = index % slideCount;
-          for (var i=0; i<slideCount; i++) {
-            if (i == this.currentSlide) {
-              cc[i].display = true;
-            } else {
-              cc[i].display = false;
-            }
-          }
+          vec3.negate(this.slides.childNodes[this.currentSlide].position, this.targetPos);
+          this.visibleSlides(before, this.currentSlide);
+          this.pulse = 10;
+        },
+
+        getCurrentTitle : function() {
+          return this.slides.childNodes[this.currentSlide].title;
         },
 
         nextSlide : function() {
@@ -146,15 +219,20 @@
         },
 
         parseSlides : function(elem) {
-          var cn = $A(elem.childNodes);
+          var cn = $A(elem.childNodes).filter(function(s){ return s.tagName; });
           var top = new Magi.Node();
           var self = this;
+          var x = 0;
+          var cf = cn.length*400;
+          var r = cf / 2*Math.PI;
           cn.forEach(function(s) {
-            if (s.tagName) {
-              var slide = self.parseSlide(s);
-              slide.position[1] = slide.height / 2;
-              top.appendChild(slide);
-            }
+            var d = x/cn.length;
+            var slide = self.parseSlide(s);
+            slide.position[1] = Math.sin(2*Math.PI*x/10)*2500;
+            slide.position[0] = -x*7500;
+            slide.position[2] = Math.cos(2*Math.PI*x/10)*2500;
+            x++;
+            top.appendChild(slide);
           });
           return top;
         },
@@ -172,15 +250,30 @@
             switch (e.tagName) {
               case "H1":
                 sz = self.h1FontSize;
-                node = new Magi.Text(e.textContent, sz, self.h1Color);
-                node.setVAlign(node.topAlign);
-                acc.offset += sz*1.25;
+                if (!acc.top.title)
+                  acc.top.title = e.textContent;
+                node = self.makeH1(e.textContent);
+                acc.offset += sz*2;
                 break;
               case "H2":
                 sz = self.h2FontSize;
-                node = new Magi.Text(e.textContent, sz, self.h2Color);
+                node = self.makeH2(e.textContent);
+                if (acc.left < 0) {
+                  node.setAlign(node.leftAlign);
+                  left -= 100;
+                }
+                acc.offset += sz*1.5;
+                break;
+              case "H3":
+                sz = self.h3FontSize;
+                node = self.makeH3(e.textContent);
+                acc.offset += sz*1.3;
+                break;
+              case "P":
+                sz = self.pFontSize;
+                node = new Magi.Text(e.textContent, self.pFontSize, self.pColor, self.pFont);
                 node.setVAlign(node.topAlign);
-                acc.offset += sz*1.25;
+                acc.offset += sz*1.3;
                 break;
               case "UL":
               case "OL":
@@ -197,7 +290,7 @@
                 break;
               case "LI":
                 var prefix = acc.listType == "OL" ? (acc.counter++)+"." : self.listBullet;
-                node = new Magi.Text(prefix + " " + e.textContent, self.listFontSize, self.listColor);
+                node = new Magi.Text(prefix + " " + e.textContent, self.listFontSize, self.listColor, self.listFont);
                 node.setAlign(node.leftAlign, node.topAlign);
                 acc.offset += self.listFontSize*1.25;
                 break;
@@ -216,9 +309,113 @@
           });
           acc.top.height = acc.offset - origOffset;
           return acc.top;
+        },
+
+        getDotShader : function() {
+          if (!this.dotShader) {
+            var sh = new Magi.Shader(null, 'bend-vert', 'dot-frag');
+            this.dotShader = sh;
+          }
+          return this.dotShader;
+        },
+        
+        makeH1 : function(txt) {
+          var date = new Magi.MeshText(txt, this.h1FontSize/3.0, this.h1Color, this.h1Font);
+          date.setAlign(date.leftAlign);
+          date.rotation.axis[0] = 0.4;
+          date.setAngle(1.2);
+          vec3.set3(600/32, date.scaling);
+          date.position[2] = -800;
+          date.position[0] = -700;
+          date.setY(120.0);
+          date.alignedNode.material.shader = this.getDotShader();
+          date.alignedNode.material.floats.magnitude = 3.0;
+          date.alignedNode.material.floats.opacity = 0.2;
+          date.alignedNode.material.floats.xScale = date.width;
+          date.alignedNode.material.floats.yScale = date.height;
+          var t = new Magi.Node();
+          t.appendChild(date);
+          return t;
+        },
+
+        makeH2 : function(txt) {
+          var h2 = new Magi.MeshText(txt, this.h2FontSize, this.h2Color, this.h2Font);
+          h2.setVAlign(h2.topAlign);
+          h2.alignedNode.material.shader = this.getWaveShader();
+          h2.alignedNode.material.floats.magnitude = 5.0;
+          h2.alignedNode.material.floats.xScale = 0.03*h2.width;
+          h2.alignedNode.material.floats.yScale = 0.03*h2.height;
+          h2.addFrameListener(function(t,dt) {
+            h2.alignedNode.material.floats.time = t / 500;
+          });
+          return h2;
+        },
+
+        getWaveShader : function() {
+          return new Magi.Shader(null, 'wave-vert', Magi.FilterMaterial.frag);
+        },
+        
+        makeH3 : function(txt) {
+          var h3 = new Magi.MeshText(txt, this.h3FontSize, this.h3Color, this.h3Font);
+          h3.setVAlign(h3.topAlign);
+          h3.alignedNode.material.shader = this.getWaveShader();
+          h3.alignedNode.material.floats.magnitude = 5.0;
+          h3.alignedNode.material.floats.xScale = 0.03*h3.width;
+          h3.alignedNode.material.floats.yScale = 0.03*h3.height;
+          h3.addFrameListener(function(t,dt) {
+            h3.alignedNode.material.floats.time = t / 500;
+          });
+          return h3;
+        },
+
+        makeCube : function() {
+          var cb = new Magi.Cube();
+          cb.setAxis(0.4, 0.6, -1);
+          cb.rotationSpeed = 1;
+          cb.addFrameListener(function(t,dt) {
+            this.rotation.angle += (this.rotationSpeed*dt/4000);
+            this.rotation.angle %= (Math.PI*2);
+          });
+          cb.material = cb.material.copy();
+          var fs = cb.material.floats;
+          vec4.setLeft(fs.MaterialDiffuse, [0.8,0.9, 1.0, 0.8]);
+          vec4.setLeft(fs.LightDiffuse, [1,1,0.5,1]);
+          vec4.setLeft(fs.LightSpecular, [0.5,1,1,1]);
+          vec4.setLeft(fs.LightAmbient, [0.3,0,0.2,1]);
+          cb.transparent = true;
+
+          var ncb = new Magi.Cube();
+          ncb.transparent = true;
+          ncb.material = cb.material.copy();
+          vec4.setLeft(ncb.material.floats.MaterialDiffuse, [1,0.95,0.8,0.7]);
+          var fs = ncb.material.floats;
+          vec4.setLeft(fs.LightDiffuse, [1,1,0.8,1]);
+          vec4.setLeft(fs.LightSpecular, [1,0.95,0.8,1]);
+          vec4.setLeft(fs.LightAmbient, [0.2,0.1,0.0,1]);
+          vec3.set3(0.75, ncb.scaling);
+          ncb.blendFuncSrc = 'SRC_ALPHA';
+          ncb.blendFuncDst = 'ONE';
+          cb.appendChild(ncb);
+          
+          var cube = new Magi.Node();
+          var pos = new Magi.Node().setScale(250).setPosition(-800,60,-470);
+          pos.appendChild(cb);
+          cube.appendChild(pos);
+          cube.outerCube = cb;
+          cube.innerCube = ncb;
+          return cube;
         }
+
+          
       });
-      
+    </script>
+    <script type="text/javascript">
+      var slideIndex = 1;
+      window.onclick = function() {
+        if (typeof App != 'undefined') return;
+        var divs = document.getElementById('slides').getElementsByTagName('div');
+        window.scrollTo(0, divs[slideIndex++].offsetTop);
+      }
       window.onresize = function() {
         var cv = $('c');
         cv.width = window.innerWidth;
@@ -233,26 +430,39 @@
         window.onresize();
 
         var s = new Magi.Scene(cv);
-        s.drawOnlyWhenChanged = true;
+        s.camera.targetFov = 40;
+//         s.drawOnlyWhenChanged = true;
         s.useDefaultCameraControls();
+        s.root.setX(0.02).setY(1.0).setAngle(-0.1);
+        s.root.childNodes[0].setAngle(-0.05);
         vec3.set([0,0,8], s.camera.position);
         vec3.set([0,0,0], s.camera.lookAt);
-        s.bg = [0, 0, 0, 1];
+        s.bg = [0.3, 0.7, 0.9, 1];
         cv.scene = s;
- 
+
+//          s.scene.addFrameListener(function(t,dt) {
+//           var rgb = Magi.Colors.hsv2rgb((t/100)%360, 0.9, 0.7);
+//           vec3.set(rgb, s.bg);
+//         });
+
+        var grad = new Magi.FilterQuad('bg-frag');
+        grad.material.floats.aspect = 4/3;
+        s.scene.appendChild(grad);
+
         App = new Slides($('slides'));
         vec3.set3(1/200, App.scaling);
         s.scene.appendChild(App);
         $('slides').style.display = 'none';
 
-        var downX=0, downY=0, cancelled=false;
+
+        var downX=0, downY=0, cancelled=true;
         cv.onmousedown = function(ev) {
           downX = ev.clientX;
           downY = ev.clientY;
           cancelled = false;
         };
         cv.onmousemove = function(ev) {
-          if (Mouse.state[Mouse.LEFT] && !cancelled) {
+          if (!cancelled) {
             var x = ev.clientX;
             var y = ev.clientY;
             var dx = x - downX;
@@ -269,6 +479,7 @@
               App.nextSlide();
             s.changed = true;
           }
+          cancelled = true;
           ev.preventDefault();
         };
 
@@ -280,21 +491,132 @@
     <pre id="stats" style="font-family:Sans-serif; font-size: small;"></pre>
     <div id="slides">
       <div>
-        <h1>Welcome to slides!</h1>
+        <h1>WebGL</h1>
+        <h2>OpenGL ES 2.0 + JavaScript</h2>
+        <h2>&lt;CANVAS&gt;</h2>
+      </div>
+      <div>
+        <h1>OpenGL ES 2.0</h1>
+        <h2>OpenGL kännyköille</h2>
+        <h2>Toimii myös tietokoneissa</h2>
+        <h2>Kiihdytettyä piirtämistä</h2>
+      </div>
+      <div>
+        <h1>1.1 vs. 2.0</h1>
+        <h2>Fiksattu vs. ohjelmoitava</h2>
+      </div>
+      <div>
+        <h1>Ohjelmoitava?</h1>
+        <h2>Shaders, baby, yeah!</h2>
+        <h2>Julmetusti laskentatehoa.</h2>
+      </div>
+      <div>
+        <h1>Ihan tosi?</h1>
+        <h2>1000x nopeampi kuin JavaScript</h2>
+        <p>(shaderista riippuen)</p>
+      </div>
+      <div>
+        <h1>Mitä sillä tekee?</h1>
+        <h2>Kustomia 2D-piirtoa</h2>
+        <h2>Kustomia 3D-piirtoa</h2>
+      </div>
+      <div>
+        <h1>Kustomia?</h1>
+        <h2>Kaikki vaatii shaderin</h2>
+        <h2>Ei oikoteitä</h2>
+      </div>
+      <div>
+        <h1>Piirtoputki</h1>
+        <h3>Vertex shader</h3>
+        <h3>⇓</h3>
+        <h3>Fragment shader</h3>
+        <h3>⇓</h3>
+        <h3>Piirtopinta</h3>
+      </div>
+      <div>
+        <h1>Vertex shader</h1>
         <ul>
-          <li>Here are</li>
-          <li>Some bullet</li>
-          <ol>
-            <li>And a nested</li>
-            <li>Numbered list</li>
-          </ol>
-          <li>Points!</li>
+          <h2>Parametreinä</h2>
+          <li>Bufferit</li>
+          <li>Tekstuurit</li>
+          <li>Uniformit</li>
         </ul>
       </div>
       <div>
-        <h1>And an image</h1>
-        <img src="tram.jpg">
-        <h2>And ???</h2>
+        <h1>Vertex shader</h1>
+        <ul>
+          <h2>Palauttaa</h2>
+          <li>Muunnetun sijainnin</li>
+          <li>Muuttujia fragment shaderille</li>
+        </ul>
+      </div>
+      <div>
+        <h1>Fragment shader</h1>
+        <ul>
+          <h2>Parametreinä</h2>
+          <li>Tekstuurit</li>
+          <li>Muuttujat vertex shaderilta</li>
+          <li>Uniformit</li>
+        </ul>
+      </div>
+      <div>
+        <h1>Fragment shader</h1>
+        <ul>
+          <h2>Palauttaa</h2>
+          <li>Pikselin värin</li>
+        </ul>
+      </div>
+      <div>
+        <h1>Piirtopinta</h1>
+        <h2>&lt;CANVAS&gt;</h2>
+        <h2>tai</h2>
+        <h2>Framebuffer object (FBO)</h2>
+      </div>
+      <div>
+        <h1>FBO</h1>
+        <h2>Näytönohjaimen muistissa</h2>
+        <h2>Tekstuuriin piirtämiseen</h2>
+      </div>
+      <div>
+        <h1>Jos kiinnostaa</h1>
+        <h2>learningwebgl.com</h2>
+      </div>
+      <div>
+        <h1>Eiks toi oo vähän...</h1>
+        <h2>...kankeeta? Joo.</h2>
+        <h2>Tavalliseen piirtoon turhan järeä.</h2>
+        <h2>Kirjastot apuun!</h2>
+      </div>
+      <div>
+        <h1>Kirjastoja</h1>
+        <h3>GLGE</h3>
+        <h3>SpiderGL</h3>
+        <h3>CopperLight</h3>
+        <h3>CubicVR</h3>
+        <h3>X3DOM</h3>
+        <p>...</p>
+      </div>
+      <div>
+        <h1>Pelejä</h1>
+        <h2>Googlen Quake 2 -portti</h2>
+        <h2>Cube Defense</h2>
+        <h2>Muutama Q3 kartankatselin</h2>
+      </div>
+      <div>
+        <h1>Hyötysoftaa?</h1>
+        <h3>3D-mallien katselimia</h3>
+        <h3>ChemDoodle-molekyylivisualisoija</h3>
+        <h3>ShaderToy</h3>
+        <h3>WebGL Street View</h3>
+      </div>
+      <div>
+        <h1>Status</h1>
+        <ul>
+          <li>Chrome, Safari, Firefox, Opera(?)</li>
+          <li>1.0-standardi kohta</li>
+          <li>Shaderien validointi ANGLElla</li>
+          <li>ANGLEn Direct3D-wrapperi vielä vaiheessa</li>
+        </ul>
       </div>
     </div>
 	</body>
