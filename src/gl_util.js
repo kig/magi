@@ -834,8 +834,8 @@ Magi.Geometry.QuadMesh = {
   },
   cache: {},
   getCachedVBO : function(gl, xCount, yCount) {
-    xCount = xCount || 100;
-    yCount = yCount || 100;
+    xCount = xCount || 50;
+    yCount = yCount || 50;
     var k = xCount +":"+ yCount;
     if (!this.cache[gl]) {
       this.cache[gl] = {};
@@ -1512,6 +1512,21 @@ Array.prototype.deleteFirst = function(obj) {
     }
   }
   return false
+}
+
+Array.prototype.stableSort = function(f) {
+  for (var i=0; i<this.length; i++) {
+    this[i].__stableSortIndex = i;
+  }
+  this.sort(function(a,b) {
+    var v = f(a,b);
+    if (v == 0)
+      v = a.__stableSortIndex - b.__stableSortIndex;
+    return v;
+  });
+  for (var i=0; i<this.length; i++) {
+    delete this[i].__stableSortIndex;
+  }
 }
 
 /**
