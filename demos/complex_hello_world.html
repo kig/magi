@@ -73,9 +73,8 @@
         vec4 sample = texture2D(Texture0, gridCenter / scale);
         float a = sample.a;
         float f = smoothstep(0.01*z+0.3*a, 0.3*a, d);
-        a *= opacity;
+        sample.a *= opacity;
         sample *= f;
-        sample.a = a;
         gl_FragColor = sample * sample.a;
       }
     </script>
