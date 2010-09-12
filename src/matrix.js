@@ -190,6 +190,7 @@ vec3.subtract = function(vec, vec2, dest) {
   dest[2] = vec[2] - vec2[2];
   return dest;
 };
+vec3.sub = vec3.subtract;
 
 /*
  * vec3.negate
@@ -236,6 +237,33 @@ vec3.scale = function(vec, val, dest) {
   dest[2] = vec[2]*val;
   return dest;
 };
+
+/*
+ * vec3.multiply
+ * Multiplies the components of a vec3 by a vec3
+ *
+ * Params:
+ * vec - vec3 to scale
+ * vec3 - vec3 to scale by
+ * dest - Optional, vec3 receiving operation result. If not specified result is written to vec
+ *
+ * Returns:
+ * dest if specified, vec otherwise
+ */
+vec3.multiply = function(vec, vec2, dest) {
+  if(!dest || vec == dest) {
+    vec[0] *= vec2[0];
+    vec[1] *= vec2[1];
+    vec[2] *= vec2[2];
+    return vec;
+  }
+  
+  dest[0] = vec[0]*vec2[0];
+  dest[1] = vec[1]*vec2[1];
+  dest[2] = vec[2]*vec2[2];
+  return dest;
+};
+vec3.mul = vec3.multiply;
 
 /*
  * vec3.normalize
