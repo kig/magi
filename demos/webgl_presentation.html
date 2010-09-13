@@ -356,7 +356,6 @@
           this.editor.appendChild(BUTTON("Sulje", {
             onclick : function(){
               self.closeEditor();
-              return false;
             }
           }));
           document.body.appendChild(this.editor);
@@ -448,7 +447,7 @@
                 break;
               case "IMG":
                 node = new Magi.MeshImage(e);
-                self.addWaveShader(node);
+                self.addWaveShader(node, 1.0);
                 node.setVAlign(node.topAlign);
                 acc.offset += node.height + 8;
                 break;
@@ -549,9 +548,9 @@
           node.alignedNode.material.floats.yScale = node.height;
         },
 
-        addWaveShader : function(node) {
+        addWaveShader : function(node, mag) {
           node.alignedNode.material.shader = this.getWaveShader();
-          node.alignedNode.material.floats.magnitude = 5.0;
+          node.alignedNode.material.floats.magnitude = mag || 5.0;
           node.alignedNode.material.floats.xScale = node.width;
           node.alignedNode.material.floats.yScale = node.height;
           node.addFrameListener(function(t,dt) {
@@ -670,6 +669,12 @@
         <p>(shaderista riippuen)</p>
       </div>
       <div>
+        <h1>Ja Typed Arrays</h1>
+        <h2>Tyypitetyt taulukot</h2>
+        <h2>Float32Array, UInt16Array, jne.</h2>
+        <h2>Nopeuttavat JavaScriptiä.</h2>
+      </div>
+      <div>
         <h1>Mitä sillä tekee?</h1>
         <h2>Kustomia 2D-piirtoa.</h2>
         <h2>Kustomia 3D-piirtoa.</h2>
@@ -757,7 +762,8 @@
       </div>
       <div>
         <h1>Jos kiinnostaa</h1>
-        <h2>learningwebgl.com</h2>
+        <img src="learningwebgl.png">
+        <p>learningwebgl.com</p>
       </div>
       <div>
         <h1>Eiks toi oo vähän...</h1>
@@ -779,6 +785,16 @@
         <h3>Tää mun Magi-häx</h3>
       </div>
       <div>
+        <h1>GLGE</h1>
+        <img src="glge.png">
+        <p>glge.org</p>
+      </div>
+      <div>
+        <h1>SpiderGL</h1>
+        <img src="spidergl.png">
+        <p>spidergl.org</p>
+      </div>
+      <div>
         <h1>Pelejä</h1>
         <h2>Googlen Quake 2 -portti</h2>
         <h2>Cube Defense</h2>
@@ -790,6 +806,16 @@
         <h3>ChemDoodle-molekyylivisualisoija</h3>
         <h3>ShaderToy</h3>
         <h3>WebGL Street View</h3>
+      </div>
+      <div>
+        <h1>ChemDoodle</h1>
+        <p>web.chemdoodle.com</p>
+        <img src="chemdoodle.png">
+      </div>
+      <div>
+        <h1>ShaderToy</h1>
+        <p>www.iquilezles.org/apps/shadertoy/</p>
+        <img src="shadertoy.png">
       </div>
       <div>
         <h1>Status</h1>
