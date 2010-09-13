@@ -170,13 +170,13 @@ Magi.Scene = Klass({
     this.root = yRot;
 
     var wheelHandler = function(ev) {
-      var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.2 : (1 / 1.2);
+      var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.25 : (1 / 1.25);
       if (ev.shiftKey) {
         yRot.scaling[0] *= ds;
         yRot.scaling[1] *= ds;
         yRot.scaling[2] *= ds;
       } else {
-        s.camera.targetFov *= ds;
+        s.camera.targetFov /= ds;
       }
       s.changed = true;
       ev.preventDefault();
@@ -329,6 +329,7 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       image.src = src;
     }
     this.image = image;
+    this.image.width; // workaround for strange chrome bug
     this.width = this.image.width;
     this.height = this.image.height;
     this.alignedNode.scaling[0] = this.image.width / 2;
@@ -339,26 +340,17 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
   }
 });
 
-Magi.Text = Klass(Magi.Node, Magi.Alignable, {
+Magi.Text = Klass(Magi.Image, Magi.Alignable, {
   fontSize : 24,
   font : 'Arial',
   color : 'black',
 
   initialize : function(content, fontSize, color, font) {
-    Magi.Node.initialize.call(this);
     this.canvas = E.canvas(1, 1);
+    Magi.Image.initialize.call(this, this.canvas);
     if (fontSize) this.fontSize = fontSize;
     if (font) this.font = font;
     if (color) this.color = color;
-    var tex = new Magi.Texture();
-    tex.generateMipmaps = false;
-    tex.image = this.canvas;
-    this.alignedNode = new Magi.Node(Magi.Geometry.Quad.getCachedVBO());
-    this.alignedNode.material = Magi.FilterMaterial.get().copy();
-    this.alignedNode.material.textures.Texture0 = tex;
-    this.alignedNode.transparent = true;
-    this.texture = tex;
-    this.appendChild(this.alignedNode);
     this.setText(content);
   },
 
@@ -375,13 +367,7 @@ Magi.Text = Klass(Magi.Node, Magi.Alignable, {
     ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
     ctx.fillStyle = this.color;
     ctx.fillText(this.text, 0, this.fontSize);
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
-    this.alignedNode.scaling[0] = this.canvas.width / 2;
-    this.alignedNode.scaling[1] = this.canvas.height / 2;
-    this.updateAlign();
-    this.texture.image = this.canvas;
-    this.texture.changed = true;
+    this.setImage(this.canvas);
   },
 
   setFontSize : function(fontSize) {
