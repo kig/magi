@@ -9,6 +9,7 @@ Magi.Node = Klass({
   depthTest : null,
   display : true,
   transparent : false,
+  id : null,
 
   initialize : function(model) {
     this.model = model;
@@ -21,6 +22,46 @@ Magi.Node = Klass({
     this.scaling = vec3.create([1, 1, 1]);
     this.frameListeners = [];
     this.childNodes = [];
+  },
+
+  getNodeById : function(name) {
+    var found = null;
+    try {
+      this.filterNodes(function(n){ if (n.id == name) { found=n; throw(null); } });
+    } catch(e) {
+      return found;
+    }
+  },
+
+  getNodesById : function(name) {
+    return this.filterNodes(function(n){ return (n.id == name); });
+  },
+
+  getNodesByKlass : function(klass) {
+    return this.filterNodes(function(n){ return (n instanceof klass); });
+  },
+
+  getNodesByMethod : function(name) {
+    return this.filterNodes(function(n){ return n[name]; });
+  },
+
+  getNodesByKeyValue : function(key, value) {
+    return this.filterNodes(function(n){ return n[key] == value; });
+  },
+
+  filterNodes : function(f) {
+    var nodes = [];
+    this.forEach(function(n) {
+      if (f(n)) nodes.push(n);
+    });
+    return nodes;
+  },
+
+  forEach : function(f) {
+    f.call(this,this);
+    this.childNodes.forEach(function(cn){
+      cn.forEach(f);
+    });
   },
 
   setX : function(x) {
