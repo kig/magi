@@ -105,6 +105,7 @@
         gl_FragColor = c*c.a;
       }
     </script>
+<!--     <script type="text/javascript" src="../src/magi.base.min.js"></script> -->
     <script type="text/javascript" src="../src/matrix.js"></script>
     <script type="text/javascript" src="../src/gl_util.js"></script>
     <script type="text/javascript" src="../src/scenegraph.js"></script>
@@ -179,7 +180,7 @@
           var cc = this.slides.childNodes;
           for (var i=0; i<cc.length; i++) {
             if (i < min || i > max) {
-//               cc[i].display = false;
+              cc[i].display = false;
             } else {
               cc[i].display = true;
             }
@@ -496,6 +497,19 @@
         <h2>&lt;CANVAS&gt;</h2>
       </div>
       <div>
+        <h1>HTML:ssä</h1>
+        <h2>Tavan &lt;CANVAS&gt;</h2>
+        <h2>Toimii kuten kuva</h2>
+        <h2>CSS, toDataURL(), jne.</h2>
+      </div>
+      <div>
+        <h1>Kuinka sen saan?</h1>
+        <h2>Firefox 4 beta tai Minefield</h2>
+        <h2>WebKit nightly OS X 10.6:lla</h2>
+        <h2>Chromium</h2>
+        <p>khronos.org/webgl/wiki/Getting_a_WebGL_Implementation</p>
+      </div>
+      <div>
         <h1>OpenGL ES 2.0</h1>
         <h2>OpenGL kännyköille</h2>
         <h2>Toimii myös tietokoneissa</h2>
@@ -524,6 +538,17 @@
         <h1>Kustomia?</h1>
         <h2>Kaikki vaatii shaderin</h2>
         <h2>Ei oikoteitä</h2>
+      </div>
+      <div>
+        <h1>Paitsi tekstuurit</h1>
+        <ul>
+        <h2>WebGL osaa ladata</h2>
+          <li>&lt;CANVAS&gt;</li>
+          <li>&lt;IMG&gt;</li>
+          <li>&lt;VIDEO&gt;</li>
+          <li>Plus pikselitaulukot.</li>
+        </ul>
+        <h2>Hyvin näppärää.</h2>
       </div>
       <div>
         <h1>Piirtoputki</h1>
@@ -589,12 +614,15 @@
       </div>
       <div>
         <h1>Kirjastoja</h1>
-        <h3>GLGE</h3>
-        <h3>SpiderGL</h3>
+        <h2>Aakkosjärjestyksessä:</h2>
+        <h3>C3DL</h3>
         <h3>CopperLight</h3>
         <h3>CubicVR</h3>
+        <h3>GLGE</h3>
+        <h3>SpiderGL</h3>
         <h3>X3DOM</h3>
-        <p>...</p>
+        <h3>XB PointStream</h3>
+        <h3>Tää mun Magi-häx</h3>
       </div>
       <div>
         <h1>Pelejä</h1>
@@ -611,12 +639,30 @@
       </div>
       <div>
         <h1>Status</h1>
-        <ul>
-          <li>Chrome, Safari, Firefox, Opera(?)</li>
-          <li>1.0-standardi kohta</li>
-          <li>Shaderien validointi ANGLElla</li>
-          <li>ANGLEn Direct3D-wrapperi vielä vaiheessa</li>
-        </ul>
+        <h2>Chrome, Safari, Firefox, Opera(?)</h2>
+        <h2>1.0-standardi kohta</h2>
+        <h2>Shaderien validointi ANGLElla</h2>
+        <h2>Softarendaus OSMESAlla</h2>
+      </div>
+      <div>
+        <h1>ANGLE?</h1>
+        <h2>Almost Native Graphics Layer Engine</h2>
+        <h3>angleproject.googlecode.com</h3>
+        <h3>OpenGL ES 2.0 -tulkki</h3>
+      </div>
+      <div>
+        <h1>Tulkki?</h1>
+        <h2>Kääntää shaderit natiiveiksi</h2>
+        <h2>GLES 2.0 -> OpenGL 2.1</h2>
+        <h2>GLES 2.0 -> Direct3D 9</h2>
+        <p>(jossain vaiheessa)</p>
+      </div>
+      <div>
+        <h1>OSMESA</h1>
+        <h2>Off-Screen MESA GL</h2>
+        <h2>Piirtää CPU:lla</h2>
+        <h2>Erittäin hidas</h2>
+        <h2>Bugejakin löytyy</h2>
       </div>
     </div>
 	</body>
