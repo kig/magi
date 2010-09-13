@@ -107,6 +107,7 @@ Magi.Scene = Klass({
     var dt = this.timeDir * this.timeSpeed * real_dt;
     this.time += dt;
     this.previousTime = newTime;
+    this.frameTime = real_dt;
     
     this.camera.update(this.time, dt);
     this.scene.update(this.time, dt);
