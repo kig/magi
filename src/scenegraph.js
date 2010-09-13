@@ -38,7 +38,7 @@ Magi.Node = Klass({
     return this;
   },
 
-  setPosition : function(x,y,z) {
+  setPosition : function(x,y,z) {
     if (x.length != null) {
       vec3.set(x, this.position);
     } else {
