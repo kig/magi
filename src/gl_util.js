@@ -195,10 +195,22 @@ Magi.Texture = Klass({
   upload : function() {
     var gl = this.gl;
     var target = gl[this.target];
-    if (this.image)
-      gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
-    else
+    if (this.image) {
+      if (this.image.tagName == 'VIDEO' && (/WebKit\/\d+/).test(window.navigator.userAgent)) {
+        if (!this.image.tmpCanvas ||
+            this.image.tmpCanvas.width != this.image.width ||
+            this.image.tmpCanvas.height != this.image.height)
+        {
+          this.image.tmpCanvas = E.canvas(this.image.width, this.image.height);
+        }
+        this.image.tmpCanvas.getContext('2d').drawImage(this.image, 0, 0, this.image.width, this.image.height);
+        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image.tmpCanvas);
+      } else {
+        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
+      }
+    } else {
       gl.texImage2D(target, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, this.data);
+    }
     Magi.checkError(gl, "Texture.upload");
   },
   
@@ -2278,12 +2290,14 @@ Mouse.getRelativeCoords = function(element, event) {
 
 Browser = (function(){
   var ua = window.navigator.userAgent
+  var chrome = ua.match(/Chrome\/\d+/)
   var safari = ua.match(/Safari/)
   var mobile = ua.match(/Mobile/)
   var webkit = ua.match(/WebKit\/\d+/)
   var khtml = ua.match(/KHTML/)
   var gecko = ua.match(/Gecko/)
   var ie = ua.match(/Explorer/)
+  if (chrome) return 'Chrome'
   if (mobile && safari) return 'Mobile Safari'
   if (safari) return 'Safari'
   if (webkit) return 'Webkit'
