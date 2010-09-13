@@ -104,6 +104,69 @@ Magi.throwError = function(gl, msg) {
   }
 }
 
+Magi.AllocatedResources = {
+  textures : [],
+  vbos : [],
+  shaders : [],
+  fbos : [],
+
+  deleteAll : function() {
+    while (this.textures.length > 0)
+      this.textures[0].destroy();
+    while (this.vbos.length > 0)
+      this.vbos[0].destroy();
+    while (this.fbos.length > 0)
+      this.fbos[0].destroy();
+    while (this.shaders.length > 0)
+      this.shaders[0].destroy();
+  },
+
+  addTexture : function(tex) {
+    if (this.textures.indexOf(tex) == -1)
+      this.textures.push(tex);
+  },
+
+  addShader : function(tex) {
+    if (this.shaders.indexOf(tex) == -1)
+      this.shaders.push(tex);
+  },
+
+  addVBO : function(tex) {
+    if (this.vbos.indexOf(tex) == -1)
+      this.vbos.push(tex);
+  },
+
+  addFBO : function(tex) {
+    if (this.fbos.indexOf(tex) == -1)
+      this.fbos.push(tex);
+  },
+
+  deleteTexture : function(tex) {
+    var i = this.textures.indexOf(tex);
+    if (i >= 0)
+      this.textures.splice(i,1);
+  },
+
+  deleteShader : function(tex) {
+    var i = this.shaders.indexOf(tex);
+    if (i >= 0)
+      this.shaders.splice(i,1);
+  },
+
+  deleteVBO : function(tex) {
+    var i = this.vbos.indexOf(tex);
+    if (i >= 0)
+      this.vbos.splice(i,1);
+  },
+
+  deleteFBO : function(tex) {
+    var i = this.fbos.indexOf(tex);
+    if (i >= 0)
+      this.fbos.splice(i,1);
+  }
+};
+
+window.onunload = function(){ Magi.AllocatedResources.deleteAll(); };
 
 Magi.Texture = Klass({
   target : 'TEXTURE_2D',
@@ -115,6 +178,7 @@ Magi.Texture = Klass({
 
   initialize : function(gl) {
     this.gl = gl;
+    Magi.AllocatedResources.addTexture(this);
   },
 
   defaultTexCache : {},
@@ -170,6 +234,12 @@ Magi.Texture = Klass({
       this.regenerateMipmap();
       this.changed = false;
     }
+  },
+
+  destroy : function() {
+    if (this.textureObject)
+      this.gl.deleteTexture(this.textureObject);
+    Magi.AllocatedResources.deleteTexture(this);
   }
 });
 
@@ -189,11 +259,13 @@ Magi.Shader = Klass({
     for (var i=1; i<arguments.length; i++) {
       this.shaders.push(arguments[i]);
     }
+    Magi.AllocatedResources.addShader(this);
   },
 
   destroy : function() {
     if (this.shader != null) 
       Magi.Shader.deleteShader(this.gl, this.shader);
+    Magi.AllocatedResources.deleteShader(this);
   },
 
   compile : function() {
@@ -513,10 +585,11 @@ Magi.VBO = Klass({
         else
           this.data.push(arguments[i]);
       }
+      Magi.AllocatedResources.addVBO(this);
     },
 
   setData : function() {
-    this.destroy();
+    this.clear();
     this.data = [];
     for (var i=0; i<arguments.length; i++) {
       if (arguments[i].elements)
@@ -526,7 +599,7 @@ Magi.VBO = Klass({
     }
   },
 
-  destroy : function() {
+  clear : function() {
     if (this.vbos != null)
       for (var i=0; i<this.vbos.length; i++)
         this.gl.deleteBuffer(this.vbos[i]);
@@ -537,8 +610,13 @@ Magi.VBO = Klass({
     this.initialized = false;
   },
 
+  destroy : function() {
+    this.clear();
+    Magi.AllocatedResources.deleteVBO(this);
+  },
+
   init : function() {
-    this.destroy();
+    this.clear();
     var gl = this.gl;
    
     gl.getError();
@@ -649,12 +727,14 @@ Magi.FBO = Klass({
     this.height = height;
     if (use_depth != null)
       this.useDepth = use_depth;
+    Magi.AllocatedResources.addFBO(this);
   },
 
   destroy : function() {
     if (this.fbo) this.gl.deleteFramebuffer(this.fbo);
     if (this.rbo) this.gl.deleteRenderbuffer(this.rbo);
     if (this.texture) this.gl.deleteTexture(this.texture);
+    Magi.AllocatedResources.deleteFBO(this);
   },
 
   init : function() {
