@@ -196,21 +196,40 @@ Magi.Texture = Klass({
     var gl = this.gl;
     var target = gl[this.target];
     if (this.image) {
-      if (this.image.tagName == 'VIDEO' && (/WebKit\/\d+/).test(window.navigator.userAgent)) {
+      var img = this.image;
+      if (this.image.tagName == 'VIDEO' &&
+          (/WebKit\/\d+/).test(window.navigator.userAgent))
+      {
         if (!this.image.tmpCanvas ||
             this.image.tmpCanvas.width != this.image.width ||
             this.image.tmpCanvas.height != this.image.height)
         {
           this.image.tmpCanvas = E.canvas(this.image.width, this.image.height);
         }
-        this.image.tmpCanvas.getContext('2d').drawImage(this.image, 0, 0, this.image.width, this.image.height);
-        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image.tmpCanvas);
+        this.image.tmpCanvas.getContext('2d')
+            .drawImage(this.image, 0, 0, this.image.width, this.image.height);
+        img = this.image.tmpCanvas;
+      }
+      this.width = img.width;
+      this.height = img.height;
+      if (this.previousWidth == this.width && this.previousHeight == this.height)
+      {
+        gl.texSubImage2D(target, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
       } else {
-        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
+        gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
       }
     } else {
-      gl.texImage2D(target, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, this.data);
+      if (this.previousWidth == this.width && this.previousHeight == this.height)
+      {
+        gl.texImage2D(target, 0, 0, 0, this.width, this.height,
+                      gl.RGBA, gl.UNSIGNED_BYTE, this.data);
+      } else {
+        gl.texImage2D(target, 0, gl.RGBA, this.width, this.height, 0,
+                      gl.RGBA, gl.UNSIGNED_BYTE, this.data);
+      }
     }
+    this.previousWidth = this.width;
+    this.previousHeight = this.height;
     Magi.checkError(gl, "Texture.upload");
   },
   
@@ -248,9 +267,15 @@ Magi.Texture = Klass({
     }
   },
 
-  destroy : function() {
+  clear : function() {
     if (this.textureObject)
       this.gl.deleteTexture(this.textureObject);
+    this.previousWidth = this.previousHeight = null;
+    this.textureObject = null;
+  },
+
+  destroy : function() {
+    this.clear();
     Magi.AllocatedResources.deleteTexture(this);
   }
 });
