@@ -173,11 +173,11 @@ Magi.Scene = Klass({
     var wheelHandler = function(ev) {
       var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.25 : (1 / 1.25);
       if (ev.shiftKey) {
-        yRot.scaling[0] *= ds;
-        yRot.scaling[1] *= ds;
-        yRot.scaling[2] *= ds;
+        yRot.scaling[0] /= ds;
+        yRot.scaling[1] /= ds;
+        yRot.scaling[2] /= ds;
       } else {
-        s.camera.targetFov /= ds;
+        s.camera.targetFov *= ds;
       }
       s.changed = true;
       ev.preventDefault();
