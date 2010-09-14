@@ -28,11 +28,15 @@
         font-size: 20px;
         padding-left: 2px;
         padding-right: 2px;
+        margin-bottom: 4px;
         background-color: rgba(255,255,255,0.6);
       }
       .editor button {
         margin: 0px;
         margin-top: 10px;
+      }
+      canvas:focus {
+        outline: none;
       }
     </style>
     <script type="text/x-glsl-vs" id="wave-vert">
@@ -163,6 +167,7 @@
 
         initialize : function(elem) {
           this.canvas = E.canvas(window.innerWidth, window.innerHeight);
+          this.canvas.setAttribute('tabindex', '-1');
           this.canvas.style.position = 'absolute';
           this.canvas.style.left = this.canvas.style.top = '0px';
           document.body.appendChild(this.canvas);
@@ -204,6 +209,7 @@
           this.canvas.onmousedown = function(ev) {
             downX = ev.clientX;
             downY = ev.clientY;
+            this.focus();
             cancelled = false;
           };
           this.canvas.onmousemove = function(ev) {
@@ -227,6 +233,24 @@
             cancelled = true;
             ev.preventDefault();
           };
+          this.canvas.onkeydown = function(ev) {
+            if (Key.match(ev, Key.SPACE)) {
+              if (ev.shiftKey)
+                self.previousSlide();
+              else
+                self.nextSlide();
+              s.changed = true;
+              ev.preventDefault();
+            } else if (Key.match(ev, Key.BACKSPACE)) {
+              if (ev.shiftKey)
+                self.nextSlide();
+              else
+                self.previousSlide();
+              s.changed = true;
+              ev.preventDefault();
+            } 
+          };
+          this.canvas.focus();
 
           this.targetPos = vec3.create();
           this.cube = this.makeCube();
@@ -376,6 +400,7 @@
           this.editor.appendChild(BUTTON("Sulje", {
             onclick : function(){
               self.closeEditor();
+              self.canvas.focus();
             }
           }));
           document.body.appendChild(this.editor);
@@ -480,6 +505,19 @@
                   }
                 });
                 acc.offset += node.height + 8;
+                break;
+              case "EDIT":
+                node = new Magi.Node();
+                node.addFrameListener(function() {
+                  if (self.currentSlide == this.slideIndex) {
+                    if (!this.triggered && (!self.editor || !self.editor.parentNode)) {
+                      this.triggered = true;
+                      self.editSlide();
+                    }
+                  } else {
+                    this.triggered = false;
+                  }
+                });
                 break;
               case "CANVAS":
                 node = new Magi.Image(e);
@@ -663,12 +701,6 @@
         <h2>&lt;CANVAS&gt;</h2>
       </div>
       <div>
-        <h1>HTML:ssä</h1>
-        <h2>Tavan &lt;CANVAS&gt;</h2>
-        <h2>Toimii kuten kuva</h2>
-        <h2>CSS, toDataURL(), jne.</h2>
-      </div>
-      <div>
         <h1>Kuinka sen saan?</h1>
         <h2>Firefox 4 beta tai Minefield</h2>
         <h2>WebKit nightly OS X 10.6:lla</h2>
@@ -679,6 +711,12 @@
         <h1>Tukeeko IE9?</h1>
         <h2>Ei mitään tietoa.</h2>
         <h2>Chrome Frame?</h2>
+      </div>
+      <div>
+        <h1>HTML:ssä</h1>
+        <h2>Tavan &lt;CANVAS&gt;</h2>
+        <h2>Toimii kuten kuva</h2>
+        <h2>CSS, toDataURL(), jne.</h2>
       </div>
       <div>
         <h1>OpenGL ES 2.0</h1>
@@ -701,12 +739,6 @@
         <p>(shaderista riippuen)</p>
       </div>
       <div>
-        <h1>Ja Typed Arrays</h1>
-        <h2>Tyypitetyt taulukot</h2>
-        <h2>Float32Array, UInt16Array, jne.</h2>
-        <h2>Nopeuttavat JavaScriptiä.</h2>
-      </div>
-      <div>
         <h1>Mitä sillä tekee?</h1>
         <h2>Kustomia 2D-piirtoa.</h2>
         <h2>Kustomia 3D-piirtoa.</h2>
@@ -715,30 +747,6 @@
         <h1>Kustomia?</h1>
         <h2>Kaikki vaatii shaderin.</h2>
         <h2>Ei oikoteitä.</h2>
-      </div>
-      <div>
-        <h1>Paitsi tekstuurit</h1>
-        <ul>
-        <h2>WebGL osaa ladata:</h2>
-          <li>&lt;CANVAS&gt;</li>
-          <li>&lt;IMG&gt;</li>
-          <li>&lt;VIDEO&gt;</li>
-          <li>Plus pikselitaulukot.</li>
-        </ul>
-        <h2>Joka on varsin näppärää.</h2>
-      </div>
-      <div>
-        <h1>CANVAS</h1>
-        <h2>Kaikki tekstit tässä.</h2>
-        <p>(Parempi olisi käyttää CSS 3D:tä, mut.)</p>
-      </div>
-      <div>
-        <h1>IMG</h1>
-        <img src="tram.jpg" width="360" height="360">
-      </div>
-      <div>
-        <h1>VIDEO</h1>
-        <video oncube="true" src="http://www.html5rocks.com/tutorials/video/basics/Chrome_ImF.webm" width="480" height="320" controls="on"></video>
       </div>
       <div>
         <h1>Piirtoputki</h1>
@@ -751,34 +759,34 @@
       <div>
         <h1>Vertex shader</h1>
         <ul>
-          <h2>Parametreinä</h2>
-          <li>Bufferit</li>
-          <li>Tekstuurit</li>
-          <li>Uniformit</li>
+          <h2>Laskee</h2>
+          <li>Mihin piirretään</li>
+          <li>Muuttujia fragment shaderille</li>
         </ul>
       </div>
       <div>
         <h1>Vertex shader</h1>
         <ul>
-          <h2>Palauttaa</h2>
-          <li>Muunnetun sijainnin</li>
-          <li>Muuttujia fragment shaderille</li>
+          <h2>Parametreinä</h2>
+          <li>Bufferit (pistetaulukot)</li>
+          <li>Tekstuurit (pintakuviot)</li>
+          <li>Uniformit (kutsuparametrit)</li>
+        </ul>
+      </div>
+      <div>
+        <h1>Fragment shader</h1>
+        <ul>
+          <h2>Laskee</h2>
+          <li>Pikselin värin</li>
         </ul>
       </div>
       <div>
         <h1>Fragment shader</h1>
         <ul>
           <h2>Parametreinä</h2>
-          <li>Tekstuurit</li>
           <li>Muuttujat vertex shaderilta</li>
+          <li>Tekstuurit</li>
           <li>Uniformit</li>
-        </ul>
-      </div>
-      <div>
-        <h1>Fragment shader</h1>
-        <ul>
-          <h2>Palauttaa</h2>
-          <li>Pikselin värin</li>
         </ul>
       </div>
       <div>
@@ -793,9 +801,33 @@
         <h2>Tekstuuriin piirtämiseen</h2>
       </div>
       <div>
+        <h1>Tekstuurit</h1>
+        <ul>
+        <h2>WebGL osaa ladata:</h2>
+          <li>&lt;CANVAS&gt;</li>
+          <li>&lt;IMG&gt;</li>
+          <li>&lt;VIDEO&gt;</li>
+          <li>Plus pikselitaulukot.</li>
+        </ul>
+      </div>
+      <div>
+        <h1>CANVAS</h1>
+        <h2>Kaikki tekstit tässä.</h2>
+        <p>(Parempi olisi käyttää CSS 3D:tä, mut.)</p>
+        <edit></edit>
+      </div>
+      <div>
+        <h1>IMG</h1>
+        <img src="tram.jpg" width="360" height="360">
+      </div>
+      <div>
+        <h1>VIDEO</h1>
+        <video oncube="true" preload src="http://www.html5rocks.com/tutorials/video/basics/Chrome_ImF.webm" width="480" height="320" controls="on"></video>
+      </div>
+      <div>
         <h1>Jos kiinnostaa</h1>
-        <img src="learningwebgl.png">
         <p>learningwebgl.com</p>
+        <img src="learningwebgl.png">
       </div>
       <div>
         <h1>Eiks toi oo vähän...</h1>
@@ -814,7 +846,6 @@
         <h3>SpiderGL</h3>
         <h3>X3DOM</h3>
         <h3>XB PointStream</h3>
-        <h3>Tää mun Magi-häx</h3>
       </div>
       <div>
         <h1>GLGE</h1>
@@ -829,7 +860,7 @@
       <div>
         <h1>Pelejä</h1>
         <h2>Googlen Quake 2 -portti</h2>
-        <h2>Cube Defense</h2>
+        <h2>O3D biljardi</h2>
         <h2>Muutama Q3 kartankatselin</h2>
       </div>
       <div>
