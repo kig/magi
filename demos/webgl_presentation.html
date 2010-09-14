@@ -172,6 +172,12 @@
           this.canvas.style.left = this.canvas.style.top = '0px';
           document.body.appendChild(this.canvas);
 
+          if (document.location.hash) {
+            this.currentSlide = parseInt(document.location.hash.slice(1));
+          } else {
+            this.currentSlide = 0;
+          }
+          
           this.display = new Magi.Scene(this.canvas);
           this.scene = this.display.scene;
           var s = this.display;
@@ -338,11 +344,7 @@
           this.slideElement.style.display = 'none';
           this.slides = this.parseSlides(elem);
           this.scene.appendChild(this.slides);
-          if (document.location.hash) {
-            this.setSlide(parseInt(document.location.hash.slice(1)));
-          } else {
-            this.setSlide(0);
-          }
+          this.setSlide(this.currentSlide);
         },
 
         setSlide : function(index) {
@@ -827,7 +829,7 @@
       <div>
         <h1>Jos kiinnostaa</h1>
         <p>learningwebgl.com</p>
-        <img src="learningwebgl.png">
+        <img src="learningwebgl.jpg">
       </div>
       <div>
         <h1>Eiks toi oo vähän...</h1>
@@ -849,12 +851,12 @@
       </div>
       <div>
         <h1>GLGE</h1>
-        <img src="glge.png">
+        <img src="glge.jpg">
         <p>glge.org</p>
       </div>
       <div>
         <h1>SpiderGL</h1>
-        <img src="spidergl.png">
+        <img src="spidergl.jpg">
         <p>spidergl.org</p>
       </div>
       <div>
@@ -873,12 +875,12 @@
       <div>
         <h1>ChemDoodle</h1>
         <p>web.chemdoodle.com</p>
-        <img src="chemdoodle.png">
+        <img src="chemdoodle.jpg">
       </div>
       <div>
         <h1>ShaderToy</h1>
         <p>www.iquilezles.org/apps/shadertoy/</p>
-        <img src="shadertoy.png">
+        <img src="shadertoy.jpg">
       </div>
       <div>
         <h1>Status</h1>
@@ -918,6 +920,16 @@
         <h1>Kiitos!</h1>
         <h2>Ilmari Heikkinen</h2>
         <h3>ilmari.heikkinen@gmail.com</h3>
+      </div>
+      <div>
+        <h1>Tiedostokoot</h1>
+        <ul>
+          <li>30kB esityssofta + slaidit</li>
+          <li>85kB minifioity kirjasto</li>
+          <li>(yhteensä 30kB gzipattuna)</li>
+          <li>250kB kuvia</li>
+          <li>2MB video</li>
+        </ul>
       </div>
       <div>
         <h1>Xiittejä</h1>
