@@ -8,7 +8,8 @@
         text-align: center;
       }
       #slides div {
-        min-height: 100%;
+        margin-bottom: 100%;
+        padding-top: 5%;
         font-size: 200%;
       }
       #slides li {
@@ -157,6 +158,9 @@
 
         pulse : 0,
 
+        wavyText : true,
+        cycleColors : false,
+
         initialize : function(elem) {
           this.canvas = E.canvas(window.innerWidth, window.innerHeight);
           this.canvas.style.position = 'absolute';
@@ -270,10 +274,21 @@
           for (var i=0; i<cc.length; i++) {
             if (!this.allSlidesVisible && (i < min || i > max)) {
               cc[i].display = false;
+              this.deleteTextures(cc[i]);
             } else {
               cc[i].display = true;
             }
           }
+        },
+
+        deleteTextures : function(node) {
+          node.forEach(function(c) {
+            if (c.material) {
+              for (var i in c.material.textures) {
+                c.material.textures[i].clear();
+              }
+            }
+          });
         },
 
         toggleApp : function() {
@@ -295,11 +310,15 @@
             this.removeChild(this.slides);
             this.slideElement.style.display = 'block';
           }
-          this.slides = this.parseSlides(elem);
           this.slideElement = elem;
           this.slideElement.style.display = 'none';
+          this.slides = this.parseSlides(elem);
           this.scene.appendChild(this.slides);
-          this.setSlide(0);
+          if (document.location.hash) {
+            this.setSlide(parseInt(document.location.hash.slice(1)));
+          } else {
+            this.setSlide(0);
+          }
         },
 
         setSlide : function(index) {
@@ -311,6 +330,7 @@
           vec3.negate(this.slides.childNodes[this.currentSlide].position, this.targetPos);
           this.visibleSlides(before, this.currentSlide);
           if (this.editor && this.editor.parentNode) this.editSlide();
+          document.location.replace("#"+this.currentSlide);
         },
 
         getCurrentTitle : function() {
@@ -475,6 +495,7 @@
                 break;
               case "VIDEO":
                 node = new Magi.MeshImage(e);
+                node.alignedNode.transparent = false;
                 self.addWaveShader(node);
                 node.setVAlign(node.topAlign);
                 node.elapsed = 100;
@@ -549,12 +570,19 @@
         },
 
         addWaveShader : function(node, mag) {
+          mag = mag || 5.0;
           node.alignedNode.material.shader = this.getWaveShader();
-          node.alignedNode.material.floats.magnitude = mag || 5.0;
+          node.alignedNode.material.floats.magnitude = mag;
           node.alignedNode.material.floats.xScale = node.width;
           node.alignedNode.material.floats.yScale = node.height;
+          var self = this;
           node.addFrameListener(function(t,dt) {
             node.alignedNode.material.floats.time = t / 500;
+            if (self.wavyText) {
+              node.alignedNode.material.floats.magnitude = mag;
+            } else {
+              node.alignedNode.material.floats.magnitude = 0.0;
+            }
           });
         },
 
@@ -612,11 +640,15 @@
       });
     </script>
     <script type="text/javascript">
-      var slideIndex = 1;
-      window.onclick = function() {
+      var slideIndex = 0;
+      window.onclick = function(ev) {
         if (typeof App != 'undefined' && !App.disabled) return;
         var divs = document.getElementById('slides').getElementsByTagName('div');
-        window.scrollTo(0, divs[slideIndex++].offsetTop);
+        if (ev.shiftKey) slideIndex--;
+        else slideIndex++;
+        slideIndex %= divs.length;
+        if (slideIndex < 0) slideIndex = divs.length+slideIndex;
+        window.scrollTo(0, divs[slideIndex].offsetTop);
       }
       window.onload = function() {
         App = new Slides($('slides'));
@@ -706,7 +738,7 @@
       </div>
       <div>
         <h1>VIDEO</h1>
-        <video oncube="true" src="http://www.html5rocks.com/tutorials/video/basics/Chrome_ImF.webm" width="480" height="320"></video>
+        <video oncube="true" src="http://www.html5rocks.com/tutorials/video/basics/Chrome_ImF.webm" width="480" height="320" controls="on"></video>
       </div>
       <div>
         <h1>Piirtoputki</h1>
@@ -861,11 +893,17 @@
         <p>App.editSlide()</p>
         <p>App.toggleAllSlidesVisible()</p>
         <p>App.toggleApp()</p>
+        <p>App.wavyText = false</p>
+        <p>App.cycleColors = true</p>
         <p>txt = App.scene.getNodesByKlass(Magi.MeshText)[0]</p>
         <p>txt.alignedNode.material.floats.pitch = 2</p>
         <p>txt = App.scene.getNodesByKlass(Magi.MeshText)[2]
         <p>App.addDotShader(txt)</p>
         <p>txt.alignedNode.material.floats.pitch = 2</p>
+      </div>
+      <div>
+        <h1>Loppu.</h1>
+        <p>Klikkaa takaisin alkuun.</p>
       </div>
     </div>
 	</body>
