@@ -178,11 +178,29 @@
             this.currentSlide = 0;
           }
           
-          this.display = new Magi.Scene(this.canvas);
+          this.realDisplay = new Magi.Scene(this.canvas);
+          this.previousFrameFBO = new Magi.FBO(this.realDisplay.gl, this.canvas.width, this.canvas.height);
+          this.previousFrameFBO.use();
+          this.fbo = new Magi.FBO(this.realDisplay.gl, this.canvas.width, this.canvas.height);
+          this.fbo.use();
+          var showFBO = new Magi.FilterQuad();
+          var self = this;
+          showFBO.addFrameListener(function(t,dt){
+            this.material.textures.Texture0 = self.fbo.texture;
+            self.display.fbo = self.fbo;
+            self.fbo.setSize(self.canvas.width, self.canvas.height);
+            self.display.draw(t,dt);
+            var f = self.previousFrameFBO;
+            self.previousFrameFBO = self.fbo;
+            self.fbo = f;
+          });
+          this.realDisplay.scene.appendChild(showFBO);
+
+          this.display = new Magi.Scene(this.fbo);
           this.scene = this.display.scene;
           var s = this.display;
           s.camera.targetFov = 40;
-          s.useDefaultCameraControls();
+          s.useDefaultCameraControls(this.canvas);
           s.root.setX(0.02).setY(1.0).setAngle(-0.1);
           s.root.childNodes[0].setAngle(-0.05);
           vec3.set([0,0,8], s.camera.position);
@@ -196,7 +214,6 @@
 
           $('slides').style.display = 'none';
 
-          var self = this;
 
           s.scene.addFrameListener(function(t,dt) {
             if (self.cycleColors) {
@@ -499,13 +516,20 @@
                 acc.offset += node.height + 8;
                 break;
               case "SELF":
-                node = new Magi.Image(self.canvas);
-                node.setVAlign(node.topAlign);
+                node = new Magi.Image(self.previousFrameFBO.texture, true);
                 node.addFrameListener(function() {
-                  if (self.currentSlide == this.slideIndex) {
-                    this.texture.changed = true;
-                  }
+                  this.setImage(self.previousFrameFBO.texture);
                 });
+                node.setVAlign(node.topAlign);
+                acc.offset += node.height + 8;
+                break;
+              case "SELFCANVAS":
+                node = new Magi.Image(self.canvas);
+                node.addFrameListener(function() {
+                  if (self.currentSlide == this.slideIndex)
+                    this.texture.changed = true;
+                });
+                node.setVAlign(node.topAlign);
                 acc.offset += node.height + 8;
                 break;
               case "EDIT":
@@ -801,6 +825,7 @@
         <h1>FBO</h1>
         <h2>Näytönohjaimen muistissa</h2>
         <h2>Tekstuuriin piirtämiseen</h2>
+        <self></self>
       </div>
       <div>
         <h1>Tekstuurit</h1>
