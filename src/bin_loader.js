@@ -1,6 +1,10 @@
 Magi.Bin = function(){};
-Magi.Bin.load = function(url) {
+Magi.Bin.load = function(url, onload, onerror) {
   var o = new Magi.Bin();
+  if (onload)
+    o.onload = onload;
+  if (onerror)
+    o.onerror = onerror;
   o.load(url);
   return o;
 }
@@ -15,7 +19,7 @@ Magi.Bin.prototype = {
           self.downloadTime = new Date() - self.loadStartTime;
           self.parse(xhr.responseText);
           if (self.onload)
-            self.onload(xhr);
+            self.onload(self, xhr);
         } else {
           if (self.onerror)
             self.onerror(xhr);
