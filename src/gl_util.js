@@ -88,11 +88,20 @@ Klass = function() {
   return c
 }
 
+Magi.errorName = function(gl, errorCode) {
+  var names = [];
+  for (var i in gl) {
+    if (gl[i] == errorCode)
+      names.push(i);
+  }
+  var name = names.join("|");
+  return name;
+}
 
 Magi.checkError = function(gl, msg) {
   var e = gl.getError();
   if (e != 0) {
-    Magi.log("Error " + e + " at " + msg);
+    Magi.log("Error " + e + ":" + Magi.errorName(gl, e) + " at " + msg);
   }
   return e;
 }
@@ -100,7 +109,7 @@ Magi.checkError = function(gl, msg) {
 Magi.throwError = function(gl, msg) {
   var e = gl.getError();
   if (e != 0) {
-    throw(new Error("Error " + e + " at " + msg));
+    throw(new Error("Error " + e + ":" + Magi.errorName(gl, e) + " at " + msg));
   }
 }
 
@@ -111,8 +120,10 @@ Magi.AllocatedResources = {
   fbos : [],
 
   deleteAll : function() {
-    while (this.textures.length > 0)
+    while (this.textures.length > 0) {
+      this.textures[0].permanent = false;
       this.textures[0].destroy();
+    }
     while (this.vbos.length > 0)
       this.vbos[0].destroy();
     while (this.fbos.length > 0)
@@ -221,7 +232,7 @@ Magi.Texture = Klass({
     } else {
       if (this.previousWidth == this.width && this.previousHeight == this.height)
       {
-        gl.texImage2D(target, 0, 0, 0, this.width, this.height,
+        gl.texSubImage2D(target, 0, 0, 0, this.width, this.height,
                       gl.RGBA, gl.UNSIGNED_BYTE, this.data);
       } else {
         gl.texImage2D(target, 0, gl.RGBA, this.width, this.height, 0,
@@ -230,7 +241,7 @@ Magi.Texture = Klass({
     }
     this.previousWidth = this.width;
     this.previousHeight = this.height;
-    Magi.checkError(gl, "Texture.upload");
+    Magi.throwError(gl, "Texture.upload");
   },
   
   regenerateMipmap : function() {
@@ -249,6 +260,7 @@ Magi.Texture = Klass({
     this.textureObject = gl.createTexture();
     Magi.Stats.textureCreationCount++;
     gl.bindTexture(target, this.textureObject);
+    Magi.throwError(gl, "Texture.compile");
     this.upload();
     gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -268,6 +280,7 @@ Magi.Texture = Klass({
   },
 
   clear : function() {
+    if (this.permanent == true) return;
     if (this.textureObject)
       this.gl.deleteTexture(this.textureObject);
     this.previousWidth = this.previousHeight = null;
@@ -275,6 +288,7 @@ Magi.Texture = Klass({
   },
 
   destroy : function() {
+    if (this.permanent == true) return;
     this.clear();
     Magi.AllocatedResources.deleteTexture(this);
   }
@@ -770,8 +784,27 @@ Magi.FBO = Klass({
   destroy : function() {
     if (this.fbo) this.gl.deleteFramebuffer(this.fbo);
     if (this.rbo) this.gl.deleteRenderbuffer(this.rbo);
-    if (this.texture) this.gl.deleteTexture(this.texture);
+    if (this.texture) {
+      this.texture.permanent = false;
+      this.texture.destroy();
+    }
     Magi.AllocatedResources.deleteFBO(this);
+  },
+
+  setSize : function(w, h) {
+    if (w == this.width && h == this.height)
+      return;
+    var gl = this.gl;
+    this.width = w;
+    this.height = h;
+    this.texture.width = this.width;
+    this.texture.height = this.height;
+    this.texture.changed = true;
+    this.texture.use();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbo);
+    Magi.throwError(gl, "FBO.resize bindRenderbuffer");
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+    Magi.throwError(gl, "FBO.resize renderbufferStorage");
   },
 
   init : function() {
@@ -781,35 +814,28 @@ Magi.FBO = Klass({
     var rb;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    Magi.checkError(gl, "FBO.init bindFramebuffer");
+    Magi.throwError(gl, "FBO.init bindFramebuffer");
+
+    var tex = this.texture != null ? this.texture : new Magi.Texture(gl);
+    tex.width = w;
+    tex.height = h;
+    tex.data = null;
+    tex.generateMipmaps = false;
+    tex.permanent = true;
+    tex.use();
+    Magi.throwError(gl, "FBO.init tex");
+
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex.textureObject, 0);
+    Magi.throwError(gl, "FBO.init bind tex");
+
     if (this.useDepth) {
       rb = this.rbo != null ? this.rbo : gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-      Magi.checkError(gl, "FBO.init bindRenderbuffer");
+      Magi.throwError(gl, "FBO.init bindRenderbuffer");
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-      Magi.checkError(gl, "FBO.init renderbufferStorage");
-    }
-
-    var tex = this.texture != null ? this.texture : gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    try {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    } catch (e) { // argh, no null texture support
-      var tmp = this.getTempCanvas(w,h);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tmp);
-    }
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    Magi.checkError(gl, "FBO.init tex");
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    Magi.checkError(gl, "FBO.init bind tex");
-
-    if (this.useDepth) {
+      Magi.throwError(gl, "FBO.init renderbufferStorage");
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
-      Magi.checkError(gl, "FBO.init bind depth buffer");
+      Magi.throwError(gl, "FBO.init bind depth buffer");
     }
 
     var fbstat = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
@@ -819,7 +845,7 @@ Magi.FBO = Klass({
         try { glv = gl[v]; } catch (e) { glv = null; }
         if (glv == fbstat) { fbstat = v; break; }}
     }
-    Magi.checkError(gl, "FBO.init check fbo");
+    Magi.throwError(gl, "FBO.init check fbo");
 
     this.fbo = fbo;
     this.rbo = rb;
@@ -827,18 +853,10 @@ Magi.FBO = Klass({
     this.initialized = true;
   },
 
-  getTempCanvas : function(w, h) {
-    if (!Magi.FBO.tempCanvas) {
-      Magi.FBO.tempCanvas = document.createElement('canvas');
-    }
-    Magi.FBO.tempCanvas.width = w;
-    Magi.FBO.tempCanvas.height = h;
-    return Magi.FBO.tempCanvas;
-  },
-
   use : function() {
     if (!this.initialized) this.init();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
+    Magi.throwError(this.gl, "FBO.use");
   }
 });
 
