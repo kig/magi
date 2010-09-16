@@ -131,11 +131,7 @@
         gl_FragColor = c*c.a;
       }
     </script>
-<!--     <script type="text/javascript" src="../src/magi.base.min.js"></script> -->
-    <script type="text/javascript" src="../src/matrix.js"></script>
-    <script type="text/javascript" src="../src/gl_util.js"></script>
-    <script type="text/javascript" src="../src/scenegraph.js"></script>
-    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript" src="../src/magi.js"></script>
     <script type="text/javascript">
       Slides = Klass({
         currentSlide : 0,
@@ -332,7 +328,8 @@
           node.forEach(function(c) {
             if (c.material) {
               for (var i in c.material.textures) {
-                c.material.textures[i].clear();
+                if (c.material.textures[i])
+                  c.material.textures[i].clear();
               }
             }
           });
@@ -581,6 +578,27 @@
                 });
                 acc.offset += node.height + 8;
                 break;
+              case "MODEL":
+                node = new Magi.Node();
+                var w = Magi.Bin.load(e.getAttribute('src'), (function(node){
+                  return function(model) {
+                    var sc = 1000.0 / (model.boundingBox.diameter);
+                    var n = new Magi.Node();
+                    n.setScale(sc);
+                    n.setY(-150);
+                    n.model = model.makeVBO();
+                    n.rotation.axis = [1,0,0];
+                    n.rotation.angle = -Math.PI/2;
+                    n.material = Magi.DefaultMaterial.get();
+                    n.material.floats.LightDiffuse = [1,1,1,1];
+                    n.material.floats.MaterialShininess = 6.0;
+                    n.material.floats.MaterialDiffuse = [1,1,1,1];
+                    node.appendChild(n);
+                  }
+                })(node));
+                w.flatNormals = false;
+                acc.offset += 150;
+                break;
             }
             if (node) {
               node.id = e.id;
@@ -763,6 +781,11 @@
         <h1>Ihan tosi?</h1>
         <h2>1000x nopeampi kuin JavaScript</h2>
         <p>(shaderista riippuen)</p>
+      </div>
+      <div>
+        <h1>Jaa?</h1>
+        <model src="walas.obj.bin"></model>
+        <h2>80 000 kolmiota</h2>
       </div>
       <div>
         <h1>Mitä sillä tekee?</h1>
