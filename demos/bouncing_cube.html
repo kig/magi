@@ -3,7 +3,7 @@
     <title>CUBE</title>
     <script type="text/javascript" src="../src/magi.js"></script>
     <script type="text/javascript">
-      Magi.onload = function() {
+      window.onload = function() {
         var s = new Magi.Scene($('c'), new Magi.Cube().makeBounce().makeRotate());
         var txt = new Magi.Text("CUBE");
         txt.setAlign(txt.centerAlign, txt.bottomAlign)
