@@ -1,4 +1,22 @@
-Magi.Node = Klass({
+Magi.Motion = {
+  makeBounce : function() {
+    this.addFrameListener(function(t, dt) {
+      var y = 2*Math.abs(Math.sin(t / 500));
+      this.position[1] = y;
+    });
+    return this;
+  },
+
+  makeRotate : function(speed) {
+    speed = speed || 0.2;
+    this.addFrameListener(function(t,dt) {
+      this.rotation.angle = (Math.PI*2*t / (1000/speed)) % (Math.PI*2);
+    });
+    return this;
+  }
+};
+
+Magi.Node = Klass(Magi.Motion, {
   model : null,
   position : null,
   rotation : null,
