@@ -188,7 +188,7 @@ Magi.Scene = Klass({
     this.root = yRot;
 
     var wheelHandler = function(ev) {
-      var ds = ((ev.detail || ev.wheelDelta) > 0) ? 1.25 : (1 / 1.25);
+      var ds = (ev.detail < 0 || ev.wheelDelta > 0) ? 1.25 : (1 / 1.25);
       if (ev.shiftKey) {
         yRot.scaling[0] *= ds;
         yRot.scaling[1] *= ds;
