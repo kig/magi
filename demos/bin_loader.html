@@ -17,7 +17,7 @@
         c.width = window.innerWidth;
         c.height = window.innerHeight;
         byId('info').innerHTML = "Loading model (560kB)...";
-        var w = Magi.Bin.load('walas.obj.bin');
+        var w = Magi.Bin.load('walas.binm');
         w.flatNormals = false;
         w.onload = function() {
           byId('info').innerHTML = "Downloaded 560kB in " + w.downloadTime + " ms<br>" +

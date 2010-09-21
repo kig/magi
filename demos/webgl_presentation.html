@@ -10,19 +10,14 @@
     <script type="text/javascript" src="../src/scene_util.js"></script>
     <script type="text/javascript" src="../src/bin_loader.js"></script>
     <script type="text/javascript" src="../slides/slides.js"></script>
-    <script type="text/javascript">
-      window.onload = function(){
-        App = new Slides(byId('slides'));
-      }
-    </script>
   </head>
   <body>
     <div id="slides">
       <div>
         <h1>WebGL</h1>
         <h2></h2>
-        <h3>Click or press space for next slide.</h3>
-        <h3>Shift-click or backspace for previous slide.</h3>
+        <h3>Press space for next slide.</h3>
+        <h3>Press backspace for previous slide.</h3>
       </div>
       <div>
         <h1>WebGL</h1>
@@ -69,7 +64,7 @@
       </div>
       <div>
         <h1>Yeah?</h1>
-        <model src="walas.obj.bin"></model>
+        <model src="walas.binm"></model>
         <h2>80 000 triangles</h2>
       </div>
       <div>
@@ -273,6 +268,9 @@
         <p>Click to return to start.</p>
       </div>
     </div>
+    <script type="text/javascript">
+      App = new Slides(byId('slides'));
+    </script>
 	</body>
 
 </html>
