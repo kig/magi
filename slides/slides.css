@@ -1,0 +1,34 @@
+#slides {
+  text-align: center;
+}
+#slides div {
+  margin-bottom: 100%;
+  padding-top: 5%;
+  font-size: 200%;
+}
+#slides li {
+  list-style: none;
+}
+.editor {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  background-color: rgba(255,255,255,0.2);
+  padding: 10px;
+}
+.editor input {
+  border: 0px;
+  width: 400px;
+  font-size: 20px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin-bottom: 4px;
+  background-color: rgba(255,255,255,0.6);
+}
+.editor button {
+  margin: 0px;
+  margin-top: 10px;
+}
+canvas:focus {
+  outline: none;
+}
