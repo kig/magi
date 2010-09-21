@@ -38,7 +38,7 @@ Slides = Klass({
         else self.currentSlide++;
         self.currentSlide %= divs.length;
         if (self.currentSlide < 0) self.currentSlide = divs.length+self.currentSlide;
-        window.scrollTo(0, divs[self.currentSlide].offsetTop);
+        window.scrollTo(0, divs[self.currentSlide].offsetTop-40);
       }
     }
   },
@@ -209,8 +209,12 @@ Slides = Klass({
     var min = Math.min(first, last);
     var max = Math.max(first, last);
     var cc = this.slides.childNodes;
+    if (min == 0 && max == cc.length-1) {
+      min = cc.length-1;
+      max = 0;
+    }
     for (var i=0; i<cc.length; i++) {
-      if (!this.allSlidesVisible && (i < min || i > max)) {
+      if (!this.allSlidesVisible && i != min && i != max && (i < min || i > max)) {
         cc[i].display = false;
         this.deleteTextures(cc[i]);
       } else {
@@ -336,7 +340,7 @@ Slides = Klass({
       var slide = self.parseSlide(s, null, x);
       slide.element = s;
       slide.position[1] = Math.sin(2*Math.PI*x/10)*2500;
-      slide.position[0] = -x*7500;
+      slide.position[0] = -x*10000;
       slide.position[2] = Math.cos(2*Math.PI*x/10)*2500;
       x++;
       top.appendChild(slide);
