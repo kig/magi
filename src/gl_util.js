@@ -208,6 +208,10 @@ Magi.Texture = Klass({
     var target = gl[this.target];
     if (this.image) {
       var img = this.image;
+      if (!Object.isImageLoaded(img)) {
+        this.changed = true;
+        return;
+      }
       if ((this.image.tagName == 'IMG' && (/\.svgz?$/i).test(this.image.src)) ||
           (this.image.tagName == 'VIDEO' &&
           (/WebKit\/\d+/).test(window.navigator.userAgent)))
