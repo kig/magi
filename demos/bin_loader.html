@@ -26,7 +26,7 @@
           var s = new Magi.Scene(c, null, null);
           s.useDefaultCameraControls();
           s.bg = [0,0,0,0];
-          s.drawOnlyWhenChanged = true;
+//           s.drawOnlyWhenChanged = true;
           s.camera.position = [0, 2, 7];
           s.camera.lookAt = [0, 0.5, 0];
           var n = new Magi.Node();
@@ -41,6 +41,21 @@
           n.material.floats.MaterialShininess = 6.0;
           n.material.floats.MaterialDiffuse = [1,1,1,1];
           s.scene.appendChild(n);
+          s.scene.afterTransform(function(m) {
+            mat4.set(m, Magi.DefaultMaterial.lightMatrix);
+          });
+          var lp = n.material.floats.LightPos;
+          lp[1] = 3;
+          n.addFrameListener(function(t, dt) {
+            lp[0] = 7 * Math.sin(t/1000);
+            lp[2] = 7 * Math.cos(t/1000);
+          });
+          var cb = new Magi.Cube();
+          cb.setScale(0.2);
+          cb.addFrameListener(function(t,dt) {
+            vec3.set(lp, this.position);
+          });
+          s.scene.appendChild(cb);
         }
       }
     </script>
