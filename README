@@ -2,34 +2,63 @@ Sketching a small WebGL scene graph library
 
 Goals: [- planned, + implemented, x started]
   Put together quick presentation graphics
+    x webgl_presentation.html -- semi-complete HTML slideshow app
+
+  Write documentation
+    x matrix.js changes -- glMatrix.js fork
+    x gl_util.js -- WebGL utils, DOM utils, Colors, Curves, Klass
+    - scenegraph.js -- Basic scene graph
+    - scene_util.js -- More advanced stuff, default shaders
+    - tar.js -- Tar archive loader
+    - obj_loader.js -- Quite incomplete OBJ model format loader
+    - bin_loader.js -- Custom binary model format loader
+
   Make simple things simple
-    Loading and displaying simple textured models
-      x Load archives with model and textures using XMLHttpRequest
-      - Multiple lights
     Drawing text
       + Draw text using the 2D canvas
       + Billboard text (buggy)
-      x Layouted text (this is an utter pain to implement though)
       - Extruded text (hmm?)
     Drawing images
       + Load image to textured quad
     Applying post-processing filters
-      - Cameras with FBO render targets
+      + Displays with FBO render targets
       + Material system
+      - Easy way to chain filters
     Animation
+      + Move along Bezier curves & Catmull-Rom splines
       x Animation vocabulary
       - Transformation tweens
-      x Follow along Bezier curves & Catmull-Rom splines
     User inputs
       + Default camera navigation
       - Event handlers
+    Loading and displaying simple textured models
+      x Load archives with model and textures using XMLHttpRequest
+      - Multiple lights
     Drawing presentation geometry
-      x Cubes, mesh cubes
       + Quads, mesh quads
-      + Spheres
-      - Capped cylinders
+      + Fullscreen quads
+      x Spheres
+      x Cubes, mesh cubes
       x Ring segments, capped rings
+      - Capped cylinders
       - Ribbons (along Bezier paths)
       - Dice
-      + Fullscreen quads
       - Layouted arrays of objects (grids, circles, ...)
+
+  Not-so-complex stuff
+    x Rewrite scene graph so that it can handle multiple passes easier.
+    x Have a structure that's somewhat like this:
+      - Display == render target + scene
+        - to draw, bind FBO and render scene
+        - write a custom draw method to do fancy stuff like envmaps or shadows
+      x Camera == perspective & lookat matrices, used by display
+      - Light == per-scene list of light attribs, for use in shaders
+      x Scene == graph of nodes
+      + Node == matrix + model + material + subgraph
+      + Model == geometry
+      + Material == shader + uniforms
+
+  Complex stuff
+    - Shadow maps
+    - Depth-peeling
+    - Envmaps
