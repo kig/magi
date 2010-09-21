@@ -339,6 +339,14 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       image.src = src;
     }
     this.image = image;
+    if (image.tagName && !Object.isImageLoaded(image)) {
+      var self = this;
+      image.addEventListener('load', function() {
+        if (self.image == this) {
+          self.setImage(this);
+        }
+      }, false);
+    }
     this.image.width; // workaround for strange chrome bug
     this.width = this.image.width;
     this.height = this.image.height;
