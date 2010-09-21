@@ -131,7 +131,11 @@
         gl_FragColor = c*c.a;
       }
     </script>
-    <script type="text/javascript" src="../src/magi.js"></script>
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript" src="../src/bin_loader.js"></script>
     <script type="text/javascript">
       Slides = Klass({
         currentSlide : 0,
@@ -208,7 +212,7 @@
           grad.material.floats.aspect = 4/3;
           s.scene.appendChild(grad);
 
-          $('slides').style.display = 'none';
+          byId('slides').style.display = 'none';
 
 
           s.scene.addFrameListener(function(t,dt) {
@@ -279,7 +283,8 @@
           this.scene.addFrameListener(function(t,dt) {
             vec3.sub(self.targetPos, self.scene.position, d);
             if (vec3.lengthSquare(d) > 1) {
-              vec3.scale(d, 0.25);
+              var f = 1-Math.pow(0.75, dt/33);
+              vec3.scale(d, f);
               vec3.add(self.scene.position, d);
             } else {
               self.visibleSlides(self.currentSlide, self.currentSlide);
@@ -288,19 +293,23 @@
             vec3.sub(d, self.cube.position);
             var dist = vec3.length(d);
             if (dist > 1) {
-              vec3.scale(d, 0.15);
+              var f = 1-Math.pow(0.85, dt/33);
+              vec3.scale(d, f);
               vec3.add(self.cube.position, d);
               self.cube.outerCube.setScale(Math.max(0.3, Math.min(1.0, 100.0/dist)));
               self.cube.outerCube.rotationSpeed = Math.min(50, 1+dist/10);
-              if (dist < 80 && dist > 50 && self.pulse == 0) {
-                self.pulse = 10;
+              if (dist < 80 && dist > 50 && self.pulse <= 0) {
+                self.pulse = 330;
               }
             } else {
+              self.cube.outerCube.setScale(1.0);
               self.cube.outerCube.rotationSpeed = 1;
             }
-            if (self.pulse) {
-              self.cube.innerCube.setScale(0.8-self.pulse*0.02);
-              self.pulse--;
+            if (self.pulse>0) {
+              self.cube.innerCube.setScale(0.8-(self.pulse/33)*0.02);
+              self.pulse-=dt;
+            } else {
+              self.cube.innerCube.setScale(0.8);
             }
           });
         },
@@ -430,7 +439,7 @@
         },
 
         parseSlides : function(elem) {
-          var cn = $A(elem.childNodes).filter(function(s){ return s.tagName; });
+          var cn = toArray(elem.childNodes).filter(function(s){ return s.tagName; });
           var top = new Magi.Node();
           var self = this;
           var x = 0;
@@ -450,7 +459,7 @@
         },
 
         parseSlide : function(elem, acc, idx) {
-          var cn = $A(elem.childNodes);
+          var cn = toArray(elem.childNodes);
           acc = acc || {top: new Magi.Node(), left: 0, xOffset: 0, offset: 0, counter: 0};
           var self = this;
           var origOffset = acc.offset;
@@ -732,8 +741,8 @@
         if (slideIndex < 0) slideIndex = divs.length+slideIndex;
         window.scrollTo(0, divs[slideIndex].offsetTop);
       }
-      window.onload = function() {
-        App = new Slides($('slides'));
+      window.onload=function(){
+        App = new Slides(byId('slides'));
       }
     </script>
   </head>
