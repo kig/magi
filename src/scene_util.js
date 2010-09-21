@@ -527,6 +527,7 @@ Magi.DefaultMaterial = {
     "attribute vec2 TexCoord;"+
     "uniform mat4 PMatrix;"+
     "uniform mat4 MVMatrix;"+
+    "uniform mat4 LightMatrix;"+
     "uniform mat3 NMatrix;"+
     "uniform float LightConstantAtt;"+
     "uniform float LightLinearAtt;"+
@@ -542,7 +543,8 @@ Magi.DefaultMaterial = {
     "  texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);"+
     "  normal = normalize(NMatrix * Normal);"+
     "  vec4 worldPos = MVMatrix * v;"+
-    "  lightVector = vec3(LightPos - worldPos);"+
+    "  vec4 lightWorldPos = LightMatrix * LightPos;"+
+    "  lightVector = vec3(lightWorldPos - worldPos);"+
     "  lightDir = normalize(lightVector);"+
     "  float dist = length(lightVector);"+
     "  eyeVec = -vec3(worldPos);"+
@@ -577,7 +579,8 @@ Magi.DefaultMaterial = {
     "  vec3 R = reflect(-lightDir, normal);"+
     "  float specular = pow( max(dot(R, E), 0.0), MaterialShininess );"+
     "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
-    "  color += lcolor * step(0.0, lambertTerm);"+
+    "  if (lambertTerm > 0.0) color += lcolor * lambertTerm;"+
+    "  else color += diffuse * attenuation * 0.3 * -lambertTerm;"+
     "  color += texture2D(EmitTex, texCoord0);" +
     "  color *= matDiff.a;"+
     "  color.a = matDiff.a;"+
@@ -590,8 +593,12 @@ Magi.DefaultMaterial = {
       var shader = new Magi.Shader(null, this.vert, this.frag);
       this.cached = this.setupMaterial(shader);
     }
-    return this.cached.copy();
+    var c = this.cached.copy();
+    c.floats.LightMatrix = this.lightMatrix;
+    return c;
   },
+
+  lightMatrix : mat4.newIdentity(),
 
   setupMaterial : function(shader) {
     var m = new Magi.Material(shader);
@@ -600,43 +607,17 @@ Magi.DefaultMaterial = {
     m.floats.MaterialDiffuse = vec4.create([0.5, 0.5, 0.5, 1]);
     m.floats.MaterialAmbient = vec4.create([1, 1, 1, 1]);
     m.floats.MaterialShininess = 1.5;
+    m.floats.LightMatrix = this.lightMatrix;
 
-    m.floats.LightPos = vec4.create([7, 7, 7, 1.0]);
+    m.floats.LightPos = vec4.create([1, 1, 1, 1.0]);
     m.floats.GlobalAmbient = vec4.create([1, 1, 1, 1]);
     m.floats.LightSpecular = vec4.create([0.8, 0.8, 0.95, 1]);
     m.floats.LightDiffuse = vec4.create([0.7, 0.6, 0.9, 1]);
     m.floats.LightAmbient = vec4.create([0.1, 0.10, 0.2, 1]);
     m.floats.LightConstantAtt = 0.0;
     m.floats.LightLinearAtt = 0.1;
-    m.floats.LightQuadraticAtt = 0.0;
+    m.floats.LightQuadraticAtt = 0.02;
     return m;
   }
 
 }
-
-        // the goal here is to make simple things simple
-        
-        // Reasonable defaults:
-        // - default shader [with multi-texturing (diffuse, specular, normal?)]
-        // - camera position
-        // - scene navigation controls
-        
-        // Simple things:
-        // - drawing things with lighting
-        // - making things move [like CSS transitions?]
-        // - text 
-        // - images
-        // - painter's algorithm for draw list sort
-        // - loading and displaying models
-        // - picking
-
-        // Easy fancy things:
-        // - rendering to FBOs (scene.renderTarget = fbo)
-        
-        /*
-        ren.scene.addFrameListener(function(t,dt) {
-          var l = Matrix.mulv4(ren.camera.getLookMatrix(), [7, 7, 7, 1.0]);
-          this.material.floats.LightPos = l
-        });
-        */
-
