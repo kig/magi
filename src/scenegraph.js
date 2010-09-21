@@ -40,6 +40,7 @@ Magi.Node = Klass(Magi.Motion, {
     this.scaling = vec3.create([1, 1, 1]);
     this.frameListeners = [];
     this.childNodes = [];
+    this.afterTransformListeners = [];
   },
 
   getNodeById : function(name) {
@@ -212,6 +213,10 @@ Magi.Node = Klass(Magi.Motion, {
   addFrameListener : function(f) {
     this.frameListeners.push(f);
   },
+
+  afterTransform : function(f) {
+    this.afterTransformListeners.push(f);
+  },
   
   update : function(t, dt) {
     var a = [];
@@ -250,6 +255,9 @@ Magi.Node = Klass(Magi.Motion, {
     mat3.transpose(this.normalMatrix);
     for (var i=0; i<this.childNodes.length; i++)
       this.childNodes[i].updateTransform(m);
+    for (var i=0; i<this.afterTransformListeners.length; i++) {
+      this.afterTransformListeners[i].call(this,m);
+    }
   },
   
   collectDrawList : function(arr) {
@@ -331,12 +339,24 @@ Magi.Material = Klass({
 
   cmp : function(a, b) {
     var rv = false;
-    if (a && b && a.length && b.length && a.length === b.length) {
-      rv = true;
-      for (var i=0; i<a.length; i++)
-        rv = rv && (a[i] === b[i]);
+    if (a && b && a.length && b.length) {
+      if (a.length == b.length) {
+        rv = true;
+        for (var i=0; i<a.length; i++)
+          rv = rv && (a[i] == b[i]);
+      }
+    } else {
+      rv = a == b;
     }
     return rv;
+  },
+
+  cloneVec : function(src, dst) {
+    if (!dst || dst.length != src.length)
+      dst = new src.constructor(src.length);
+    for (var i=0; i<src.length; i++)
+      dst[i] = src[i];
+    return dst;
   },
   
   applyFloats : function() {
@@ -344,9 +364,12 @@ Magi.Material = Klass({
     for (var name in this.floats) {
       var uf = this.floats[name];
       var s = shader.uniform(name);
-      if (s.current === uf || this.cmp(s.current,uf))
+      if (this.cmp(s.current,uf))
         continue;
-      s.current = uf;
+      if (uf.length)
+        s.current = this.cloneVec(uf, s.current);
+      else
+        s.current = uf;
       Magi.Stats.uniformSetCount++;
       if (uf.length == null) {
         shader.uniform1f(name, uf);
@@ -379,9 +402,12 @@ Magi.Material = Klass({
     for (var name in this.ints) {
       var uf = this.ints[name];
       var s = shader.uniform(name);
-      if (s.current === uf || this.cmp(s.current,uf))
+      if (this.cmp(s.current,uf))
         continue;
-      s.current = uf;
+      if (uf.length)
+        s.current = this.cloneVec(uf, s.current);
+      else
+        s.current = uf;
       Magi.Stats.uniformSetCount++;
       if (uf.length == null) {
         shader.uniform1i(name, uf);
