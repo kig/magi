@@ -1,10 +1,10 @@
 if (typeof Magi == 'undefined') Magi = {};
 
-if (!window['$A']) {
+if (!window['toArray']) {
   /**
     Creates a new array from an object with #length.
     */
-  $A = function(obj) {
+  toArray = function(obj) {
     var a = new Array(obj.length)
     for (var i=0; i<obj.length; i++)
       a[i] = obj[i]
@@ -74,7 +74,7 @@ Klass = function() {
   var c = function() {
     this.initialize.apply(this, arguments)
   }
-  c.ancestors = $A(arguments)
+  c.ancestors = toArray(arguments)
   c.prototype = {}
   for(var i = 0; i<arguments.length; i++) {
     var a = arguments[i]
@@ -208,8 +208,9 @@ Magi.Texture = Klass({
     var target = gl[this.target];
     if (this.image) {
       var img = this.image;
-      if (this.image.tagName == 'VIDEO' &&
-          (/WebKit\/\d+/).test(window.navigator.userAgent))
+      if ((this.image.tagName == 'IMG' && (/\.svgz?$/i).test(this.image.src)) ||
+          (this.image.tagName == 'VIDEO' &&
+          (/WebKit\/\d+/).test(window.navigator.userAgent)))
       {
         if (!this.image.tmpCanvas ||
             this.image.tmpCanvas.width != this.image.width ||
@@ -273,9 +274,9 @@ Magi.Texture = Klass({
       this.compile();
     this.gl.bindTexture(this.gl[this.target], this.textureObject);
     if (this.changed) {
+      this.changed = false;
       this.upload();
       this.regenerateMipmap();
-      this.changed = false;
     }
   },
 
@@ -1321,7 +1322,7 @@ Magi.Curves = {
   },
 
   catmullRomPoint : function (a,b,c,d, t, dest) {
-    if (!dest) dest = vec3.create();
+    if (dest == null) dest = vec3.create();
     var af = ((-t+2)*t-1)*t*0.5;
     var bf = (((3*t-5)*t)*t+2)*0.5;
     var cf = ((-3*t+4)*t+1)*t*0.5;
@@ -1333,37 +1334,76 @@ Magi.Curves = {
     return dest;
   },
 
-/*
-  catmullRomAngle : function (a,b,c,d, t) {
+  catmullRomVector : function(a,b,c,d, t, dst) {
     var dx = 0.5 * (c[0] - a[0] + 2*t*(2*a[0] - 5*b[0] + 4*c[0] - d[0]) +
-             3*t*t*(3*b[0] + d[0] - a[0] - 3*c[0]))
+             3*t*t*(3*b[0] + d[0] - a[0] - 3*c[0]));
     var dy = 0.5 * (c[1] - a[1] + 2*t*(2*a[1] - 5*b[1] + 4*c[1] - d[1]) +
-             3*t*t*(3*b[1] + d[1] - a[1] - 3*c[1]))
-    return Math.atan2(dy, dx)
+             3*t*t*(3*b[1] + d[1] - a[1] - 3*c[1]));
+    var dz = 0.5 * (c[2] - a[2] + 2*t*(2*a[2] - 5*b[2] + 4*c[2] - d[2]) +
+             3*t*t*(3*b[2] + d[2] - a[2] - 3*c[2]));
+    if (!dst) dst = vec3.create();
+    dst[0] = dx; dst[1] = dy; dst[2] = dz;
+    vec3.normalize(dst);
+    return dst;
   },
 
-  catmullRomPointAngle : function (a,b,c,d, t) {
-    var p = this.catmullRomPoint(a,b,c,d,t)
-    var a = this.catmullRomAngle(a,b,c,d,t)
-    return {point:p, angle:a}
+  catmullRomPointVector : function (a,b,c,d, t, dst) {
+    if (dst == null) dst = { point: vec3.create(), vector: vec3.create() };
+    this.catmullRomPoint(a,b,c,d,t,dst.point);
+    this.catmullRomVector(a,b,c,d,t,dst.vector);
+    return dst;
   },
 
-  lineAngle : function(a,b) {
-    return Math.atan2(b[1]-a[1], b[0]-a[0])
+  lineVector : function(a,b,dst) {
+    if (dst == null) dst = vec3.create();
+    vec3.sub(b, a, dst);
+    dst.normalize();
+    return dst;
   },
 
-  quadraticAngle : function(a,b,c,t) {
-    var d = this.linePoint(a,b,t)
-    var e = this.linePoint(b,c,t)
-    return this.lineAngle(d,e)
+  linePointVector : function(a,b,t,dst) {
+    if (dst == null) dst = { point: vec3.create(), vector: vec3.create() };
+    this.linePoint(a,b,t,dst.point);
+    this.lineVector(a,b,dst.vector);
+    return dst;
   },
 
-  cubicAngle : function(a, b, c, d, t) {
-    var e = this.quadraticPoint(a,b,c,t)
-    var f = this.quadraticPoint(b,c,d,t)
-    return this.lineAngle(e,f)
+  __tmp0 : vec3.create(),
+  __tmp1 : vec3.create(),
+  __tmp2 : vec3.create(),
+  __tmp3 : vec3.create(),
+  __tmp4 : vec3.create(),
+  __tmp5 : vec3.create(),
+
+  quadraticVector : function(a,b,c,t,dst) {
+    if (dst == null) dst = vec3.create();
+    var d = this.__tmp0, e = this.__tmp1;
+    d = this.linePoint(a,b,t, d);
+    e = this.linePoint(b,c,t, e);
+    return this.lineVector(d,e, dst);
   },
-*/
+
+  quadraticPointVector : function(a,b,c,t,dst) {
+    if (dst == null) dst = { point: vec3.create(), vector: vec3.create() };
+    this.quadraticPoint(a,b,t,dst.point);
+    this.quadraticVector(a,b,t,dst.vector);
+    return dst;
+  },
+
+  cubicVector : function(a, b, c, d, t, dst) {
+    if (dst == null) dst = vec3.create();
+    var e = this.__tmp2, f = this.__tmp3;
+    e = this.quadraticPoint(a,b,c,t, e);
+    f = this.quadraticPoint(b,c,d,t, f);
+    return this.lineVector(e,f,dst);
+  },
+
+  cubicPointVector : function(a,b,c,d,t,dst) {
+    if (dst == null) dst = { point: vec3.create(), vector: vec3.create() };
+    this.cubicPoint(a,b,t,dst.point);
+    this.cubicVector(a,b,t,dst.vector);
+    return dst;
+  },
 
   lineLength : function(a,b) {
     var x = (b[0]-a[0]);
@@ -1380,8 +1420,9 @@ Magi.Curves = {
   },
 
   quadraticLength : function(a,b,c, error) {
-    var p1 = this.linePoint(a,b,2/3)
-    var p2 = this.linePoint(b,c,1/3)
+    var p1 = this.__tmp4, p2 = this.__tmp5;
+    p1 = this.linePoint(a,b,2/3, p1)
+    p2 = this.linePoint(b,c,1/3, p2)
     return this.cubicLength(a,p1,p2,c, error)
   },
 
@@ -1422,43 +1463,50 @@ Magi.Curves = {
       if (!error) error = 1;
       return addifclose([a,b,c,d], error);
     };
-  })()
+  })(),
 
-/*
-  quadraticLengthPointAngle : function(a,b,c,lt,error) {
-    var p1 = this.linePoint(a,b,2/3);
-    var p2 = this.linePoint(b,c,1/3);
-    return this.cubicLengthPointAngle(a,p1,p2,c, error);
+  quadraticLengthPointVector : function(a,b,c,lt,error, dst) {
+    var p1 = this.__tmp0, p2 = this.__tmp1;
+    p1 = this.linePoint(a,b,2/3, p1);
+    p2 = this.linePoint(b,c,1/3, p2);
+    return this.cubicLengthPointVector(a,p1,p2,c, error, dst);
   },
 
-  cubicLengthPointAngle : function(a,b,c,d,lt,error) {
-    // how about not creating a billion arrays, hmm?
-    var len = this.cubicLength(a,b,c,d,error)
-    var point = a
-    var prevpoint = a
-    var lengths = []
-    var prevlensum = 0
-    var lensum = 0
-    var tl = lt*len
-    var segs = 20
-    var fac = 1/segs
-    for (var i=1; i<=segs; i++) { // FIXME get smarter
-      prevpoint = point
-      point = this.cubicPoint(a,b,c,d, fac*i)
-      prevlensum = lensum
-      lensum += this.lineLength(prevpoint, point)
+  cubicLengthPointVector : function(a,b,c,d,lt,error, dst) {
+    if (dst == null) dst = { point: vec3.create(), vector: vec3.create() };
+    var len = this.cubicLength(a,b,c,d,error);
+    var point = this.__tmp4;
+    vec3.set(a, point);
+    var prevpoint = this.__tmp5;
+    vec3.set(a, prevpoint);
+    var prevlensum = 0;
+    var lensum = 0;
+    var tl = lt*len;
+    var segs = 20;
+    var fac = 1/segs;
+    // Fixed stepping over the cubic curve. Rich in error.
+    for (var i=1; i<=segs; i++) {
+      vec3.set(point, prevpoint);
+      this.cubicPoint(a,b,c,d, fac*i, point);
+      prevlensum = lensum;
+      lensum += this.lineLength(prevpoint, point);
       if (lensum >= tl) {
-        if (lensum == prevlensum)
-          return {point: point, angle: this.lineAngle(a,b)}
-        var dl = lensum - tl
-        var dt = dl / (lensum-prevlensum)
-        return {point: this.linePoint(prevpoint, point, 1-dt),
-                angle: this.cubicAngle(a,b,c,d, fac*(i-dt)) }
+        if (lensum == prevlensum) {
+          vec3.set(point, dst.point);
+          this.lineVector(a,b, dst.vector);
+          return dst;
+        }
+        var dl = lensum - tl;
+        var dt = dl / (lensum-prevlensum);
+        this.linePoint(prevpoint, point, 1-dt, dst.point);
+        this.cubicVector(a,b,c,d, fac*(i-dt), dst.vector);
+        return dst;
       }
     }
-    return {point: d.slice(0), angle: this.lineAngle(c,d)}
+    vec3.set(d, dst.point);
+    this.lineVector(c,d, dst.vector);
+    return dst;
   }
-*/
 }
 
 
@@ -1473,14 +1521,14 @@ Magi.Colors = {
 
     @param h Hue in degrees (0 .. 359)
     @param s Saturation (0.0 .. 1.0)
-    @param l Lightness (0 .. 255)
+    @param l Lightness (0.0 .. 1.0)
     @return The corresponding RGB color as [r,g,b]
     @type Array
     */
   hsl2rgb : function(h,s,l) {
     var r,g,b;
     if (s == 0) {
-      r=g=b=v;
+      r=g=b=l;
     } else {
       var q = (l < 0.5 ? l * (1+s) : l+s-(l*s));
       var p = 2 * l - q;
@@ -1530,7 +1578,7 @@ Magi.Colors = {
 
     @param h Hue in degrees (0 .. 359)
     @param s Saturation (0.0 .. 1.0)
-    @param v Value (0 .. 255)
+    @param v Value (0 .. 255) You can also use 0 .. 1.0.
     @return The corresponding RGB color as [r,g,b]
     @type Array
     */
@@ -1579,46 +1627,8 @@ Magi.Colors = {
       }
     }
     return [r,g,b];
-  },
-
-  /**
-    Parses a color style object into one that can be used with the given
-    canvas context.
-
-    Accepted formats:
-      'white'
-      '#fff'
-      '#ffffff'
-      'rgba(255,255,255, 1.0)'
-      [255, 255, 255]
-      [255, 255, 255, 1.0]
-      new Gradient(...)
-      new Pattern(...)
-
-    @param style The color style to parse
-    @param ctx Canvas 2D context on which the style is to be used
-    @return A parsed style, ready to be used as ctx.fillStyle / strokeStyle
-    */
-  parseColorStyle : function(style, ctx) {
-    if (typeof style == 'string') {
-      return style;
-    } else if (style.compiled) {
-      return style.compiled;
-    } else if (style.isPattern) {
-      return style.compile(ctx);
-    } else if (style.length == 3) {
-      return 'rgba('+style.map(Math.round).join(",")+', 1)';
-    } else if (style.length == 4) {
-      return 'rgba('+
-              Math.round(style[0])+','+
-              Math.round(style[1])+','+
-              Math.round(style[2])+','+
-              style[3]+
-             ')';
-    } else {
-      throw( "Bad style: " + style );
-    }
   }
+
 }
 
 
@@ -1972,12 +1982,6 @@ if (!String.prototype.strip) {
   }
 }
 
-if (!window['$']) {
-  $ = function(id) {
-    return document.getElementById(id)
-  }
-}
-
 if (!Math.sinh) {
   /**
     Returns the hyperbolic sine of x.
@@ -2105,6 +2109,62 @@ E.canvas = function(w,h,config) {
   return E('canvas', Object.extend(config, {id: id, width: w, height: h}))
 }
 
+/**
+  Get element by id. Shortcut for document.getElementById.
+
+  @param {string} id The element id to get.
+  @return The found element or null if no element found.
+*/
+E.byId = function(id) {
+  return document.getElementById(id);
+};
+/**
+  Get elements by class name. Shortcut for document.getElementByClassName.
+  Returns elements in a normal Array.
+
+  @param {string} className The element class name to get.
+  @return An array with all the found elements in it.
+*/
+E.byClass = function(className) {
+  return toArray(document.getElementsByClassName(className));
+};
+/**
+  Get elements by tag name. Shortcut for document.getElementByTagName.
+  Returns elements in a normal Array.
+
+  @param {string} tagName The element tag name to get.
+  @return An array with all the found elements in it.
+*/
+E.byTag = function(tagName) {
+  return toArray(document.getElementsByTagName(tagName));
+};
+
+if (typeof byId == 'undefined')
+  byId = E.byId;
+if (typeof byClass == 'undefined')
+  byClass = E.byClass;
+if (typeof byTag == 'undefined')
+  byTag = E.byTag;
+
+/**
+  Creates a tag-making function. The returned function behaves like
+  E(tagName, ...arguments)
+
+  E.g.
+    var d = E.make('DIV');
+    d("foo", {id: 'bar'});
+  is equivalent to
+    E('DIV', "foo", {id: 'bar'});
+
+  Note that all the tags in E.tags already have shortcut functions defined,
+  for example
+    DIV("foo", {id: 'bar'});
+  and
+    E.DIV("foo", {id: 'bar'});
+
+  @param {string} tagName The element tag name to use.
+  @return A tag-making function.
+*/
 E.make = function(tagName){
   return (function() {
     var args = [tagName];
@@ -2112,7 +2172,29 @@ E.make = function(tagName){
     return E.apply(E, args);
   });
 }
-E.tags = "a abbr acronym address area audio b base bdo big blockquote body br button canvas caption center cite code col colgroup dd del dfn div dl dt em fieldset form frame frameset h1 h2 h3 h4 h5 h6 head hr html i iframe img input ins kbd labeel legend li link map meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var video".toUpperCase().split(" ");
+E.tags = "a abbr acronym address area audio b base bdo big blockquote body br button canvas caption center cite code col colgroup dd del dfn div dl dt em fieldset form frame frameset h1 h2 h3 h4 h5 h6 head hr html i iframe img input ins kbd label legend li link map meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var video".toUpperCase().split(" ");
+/*
+  The following creates shortcut functions for creating HTML elements.
+  The shortcuts behave like calling E(tagName, ...arguments).
+
+  E.g.
+    DIV( "Hello, world!", {className : 'hw'} );
+  is equivalent to
+    E('DIV', "Hello, world!", {className : 'hw'} );
+
+  There are also E-namespaced versions of the functions:
+    DIV == E.DIV
+
+  The different input element types are handled in a special fashion:
+    TEXT( 'value', {id : 'foo'} );
+  is equivalent to
+    E('INPUT', {type: 'TEXT', value: 'value'}, {id : 'foo'});
+  If the first argument is not a string, it's parsed the same way as with E:
+    TEXT( {id : 'foo', value : 'bar'} );
+  is equivalent to
+    E('INPUT', {type: 'TEXT'}, {id : 'foo', value : 'bar'});
+  
+*/
 (function() {
   E.tags.forEach(function(t) {
     window[t] = E[t] = E.make(t);
@@ -2147,7 +2229,7 @@ E.tags = "a abbr acronym address area audio b base bdo big blockquote body br bu
   @param {int} h The height of the crop box.
   */
 E.cropImage = function(image, x, y, w, h) {
-  var i = image.cloneNode(false)
+  var i = image.cloneNode(false);
   Object.forceExtend(i.style, {
     position: 'relative',
     left: -x + 'px',
@@ -2155,15 +2237,15 @@ E.cropImage = function(image, x, y, w, h) {
     margin: '0px',
     padding: '0px',
     border: '0px'
-  })
+  });
   var e = E('div', {style: {
     display: 'block',
     width: w + 'px',
     height: h + 'px',
     overflow: 'hidden'
-  }})
-  e.appendChild(i)
-  return e
+  }});
+  e.appendChild(i);
+  return e;
 }
 
 /**
@@ -2173,7 +2255,7 @@ E.cropImage = function(image, x, y, w, h) {
   @return The created text node
   */
 T = function(text) {
-  return document.createTextNode(text)
+  return document.createTextNode(text);
 }
 
 /**
@@ -2188,9 +2270,9 @@ T = function(text) {
 Object.conditionalExtend = function(dst, src) {
   for (var i in src) {
     if (dst[i] == null)
-      dst[i] = src[i]
+      dst[i] = src[i];
   }
-  return dst
+  return dst;
 }
 
 /**
@@ -2202,25 +2284,25 @@ Object.conditionalExtend = function(dst, src) {
   */
 Object.clone = function(src) {
   if (!src || src == true)
-    return src
+    return src;
   switch (typeof(src)) {
     case 'string':
-      return Object.extend(src+'', src)
-      break
+      return Object.extend(src+'', src);
+      break;
     case 'number':
-      return src
-      break
+      return src;
+      break;
     case 'function':
-      obj = eval(src.toSource())
-      return Object.extend(obj, src)
-      break
+      obj = eval(src.toSource());
+      return Object.extend(obj, src);
+      break;
     case 'object':
       if (src instanceof Array) {
-        return Object.extend([], src)
+        return Object.extend([], src);
       } else {
-        return Object.extend({}, src)
+        return Object.extend({}, src);
       }
-      break
+      break;
   }
 }
 
@@ -2234,11 +2316,11 @@ Object.clone = function(src) {
   @type {Image}
   */
 Object.loadImage = function(src, onload) {
-  var img = new Image()
+  var img = new Image();
   if (onload)
-    img.onload = onload
-  img.src = src
-  return img
+    img.onload = onload;
+  img.src = src;
+  return img;
 }
 
 /**
@@ -2250,11 +2332,12 @@ Object.loadImage = function(src, onload) {
   @addon
   */
 Object.isImageLoaded = function(image) {
-  if (image.tagName == 'CANVAS') return true
-  if (!image.complete) return false
-  if (image.naturalWidth != null && image.naturalWidth == 0) return false
-  if (image.width == null || image.width == 0) return false
-  return true
+  if (image.tagName == 'CANVAS') return true;
+  if (image.tagName == 'VIDEO') return image.duration > 0;
+  if (!image.complete) return false;
+  if (image.naturalWidth != null && image.naturalWidth == 0) return false;
+  if (image.width == null || image.width == 0) return false;
+  return true;
 }
 
 /**
@@ -2263,18 +2346,18 @@ Object.isImageLoaded = function(image) {
 Object.sum = function(a,b) {
   if (a instanceof Array) {
     if (b instanceof Array) {
-      var ab = []
+      var ab = [];
       for (var i=0; i<a.length; i++) {
-        ab[i] = a[i] + b[i]
+        ab[i] = a[i] + b[i];
       }
-      return ab
+      return ab;
     } else {
-      return a.map(function(v){ return v + b })
+      return a.map(function(v){ return v + b });
     }
   } else if (b instanceof Array) {
-    return b.map(function(v){ return v + a })
+    return b.map(function(v){ return v + a });
   } else {
-    return a + b
+    return a + b;
   }
 }
 
@@ -2284,18 +2367,18 @@ Object.sum = function(a,b) {
 Object.sub = function(a,b) {
   if (a instanceof Array) {
     if (b instanceof Array) {
-      var ab = []
+      var ab = [];
       for (var i=0; i<a.length; i++) {
-        ab[i] = a[i] - b[i]
+        ab[i] = a[i] - b[i];
       }
-      return ab
+      return ab;
     } else {
-      return a.map(function(v){ return v - b })
+      return a.map(function(v){ return v - b });
     }
   } else if (b instanceof Array) {
-    return b.map(function(v){ return a - v })
+    return b.map(function(v){ return a - v });
   } else {
-    return a - b
+    return a - b;
   }
 }
 
@@ -2303,11 +2386,11 @@ Object.sub = function(a,b) {
   Deletes all attributes from an object.
   */
 Object.clear = function(obj) {
-  for (var i in obj) delete obj[i]
-  return obj
+  for (var i in obj) delete obj[i];
+  return obj;
 }
 
-if (!window.Mouse) Mouse = {}
+if (!window.Mouse) Mouse = {};
 /**
   Returns the coordinates for a mouse event relative to element.
   Element must be the target for the event.
@@ -2317,66 +2400,66 @@ if (!window.Mouse) Mouse = {}
   @return An object of form {x: relative_x, y: relative_y}
   */
 Mouse.getRelativeCoords = function(element, event) {
-  var xy = {x:0, y:0}
-  var osl = 0
-  var ost = 0
-  var el = element
+  var xy = {x:0, y:0};
+  var osl = 0;
+  var ost = 0;
+  var el = element;
   while (el) {
-    osl += el.offsetLeft
-    ost += el.offsetTop
-    el = el.offsetParent
+    osl += el.offsetLeft;
+    ost += el.offsetTop;
+    el = el.offsetParent;
   }
-  xy.x = event.pageX - osl
-  xy.y = event.pageY - ost
-  return xy
+  xy.x = event.pageX - osl;
+  xy.y = event.pageY - ost;
+  return xy;
 }
 
 Browser = (function(){
-  var ua = window.navigator.userAgent
-  var chrome = ua.match(/Chrome\/\d+/)
-  var safari = ua.match(/Safari/)
-  var mobile = ua.match(/Mobile/)
-  var webkit = ua.match(/WebKit\/\d+/)
-  var khtml = ua.match(/KHTML/)
-  var gecko = ua.match(/Gecko/)
-  var ie = ua.match(/Explorer/)
-  if (chrome) return 'Chrome'
-  if (mobile && safari) return 'Mobile Safari'
-  if (safari) return 'Safari'
-  if (webkit) return 'Webkit'
-  if (khtml) return 'KHTML'
-  if (gecko) return 'Gecko'
-  if (ie) return 'IE'
-  return 'UNKNOWN'
+  var ua = window.navigator.userAgent;
+  var chrome = ua.match(/Chrome\/\d+/);
+  var safari = ua.match(/Safari/);
+  var mobile = ua.match(/Mobile/);
+  var webkit = ua.match(/WebKit\/\d+/);
+  var khtml = ua.match(/KHTML/);
+  var gecko = ua.match(/Gecko/);
+  var ie = ua.match(/Explorer/);
+  if (chrome) return 'Chrome';
+  if (mobile && safari) return 'Mobile Safari';
+  if (safari) return 'Safari';
+  if (webkit) return 'Webkit';
+  if (khtml) return 'KHTML';
+  if (gecko) return 'Gecko';
+  if (ie) return 'IE';
+  return 'UNKNOWN';
 })()
 
 
-Mouse.LEFT = 0
-Mouse.MIDDLE = 1
-Mouse.RIGHT = 2
+Mouse.LEFT = 0;
+Mouse.MIDDLE = 1;
+Mouse.RIGHT = 2;
 
 if (Browser == 'IE') {
-  Mouse.LEFT = 1
-  Mouse.MIDDLE = 4
+  Mouse.LEFT = 1;
+  Mouse.MIDDLE = 4;
 }
 
 Mouse.state = {}
 window.addEventListener('mousedown', function(ev) {
-  Mouse.state[ev.button] = true
-}, true)
+  Mouse.state[ev.button] = true;
+}, true);
 window.addEventListener('mouseup', function(ev) {
-  Mouse.state[ev.button] = false
-}, true)
+  Mouse.state[ev.button] = false;
+}, true);
 
 
 Event = {
   cancel : function(event) {
-    if (event.preventDefault) event.preventDefault()
+    if (event.preventDefault) event.preventDefault();
   },
 
   stop : function(event) {
-    Event.cancel(event)
-    if (event.stopPropagation) event.stopPropagation()
+    Event.cancel(event);
+    if (event.stopPropagation) event.stopPropagation();
   }
 }
 
