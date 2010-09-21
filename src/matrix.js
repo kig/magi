@@ -51,6 +51,7 @@ var vec3 = {};
  */
 vec3.create = function(vec) {
   var dest = new glMatrixArrayType(3);
+  Magi.Stats.vec3CreateCount++;
   
   if(vec) {
     dest[0] = vec[0];
@@ -64,6 +65,7 @@ vec3.create = function(vec) {
 vec4 = {};
 vec4.create = function(vec) {
   var dest = new glMatrixArrayType(4);
+  Magi.Stats.vec4CreateCount++;
   
   if(vec) {
     dest[0] = vec[0];
@@ -90,6 +92,7 @@ vec4.setLeft = function(dest, vec) {
 vec2 = {};
 vec2.create = function(vec) {
   var dest = new glMatrixArrayType(2);
+  Magi.Stats.vec2CreateCount++;
   
   if(vec) {
     dest[0] = vec[0];
@@ -437,6 +440,7 @@ var mat3 = {};
  */
 mat3.create = function(mat) {
   var dest = new glMatrixArrayType(9);
+  Magi.Stats.mat3CreateCount++;
   
   if(mat) {
     dest[0] = mat[0];
@@ -489,6 +493,7 @@ mat3.set = function(mat, dest) {
  * dest
  */
 mat3.identity = function(dest) {
+  if (dest == null) dest = mat3.create();
   dest[0] = 1;
   dest[1] = 0;
   dest[2] = 0;
@@ -612,6 +617,7 @@ var mat4 = {};
  */
 mat4.create = function(mat) {
   var dest = new glMatrixArrayType(16);
+  Magi.Stats.mat4CreateCount++;
   
   if(mat) {
     dest[0] = mat[0];
@@ -677,6 +683,7 @@ mat4.set = function(mat, dest) {
  * dest
  */
 mat4.identity = function(dest) {
+  if (dest == null) dest = mat4.create();
   dest[0] = 1;
   dest[1] = 0;
   dest[2] = 0;
@@ -1564,6 +1571,7 @@ quat4 = {};
  */
 quat4.create = function(quat) {
   var dest = new glMatrixArrayType(4);
+  Magi.Stats.quat4CreateCount++;
   
   if(quat) {
     dest[0] = quat[0];

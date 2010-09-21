@@ -1226,16 +1226,17 @@ Magi.Stats = {
   bindBufferCount : 0,
   drawElementsCount : 0,
   drawArraysCount : 0,
+  vec2CreateCount : 0,
+  vec3CreateCount : 0,
+  vec4CreateCount : 0,
+  mat3CreateCount : 0,
+  mat4CreateCount : 0,
+  quat4CreateCount : 0,
   reset : function(){
-    this.shaderBindCount = 0;
-    this.materialUpdateCount = 0;
-    this.uniformSetCount = 0;
-    this.textureSetCount = 0;
-    this.textureCreationCount = 0;
-    this.vertexAttribPointerCount = 0;
-    this.bindBufferCount = 0;
-    this.drawElementsCount = 0;
-    this.drawArraysCount = 0;
+    for (var i in this) {
+      if (typeof this[i] == 'number')
+        this[i] = 0;
+    }
   },
   print : function(elem) {
     elem.textContent =
@@ -1248,6 +1249,12 @@ Magi.Stats = {
       'Bind buffer count: ' + this.bindBufferCount + '\n' +
       'Draw elements count: ' + this.drawElementsCount + '\n' +
       'Draw arrays count: ' + this.drawArraysCount + '\n' +
+      'vec2 create count: ' + this.vec2CreateCount + '\n' +
+      'vec3 create count: ' + this.vec3CreateCount + '\n' +
+      'vec4 create count: ' + this.vec4CreateCount + '\n' +
+      'mat3 create count: ' + this.mat3CreateCount + '\n' +
+      'mat4 create count: ' + this.mat4CreateCount + '\n' +
+      'quat4 create count: ' + this.quat4CreateCount + '\n' +
       '';
   }
 }
