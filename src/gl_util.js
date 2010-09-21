@@ -1201,10 +1201,14 @@ Magi.log=function(msg) {
   }
 }
 Magi.GL_CONTEXT_ID = null;
-Magi.getGLContext = function(c, args){
+Magi.findGLContextId = function(c, args) {
   var find=function(a,f){for(var i=0,j;j=a[i],i++<a.length;)if(f(j))return j};
+  var id = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n, args)}catch(e){}});
+  return id;
+}
+Magi.getGLContext = function(c, args){
   if (!this.GL_CONTEXT_ID)
-    this.GL_CONTEXT_ID = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n)}catch(e){}});
+    this.GL_CONTEXT_ID = Magi.findGLContextId(c, args);
   if (!this.GL_CONTEXT_ID) {
     this.logCanvas = c;
     this.log("No WebGL context found. Click here for more details.");
