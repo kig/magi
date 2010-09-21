@@ -10,17 +10,17 @@
     <script type="text/javascript">
 
       init = function() {
-        var c = $('c');
+        var c = byId('c');
         c.style.position = 'fixed';
         c.style.top = '0px';
         c.style.left = '0px';
         c.width = window.innerWidth;
         c.height = window.innerHeight;
-        $('info').innerHTML = "Loading model (560kB)...";
+        byId('info').innerHTML = "Loading model (560kB)...";
         var w = Magi.Bin.load('walas.obj.bin');
         w.flatNormals = false;
         w.onload = function() {
-          $('info').innerHTML = "Downloaded 560kB in " + w.downloadTime + " ms<br>" +
+          byId('info').innerHTML = "Downloaded 560kB in " + w.downloadTime + " ms<br>" +
                                 "Parsed model in " + w.parseTime + " ms<br>" + 
                                 (w.vertices.length / 9) + " triangles";
           var s = new Magi.Scene(c);

@@ -10,17 +10,17 @@
     <script type="text/javascript">
 
       init = function() {
-        var s = new Magi.Scene($('c'));
-        $('info').innerHTML = 'Loading model (530kB)...';
+        var s = new Magi.Scene(byId('c'));
+        byId('info').innerHTML = 'Loading model (530kB)...';
         var w = Magi.Obj.load('tram.obj');
         w.onload = function() {
           s.camera.position = [0, 2, 7];
           var tex = new Magi.Texture();
           tex.image = new Image();
           tex.image.src = 'tram.jpg';
-          $('info').innerHTML = 'Loading texture (50kB)...';
+          byId('info').innerHTML = 'Loading texture (50kB)...';
           tex.image.onload = function(){
-            $('info').innerHTML = '';
+            byId('info').innerHTML = '';
             var n = new Magi.Node();
             var sc = 4.0 / (w.boundingBox.diameter);
             n.scaling = [sc, sc, sc];

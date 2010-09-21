@@ -13,7 +13,7 @@
     <script type="text/javascript">
 
       init = function() {
-        $('info').innerHTML = 'Loading .tar of model and texture (&lt;200kB)...<br>';
+        byId('info').innerHTML = 'Loading .tar of model and texture (&lt;200kB)...<br>';
         var t0 = new Date();
         Magi.Tar.load('tram.obj.tar', function(files) {
           var w = new Magi.Obj();
@@ -23,12 +23,12 @@
           var t = new Date;
           tex.image.src = files['tram.jpg'].toDataURL();
           var elapsed = new Date() - t;
-          $('info').innerHTML += 'Parsed tar in ' + this.parseTime + ' ms<br>' +
+          byId('info').innerHTML += 'Parsed tar in ' + this.parseTime + ' ms<br>' +
                                 'Parsed model ('+(w.vertices.length/9)+' tris) in ' + w.parseTime + ' ms<br>' +
                                 'Parsed texture ('+tex.image.width+'x'+tex.image.height+') in ' + elapsed + ' ms<br>';
-          $('info').innerHTML += 'Total time to load assets: ' + (new Date() - t0) + ' ms<br>';
+          byId('info').innerHTML += 'Total time to load assets: ' + (new Date() - t0) + ' ms<br>';
           var t1 = new Date();
-          var s = new Magi.Scene($('c'));
+          var s = new Magi.Scene(byId('c'));
           s.camera.position = [0, 2, 7];
           var n = new Magi.Node();
           var sc = 4.0 / (w.boundingBox.diameter);
@@ -42,13 +42,13 @@
           s.scene.addFrameListener(function(t,dt){
             this.rotation.angle += dt / 1000;
             if (frame == 1) {
-              $('info').innerHTML += 'Time to draw first frame (creating GL resources et al.): ' + (s.firstFrameDoneTime-t1) + ' ms<br>';
-              $('info').innerHTML += 'Total time to end of first frame: ' + (s.firstFrameDoneTime-t0) + ' ms<br>';
+              byId('info').innerHTML += 'Time to draw first frame (creating GL resources et al.): ' + (s.firstFrameDoneTime-t1) + ' ms<br>';
+              byId('info').innerHTML += 'Total time to end of first frame: ' + (s.firstFrameDoneTime-t0) + ' ms<br>';
             }
             frame++;
           });
           s.scene.appendChild(n);
-          $('info').innerHTML += 'Time to create scene: ' + (new Date() - t1) + ' ms<br>';
+          byId('info').innerHTML += 'Time to create scene: ' + (new Date() - t1) + ' ms<br>';
           t1 = new Date();
         });
       }

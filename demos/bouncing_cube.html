@@ -1,10 +1,14 @@
 <html>
   <head>
     <title>CUBE</title>
-    <script type="text/javascript" src="../src/magi.js"></script>
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
     <script type="text/javascript">
       window.onload = function() {
-        var s = new Magi.Scene($('c'), new Magi.Cube().makeBounce().makeRotate());
+        var s = new Magi.Scene(byId('c'),
+                               new Magi.Cube().makeBounce().makeRotate());
         var txt = new Magi.Text("CUBE");
         txt.setAlign(txt.centerAlign, txt.bottomAlign)
            .setY(0.5)

@@ -98,12 +98,12 @@
     <script type="text/javascript" src="../src/scene_util.js"></script>
     <script type="text/javascript">
       window.onresize = function() {
-        var cv = $('c');
+        var cv = byId('c');
         cv.width = window.innerWidth;
         cv.height = window.innerHeight;
       }
       window.onload = function() {
-        var cv = $('c');
+        var cv = byId('c');
         cv.style.position = 'absolute';
         cv.style.left = cv.style.top = '0px';
         window.onresize();

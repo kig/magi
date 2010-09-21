@@ -150,7 +150,7 @@ Magi.Scene = Klass({
     this.changed = false;
     Magi.throwError(this.gl, "Scene draw loop");
     if (this.showStats) {
-      var stats = $('stats');
+      var stats = E.byId('stats');
       if (stats) {
         Magi.Stats.print(stats);
         Magi.Stats.reset();
