@@ -20,134 +20,129 @@
     <div id="slides">
       <div>
         <h1>WebGL</h1>
-        <p>Click or press space for next slide.</p>
-        <p>Shift-click or backspace for previous slide.</p>
-      </div>
-      <div>
-        <h1>WebGL</h1>
         <h2>OpenGL ES 2.0 + JavaScript</h2>
         <h2>&lt;CANVAS&gt;</h2>
       </div>
       <div>
-        <h1>How do I get it?</h1>
-        <h2>Firefox 4 beta or Minefield</h2>
-        <h2>WebKit nightly on OS X 10.6</h2>
+        <h1>Kuinka sen saan?</h1>
+        <h2>Firefox 4 beta tai Minefield</h2>
+        <h2>WebKit nightly OS X 10.6:lla</h2>
         <h2>Chromium</h2>
         <p>khronos.org/webgl/wiki/Getting_a_WebGL_Implementation</p>
       </div>
       <div>
-        <h1>IE9 support?</h1>
-        <h2>No idea whatsoever.</h2>
+        <h1>Tukeeko IE9?</h1>
+        <h2>Ei mitään tietoa.</h2>
         <h2>Chrome Frame?</h2>
       </div>
       <div>
-        <h1>In HTML</h1>
-        <h2>The usual &lt;CANVAS&gt;</h2>
-        <h2>Works like an image</h2>
-        <h2>CSS, toDataURL(), etc.</h2>
+        <h1>HTML:ssä</h1>
+        <h2>Tavan &lt;CANVAS&gt;</h2>
+        <h2>Toimii kuten kuva</h2>
+        <h2>CSS, toDataURL(), jne.</h2>
       </div>
       <div>
         <h1>OpenGL ES 2.0</h1>
-        <h2>OpenGL for mobile phones.</h2>
-        <h2>Also works on computers.</h2>
-        <h2>Accelerated drawing.</h2>
+        <h2>OpenGL kännyköille.</h2>
+        <h2>Toimii myös tietokoneella.</h2>
+        <h2>Kiihdytettyä piirtämistä.</h2>
       </div>
       <div>
         <h1>1.1 vs. 2.0</h1>
-        <h2>Fixed vs. programmable.</h2>
+        <h2>Fiksattu vs. ohjelmoitava.</h2>
       </div>
       <div>
-        <h1>Programmable?</h1>
+        <h1>Ohjelmoitava?</h1>
         <h2>Shaders, baby, yeah!</h2>
-        <h2>Massive performance.</h2>
+        <h2>Julmetusti laskentatehoa.</h2>
       </div>
       <div>
-        <h1>No kidding?</h1>
-        <h2>1000x faster than JavaScript</h2>
-        <p>(depending on shader)</p>
+        <h1>Ihan tosi?</h1>
+        <h2>1000x nopeampi kuin JavaScript</h2>
+        <p>(shaderista riippuen)</p>
       </div>
       <div>
-        <h1>Yeah?</h1>
+        <h1>Jaa?</h1>
         <model src="walas.obj.bin"></model>
-        <h2>80 000 triangles</h2>
+        <h2>80 000 kolmiota</h2>
       </div>
       <div>
-        <h1>What's it good for?</h1>
-        <h2>Custom 2D drawing.</h2>
-        <h2>Custom 3D drawing.</h2>
+        <h1>Mitä sillä tekee?</h1>
+        <h2>Kustomia 2D-piirtoa.</h2>
+        <h2>Kustomia 3D-piirtoa.</h2>
       </div>
       <div>
-        <h1>Custom?</h1>
-        <h2>Everything requires shaders.</h2>
-        <h2>No shortcuts.</h2>
+        <h1>Kustomia?</h1>
+        <h2>Kaikki vaatii shaderin.</h2>
+        <h2>Ei oikoteitä.</h2>
       </div>
       <div>
-        <h1>Drawing pipeline</h1>
+        <h1>Piirtoputki</h1>
         <h3>Vertex shader</h3>
         <h3>⇓</h3>
         <h3>Fragment shader</h3>
         <h3>⇓</h3>
-        <h3>Render target</h3>
+        <h3>Piirtopinta</h3>
       </div>
       <div>
         <h1>Vertex shader</h1>
         <ul>
-          <h2>Computes</h2>
-          <li>Where to draw</li>
-          <li>Varyings for the fragment shader</li>
+          <h2>Laskee</h2>
+          <li>Mihin piirretään</li>
+          <li>Muuttujia fragment shaderille</li>
         </ul>
       </div>
       <div>
         <h1>Vertex shader</h1>
         <ul>
-          <h2>Parameters</h2>
-          <li>Buffers (vertex arrays)</li>
-          <li>Textures (images)</li>
-          <li>Uniforms (call parameters)</li>
+          <h2>Parametreinä</h2>
+          <li>Bufferit (pistetaulukot)</li>
+          <li>Tekstuurit (pintakuviot)</li>
+          <li>Uniformit (kutsuparametrit)</li>
         </ul>
       </div>
       <div>
         <h1>Fragment shader</h1>
         <ul>
-          <h2>Computes</h2>
-          <li>Color of the pixel</li>
+          <h2>Laskee</h2>
+          <li>Pikselin värin</li>
         </ul>
       </div>
       <div>
         <h1>Fragment shader</h1>
         <ul>
-          <h2>Parameters</h2>
-          <li>Varyings from the vertex shader</li>
-          <li>Textures</li>
-          <li>Uniforms</li>
+          <h2>Parametreinä</h2>
+          <li>Muuttujat vertex shaderilta</li>
+          <li>Tekstuurit</li>
+          <li>Uniformit</li>
         </ul>
       </div>
       <div>
-        <h1>Render target</h1>
+        <h1>Piirtopinta</h1>
         <h2>&lt;CANVAS&gt;</h2>
-        <h2>or</h2>
+        <h2>tai</h2>
         <h2>Framebuffer object (FBO)</h2>
       </div>
       <div>
         <h1>FBO</h1>
-        <h2>In GPU memory</h2>
-        <h2>For rendering to textures</h2>
+        <h2>Näytönohjaimen muistissa</h2>
+        <h2>Tekstuuriin piirtämiseen</h2>
         <self></self>
       </div>
       <div>
-        <h1>Textures</h1>
+        <h1>Tekstuurit</h1>
         <ul>
-        <h2>WebGL can load:</h2>
+        <h2>WebGL osaa ladata:</h2>
           <li>&lt;CANVAS&gt;</li>
           <li>&lt;IMG&gt;</li>
           <li>&lt;VIDEO&gt;</li>
-          <li>And pixel arrays.</li>
+          <li>Plus pikselitaulukot.</li>
         </ul>
       </div>
       <div>
         <h1>CANVAS</h1>
-        <h2>All the text here.</h2>
-        <p>(CSS 3D would be nicer, but eh.)</p>
+        <h2>Kaikki tekstit tässä.</h2>
+        <p>(Parempi olisi käyttää CSS 3D:tä, mut.)</p>
         <edit></edit>
       </div>
       <div>
@@ -162,19 +157,19 @@
         </video>
       </div>
       <div>
-        <h1>Further reading</h1>
+        <h1>Jos kiinnostaa</h1>
         <p>learningwebgl.com</p>
         <img src="learningwebgl.jpg">
       </div>
       <div>
-        <h1>Isn't that a bit...</h1>
-        <h2>...cumbersome? Yes.</h2>
-        <h2>Overkill for simple drawing.</h2>
-        <h2>Libraries to the rescue!</h2>
+        <h1>Eiks toi oo vähän...</h1>
+        <h2>...kankeeta? Joo.</h2>
+        <h2>Tavalliseen piirtoon turhan järeä.</h2>
+        <h2>Kirjastot apuun!</h2>
       </div>
       <div>
-        <h1>Libraries</h1>
-        <h2>Alphabetically:</h2>
+        <h1>Kirjastoja</h1>
+        <h2>Aakkosjärjestyksessä:</h2>
         <h3>C3DL</h3>
         <h3>CopperLight</h3>
         <h3>CubicVR</h3>
@@ -195,15 +190,15 @@
         <p>spidergl.org</p>
       </div>
       <div>
-        <h1>Games</h1>
-        <h2>Google's Quake 2 -port</h2>
-        <h2>O3D pool game</h2>
-        <h2>Some Q3 map viewers</h2>
+        <h1>Pelejä</h1>
+        <h2>Googlen Quake 2 -portti</h2>
+        <h2>O3D biljardi</h2>
+        <h2>Muutama Q3 kartankatselin</h2>
       </div>
       <div>
-        <h1>Applications?</h1>
-        <h3>3D model viewers</h3>
-        <h3>ChemDoodle molecule visualizer</h3>
+        <h1>Hyötysoftaa?</h1>
+        <h3>3D-mallien katselimia</h3>
+        <h3>ChemDoodle-molekyylivisualisoija</h3>
         <h3>ShaderToy</h3>
         <h3>WebGL Street View</h3>
       </div>
@@ -219,43 +214,55 @@
       </div>
       <div>
         <h1>Status</h1>
-        <h2>WebGL 1.0 soon.</h2>
+        <h2>WebGL 1.0 kohta.</h2>
         <h2>Chrome, Safari, Firefox, Opera(?)</h2>
-        <h3>Shader validation with ANGLE.</h3>
-        <p>CPU rendering with OSMESA.</p>
+        <h3>Shaderien validointi ANGLElla.</h3>
+        <p>Softarendaus OSMESAlla.</p>
       </div>
       <div>
         <h1>ANGLE?</h1>
         <h2>Almost Native Graphics Layer Engine</h2>
         <h3>angleproject.googlecode.com</h3>
-        <h3>OpenGL ES 2.0 interpreter</h3>
+        <h3>OpenGL ES 2.0 -tulkki</h3>
       </div>
       <div>
-        <h1>Interpreter?</h1>
-        <h2>Converts WebGL shaders to native.</h2>
+        <h1>Tulkki?</h1>
+        <h2>Kääntää shaderit natiiveiksi.</h2>
         <h2>GLES 2.0 -> OpenGL 2.1</h2>
-        <h2>GLES 2.0 -> DirectX 9</h2>
+        <h2>GLES 2.0 -> Direct3D 9</h2>
+        <p>(jossain vaiheessa)</p>
       </div>
       <div>
         <h1>OSMESA</h1>
         <h2>Off-Screen MESA GL</h2>
-        <h2>Draws on the CPU.</h2>
-        <h2>Very slow.</h2>
+        <h2>Piirtää CPU:lla.</h2>
+        <h2>Erittäin hidas.</h2>
+        <p>Bugejakin löytyy.</p>
       </div>
       <div>
-        <h1>Conclusion</h1>
-        <h2>Fast custom drawing.</h2>
-        <h2>Quite well supported.</h2>
-        <h2>Web-compatible.</h2>
-        <h2>Requires programming.</h2>
+        <h1>Yhteenveto</h1>
+        <h2>Nopeaa kustomipiirtoa.</h2>
+        <h2>Melko hyvin tuettu.</h2>
+        <h2>Web-yhteensopiva.</h2>
+        <h2>Vaatii ohjelmointia.</h2>
       </div>
       <div>
-        <h1>Thank You!</h1>
+        <h1>Kiitos!</h1>
         <h2>Ilmari Heikkinen</h2>
         <h3>ilmari.heikkinen@gmail.com</h3>
       </div>
       <div>
-        <h1>Cheats</h1>
+        <h1>Tiedostokoot</h1>
+        <ul>
+          <li>30kB esityssofta + slaidit</li>
+          <li>85kB minifioity kirjasto</li>
+          <li>(yhteensä 30kB gzipattuna)</li>
+          <li>250kB kuvia</li>
+          <li>2MB video</li>
+        </ul>
+      </div>
+      <div>
+        <h1>Xiittejä</h1>
         <p>App.editSlide()</p>
         <p>App.toggleAllSlidesVisible()</p>
         <p>App.toggleApp()</p>
@@ -268,8 +275,8 @@
         <p>txt.alignedNode.material.floats.pitch = 2</p>
       </div>
       <div>
-        <h1>The End</h1>
-        <p>Click to return to start.</p>
+        <h1>Loppu.</h1>
+        <p>Klikkaa takaisin alkuun.</p>
       </div>
     </div>
 	</body>
