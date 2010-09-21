@@ -31,16 +31,15 @@ Slides = Klass({
       this.initializeWebGL(elem);
     } else if (this.isSVGSupported()) { // SVG fallback
     } else { // JS + CSS fallback
-      var self = this;
-      window.onclick = function(ev) {
-        var divs = elem.getElementsByTagName('div');
-        if (ev.shiftKey) self.currentSlide--;
-        else self.currentSlide++;
-        self.currentSlide %= divs.length;
-        if (self.currentSlide < 0) self.currentSlide = divs.length+self.currentSlide;
-        window.scrollTo(0, divs[self.currentSlide].offsetTop-40);
-      }
+      window.onkeydown = this.makeKeydownHandler();
+      this.rendererGoTo = this.htmlGoTo;
     }
+    this.setSlideElement(elem);
+  },
+
+  htmlGoTo : function() {
+    var divs = this.slideElement.getElementsByTagName('div');
+    window.scrollTo(0, divs[this.currentSlide].offsetTop-40);
   },
 
   isWebGLSupported : function() {
@@ -51,6 +50,25 @@ Slides = Klass({
     return false;
   },
   
+  makeKeydownHandler : function() {
+    var self = this;
+    return function(ev) {
+      if (Key.match(ev, Key.SPACE)) {
+        if (ev.shiftKey)
+          self.previousSlide();
+        else
+          self.nextSlide();
+        ev.preventDefault();
+      } else if (Key.match(ev, Key.BACKSPACE)) {
+        if (ev.shiftKey)
+          self.nextSlide();
+        else
+          self.previousSlide();
+        ev.preventDefault();
+      }
+    };
+  },
+
   initializeWebGL : function(elem) {
     this.canvas = E.canvas(window.innerWidth, window.innerHeight);
     this.canvas.setAttribute('tabindex', '-1');
@@ -142,29 +160,13 @@ Slides = Klass({
       cancelled = true;
       ev.preventDefault();
     };
-    this.canvas.onkeydown = function(ev) {
-      if (Key.match(ev, Key.SPACE)) {
-        if (ev.shiftKey)
-          self.previousSlide();
-        else
-          self.nextSlide();
-        s.changed = true;
-        ev.preventDefault();
-      } else if (Key.match(ev, Key.BACKSPACE)) {
-        if (ev.shiftKey)
-          self.nextSlide();
-        else
-          self.previousSlide();
-        s.changed = true;
-        ev.preventDefault();
-      }
-    };
+    this.canvas.onkeydown = this.makeKeydownHandler();
     this.canvas.focus();
 
     this.targetPos = vec3.create();
     this.cube = this.makeCube();
     this.scene.appendChild(this.cube);
-    this.setSlideElement(elem);
+    this.rendererGoTo = this.webGLGoTo;
     var d = vec3.create();
     this.scene.addFrameListener(function(t,dt) {
       vec3.sub(self.targetPos, self.scene.position, d);
@@ -198,6 +200,11 @@ Slides = Klass({
         self.cube.innerCube.setScale(0.8);
       }
     });
+  },
+
+  webGLGoTo : function(before, current) {
+    vec3.negate(this.slides.childNodes[current].position, this.targetPos);
+    this.visibleSlides(before, current);
   },
 
   toggleAllSlidesVisible : function() {
@@ -249,25 +256,25 @@ Slides = Klass({
   },
 
   setSlideElement : function(elem) {
-    if (this.slides) {
-      this.removeChild(this.slides);
+    if (this.slides && this.scene) {
+      this.scene.removeChild(this.slides);
       this.slideElement.style.display = 'block';
     }
     this.slideElement = elem;
-    this.slideElement.style.display = 'none';
-    this.slides = this.parseSlides(elem);
-    this.scene.appendChild(this.slides);
+    this.slideCount = this.slideElement.getElementsByTagName('div').length;
+    if (this.scene) {
+      this.slideElement.style.display = 'none';
+      this.slides = this.parseSlides(elem);
+      this.scene.appendChild(this.slides);
+    }
     this.setSlide(this.currentSlide);
   },
 
   setSlide : function(index) {
-    var cc = this.slides.childNodes;
-    var slideCount = cc.length;
-    if (index < 0) index = slideCount+index;
+    if (index < 0) index = this.slideCount+index;
     var before = this.currentSlide
-    this.currentSlide = index % slideCount;
-    vec3.negate(this.slides.childNodes[this.currentSlide].position, this.targetPos);
-    this.visibleSlides(before, this.currentSlide);
+    this.currentSlide = index % this.slideCount;
+    this.rendererGoTo(before, this.currentSlide);
     if (this.editor && this.editor.parentNode) this.editSlide();
     document.location.replace("#"+this.currentSlide);
   },
@@ -409,6 +416,17 @@ Slides = Klass({
           node = new Magi.MeshImage(e);
           self.addWaveShader(node, 1.0);
           node.setVAlign(node.topAlign);
+          if (!Object.isImageLoaded(e)) {
+            e.addEventListener('load', (function(node,top,h) {
+              return function() {
+                var idx = top.childNodes.indexOf(node);
+                for (var i=idx+1; i<top.childNodes.length; i++) {
+                  top.childNodes[i].position[1] -= this.height-h;
+                }
+                self.addWaveShader(node, 1.0);
+              }
+            })(node, acc.top, e.height), false);
+          }
           acc.offset += node.height + 8;
           break;
         case "CANVAS":
