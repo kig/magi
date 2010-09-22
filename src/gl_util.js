@@ -142,12 +142,20 @@ Magi.throwError = function(gl, msg) {
   }
 }
 
+
+/**
+  Resource manager for tracking allocated WebGL resources and
+  destroying them on window unload.
+*/
 Magi.AllocatedResources = {
   textures : [],
   vbos : [],
   shaders : [],
   fbos : [],
 
+  /**
+    Destroys all allocated resources.
+  */
   deleteAll : function() {
     while (this.textures.length > 0) {
       this.textures[0].permanent = false;
@@ -161,44 +169,84 @@ Magi.AllocatedResources = {
       this.shaders[0].destroy();
   },
 
+  /**
+    Add a texture to track. If the texture is already tracked, does nothing.
+    
+    @param tex Magi.Texture to track.
+  */
   addTexture : function(tex) {
     if (this.textures.indexOf(tex) == -1)
       this.textures.push(tex);
   },
 
+  /**
+    Add a shader to track. If the shader is already tracked, does nothing.
+    
+    @param tex Magi.Shader to track.
+  */
   addShader : function(tex) {
     if (this.shaders.indexOf(tex) == -1)
       this.shaders.push(tex);
   },
 
+  /**
+    Add a VBO to track. If the VBO is already tracked, does nothing.
+    
+    @param tex Magi.VBO to track.
+  */
   addVBO : function(tex) {
     if (this.vbos.indexOf(tex) == -1)
       this.vbos.push(tex);
   },
 
+  /**
+    Add a FBO to track. If the FBO is already tracked, does nothing.
+    
+    @param tex Magi.FBO to track.
+  */
   addFBO : function(tex) {
     if (this.fbos.indexOf(tex) == -1)
       this.fbos.push(tex);
   },
 
+  /**
+    Deletes given texture from tracking list.
+
+    @param tex Magi.Texture to remove.
+  */
   deleteTexture : function(tex) {
     var i = this.textures.indexOf(tex);
     if (i >= 0)
       this.textures.splice(i,1);
   },
 
+  /**
+    Deletes given shader from tracking list.
+
+    @param tex Magi.Shader to remove.
+  */
   deleteShader : function(tex) {
     var i = this.shaders.indexOf(tex);
     if (i >= 0)
       this.shaders.splice(i,1);
   },
 
+  /**
+    Deletes given VBO from tracking list.
+
+    @param tex Magi.VBO to remove.
+  */
   deleteVBO : function(tex) {
     var i = this.vbos.indexOf(tex);
     if (i >= 0)
       this.vbos.splice(i,1);
   },
 
+  /**
+    Deletes given FBO from tracking list.
+
+    @param tex Magi.FBO to remove.
+  */
   deleteFBO : function(tex) {
     var i = this.fbos.indexOf(tex);
     if (i >= 0)
@@ -206,8 +254,41 @@ Magi.AllocatedResources = {
   }
 };
 
-window.onunload = function(){ Magi.AllocatedResources.deleteAll(); };
+window.addEventListener('unload', function(){
+  Magi.AllocatedResources.deleteAll();
+}, false);
 
+/**
+  Texture utility class. Creates a texture object for the texture, sets up
+  texture parameters and uploads the texture on changes.
+
+  If generateMipmaps is set to true, generates mipmaps for the texture after
+  upload.
+
+  Magi.Texture can take either an image or a pixel array as the texture source.
+
+  var tex = new Magi.Texture(gl);
+    tex.image = new Image();
+    tex.image.src = 'foo.jpg';
+    ...
+    tex.use();
+
+  For pixel array textures,
+    tex.width = w;
+    tex.height = h;
+    tex.data = pixelArray;
+
+  For null textures,
+    tex.width = w;
+    tex.height = h;
+    tex.data = null;
+
+  To tell the texture that the image has changed,
+    tex.changed = true;
+
+  To free the texture resources, use
+    tex.clear()
+*/
 Magi.Texture = Klass({
   target : 'TEXTURE_2D',
   generateMipmaps : true,
