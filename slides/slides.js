@@ -27,6 +27,17 @@ Slides = Klass({
   cycleColors : false,
 
   initialize : function(elem) {
+    if (document.location.hash) {
+      this.currentSlide = parseInt(document.location.hash.slice(1));
+    } else {
+      this.currentSlide = 0;
+    }
+    var self = this;
+    window.addEventListener('hashchange', function() {
+      var idx = parseInt(document.location.hash.slice(1));
+      if (!isNaN(idx) && idx != this.currentSlide)
+        self.setSlide(idx);
+    }, false);
     if (this.isWebGLSupported()) { // render using WebGL
       this.initializeWebGL(elem);
     } else if (this.isSVGSupported()) { // SVG fallback
@@ -75,12 +86,6 @@ Slides = Klass({
     this.canvas.style.position = 'absolute';
     this.canvas.style.left = this.canvas.style.top = '0px';
     document.body.appendChild(this.canvas);
-
-    if (document.location.hash) {
-      this.currentSlide = parseInt(document.location.hash.slice(1));
-    } else {
-      this.currentSlide = 0;
-    }
 
     this.realDisplay = new Magi.Scene(this.canvas);
     this.previousFrameFBO = new Magi.FBO(this.realDisplay.gl, this.canvas.width, this.canvas.height);
