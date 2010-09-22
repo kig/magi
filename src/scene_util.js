@@ -606,7 +606,7 @@ Magi.DefaultMaterial = {
     return c;
   },
 
-  lightMatrix : mat4.newIdentity(),
+  lightMatrix : mat4.identity(),
 
   setupMaterial : function(shader) {
     var m = new Magi.Material(shader);

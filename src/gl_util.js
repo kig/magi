@@ -88,6 +88,14 @@ Klass = function() {
   return c
 }
 
+/**
+  Returns the error name for the WebGL error code.
+  Finds the name from the gl object you give it.
+
+  @param gl {WebGLContext} A WebGL context to search error code from.
+  @param errorCode {int} Error code you wish to find a name for.
+  @return {string} Name of the errors matching errorCode, joined by |.
+*/
 Magi.errorName = function(gl, errorCode) {
   var names = [];
   for (var i in gl) {
@@ -98,6 +106,16 @@ Magi.errorName = function(gl, errorCode) {
   return name;
 }
 
+/**
+  Logs GL errors.
+  
+  GetErrors the given WebGL context and logs the error
+  alongside the given message using Magi.log().
+
+  @param gl {WebGLContext} WebGL context to query.
+  @param msg {string} Additional message for the error.
+  @return {int} The error code returned by gl.getError().
+*/
 Magi.checkError = function(gl, msg) {
   var e = gl.getError();
   if (e != 0) {
@@ -106,6 +124,17 @@ Magi.checkError = function(gl, msg) {
   return e;
 }
 
+/**
+  Turns a GL error into an exception.
+  
+  If the given WebGL context returns non-zero to getError,
+  throws an exception with the name of the error and the
+  given additional message.
+
+  @param gl {WebGLContext} WebGL context to query.
+  @param msg {string} Additional message for the error.
+  @return {null}
+*/
 Magi.throwError = function(gl, msg) {
   var e = gl.getError();
   if (e != 0) {

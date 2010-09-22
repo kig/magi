@@ -62,7 +62,22 @@ vec3.create = function(vec) {
   return dest;
 };
 
+/*
+ * vec4 - 4 Dimensional Vector
+ */
 vec4 = {};
+
+/*
+ * vec4.create
+ * Creates a new instance of a vec4 using the default array type
+ * Any javascript array containing at least 4 numeric elements can serve as a vec4
+ *
+ * Params:
+ * vec - Optional, vec4 containing values to initialize with
+ *
+ * Returns:
+ * New vec4
+ */
 vec4.create = function(vec) {
   var dest = new glMatrixArrayType(4);
   Magi.Stats.vec4CreateCount++;
@@ -76,20 +91,59 @@ vec4.create = function(vec) {
   
   return dest;
 };
+/*
+ * vec4.set
+ * Copies the values of one vec4 to another
+ *
+ * Params:
+ * vec - vec4 containing values to copy
+ * dest - vec4 receiving copied values
+ *
+ * Returns:
+ * dest
+ */
 vec4.set = function(vec, dest) {
   dest[0] = vec[0];
   dest[1] = vec[1];
   dest[2] = vec[2];
   dest[3] = vec[3];
+  return dest;
 };
+/*
+ * vec4.setLeft
+ * Copies the values of one vec4 to another
+ *
+ * Params:
+ * dest - vec4 receiving copied values
+ * vec - vec4 containing values to copy
+ *
+ * Returns:
+ * dest
+ */
 vec4.setLeft = function(dest, vec) {
   dest[0] = vec[0];
   dest[1] = vec[1];
   dest[2] = vec[2];
   dest[3] = vec[3];
+  return dest;
 };
 
+/*
+ * vec2 - 2 Dimensional Vector
+ */
 vec2 = {};
+
+/*
+ * vec2.create
+ * Creates a new instance of a vec2 using the default array type
+ * Any javascript array containing at least 2 numeric elements can serve as a vec2
+ *
+ * Params:
+ * vec - Optional, vec2 containing values to initialize with
+ *
+ * Returns:
+ * New vec2
+ */
 vec2.create = function(vec) {
   var dest = new glMatrixArrayType(2);
   Magi.Stats.vec2CreateCount++;
@@ -101,13 +155,39 @@ vec2.create = function(vec) {
   
   return dest;
 };
+
+/*
+ * vec2.set
+ * Copies the values of one vec2 to another
+ *
+ * Params:
+ * vec - vec2 containing values to copy
+ * dest - vec2 receiving copied values
+ *
+ * Returns:
+ * dest
+ */
 vec2.set = function(vec, dest) {
   dest[0] = vec[0];
   dest[1] = vec[1];
+  return dest;
 };
+
+/*
+ * vec2.setLeft
+ * Copies the values of one vec2 to another
+ *
+ * Params:
+ * dest - vec2 receiving copied values
+ * vec - vec2 containing values to copy
+ *
+ * Returns:
+ * dest
+ */
 vec2.setLeft = function(dest, vec) {
   dest[0] = vec[0];
   dest[1] = vec[1];
+  return dest;
 };
 
 /*
@@ -129,6 +209,17 @@ vec3.set = function(vec, dest) {
   return dest;
 };
 
+/*
+ * vec3.setLeft
+ * Copies the values of one vec3 to another
+ *
+ * Params:
+ * dest - vec3 receiving copied values
+ * vec - vec3 containing values to copy
+ *
+ * Returns:
+ * dest
+ */
 vec3.setLeft = function(dest, vec) {
   dest[0] = vec[0];
   dest[1] = vec[1];
@@ -137,6 +228,17 @@ vec3.setLeft = function(dest, vec) {
   return dest;
 };
 
+/*
+ * vec3.set3
+ * Sets all elements of a vec3 to the given value
+ *
+ * Params:
+ * value - value to set all elements of dest to
+ * dest - vec3 to set
+ *
+ * Returns:
+ * dest
+ */
 vec3.set3 = function(value, dest) {
   dest[0] = dest[1] = dest[2] = value;
   return dest;
@@ -193,6 +295,18 @@ vec3.subtract = function(vec, vec2, dest) {
   dest[2] = vec[2] - vec2[2];
   return dest;
 };
+/*
+ * vec3.sub
+ * Alias for vec3.subtract
+ *
+ * Params:
+ * vec - vec3, first operand
+ * vec2 - vec3, second operand
+ * dest - Optional, vec3 receiving operation result. If not specified result is written to vec
+ *
+ * Returns:
+ * dest if specified, vec otherwise
+ */
 vec3.sub = vec3.subtract;
 
 /*
@@ -266,6 +380,18 @@ vec3.multiply = function(vec, vec2, dest) {
   dest[2] = vec[2]*vec2[2];
   return dest;
 };
+/*
+ * vec3.mul
+ * Alias for vec3.multiply
+ *
+ * Params:
+ * vec - vec3 to scale
+ * vec3 - vec3 to scale by
+ * dest - Optional, vec3 receiving operation result. If not specified result is written to vec
+ *
+ * Returns:
+ * dest if specified, vec otherwise
+ */
 vec3.mul = vec3.multiply;
 
 /*
@@ -484,7 +610,7 @@ mat3.set = function(mat, dest) {
 
 /*
  * mat3.identity
- * Sets a mat3 to an identity matrix
+ * Sets a mat3 to an identity matrix. Creates a new matrix if none given.
  *
  * Params:
  * dest - mat3 to set
@@ -506,9 +632,6 @@ mat3.identity = function(dest) {
   return dest;
 };
 
-mat3.newIdentity = function() {
-  return mat3.identity(mat3.create());
-};
 
 /*
  * mat3.toMat4
@@ -674,7 +797,7 @@ mat4.set = function(mat, dest) {
 
 /*
  * mat4.identity
- * Sets a mat4 to an identity matrix
+ * Sets a mat4 to an identity matrix. Creates a new matrix if none given.
  *
  * Params:
  * dest - mat4 to set
@@ -701,10 +824,6 @@ mat4.identity = function(dest) {
   dest[14] = 0;
   dest[15] = 1;
   return dest;
-};
-
-mat4.newIdentity = function() {
-  return mat4.identity(mat4.create());
 };
 
 /*
@@ -1101,6 +1220,17 @@ mat4.scale = function(mat, vec, dest) {
   return dest;
 };
 
+/*
+ * mat4.billboard
+ * Computes the billboard matrix for a mat4
+ *
+ * Params:
+ * mat - mat4 to billboard
+ * dest - Optional, mat4 receiving operation result. If not specified result is written to mat
+ *
+ * Returns:
+ * dest if specified, mat otherwise
+ */
 mat4.billboard = function(mat, dest) {
   var a = mat[0], b = mat[5], c = mat[10];
   a = a*a; b = b*b; c = c*c;
