@@ -2,10 +2,10 @@ Sketching a small WebGL scene graph library
 
 Goals: [- planned, + implemented, x started]
   Put together quick presentation graphics
-    x webgl_presentation.html -- semi-complete HTML slideshow app
+    x slides/ -- semi-complete HTML slideshow app
 
   Write documentation
-    x matrix.js changes -- glMatrix.js fork
+    + matrix.js changes -- glMatrix.js fork
     x gl_util.js -- WebGL utils, DOM utils, Colors, Curves, Klass
     - scenegraph.js -- Basic scene graph
     - scene_util.js -- More advanced stuff, default shaders
