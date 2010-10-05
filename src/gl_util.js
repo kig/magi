@@ -44,7 +44,7 @@ if (!Object.extend)
 
   Shape = Klass({
     getArea : function() {
-      raise('No area defined!')
+      throw('No area defined!')
     }
   })
 
@@ -575,7 +575,7 @@ Magi.Shader.createShader = function(gl, type, source) {
   if (gl.getShaderParameter(shader, gl.COMPILE_STATUS) != 1) {
     var ilog = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
-    throw(new Error("Failed to compile shader. Shader info log: " + ilog));
+    throw(new Error("Failed to compile shader. Shader info log: " + ilog + " Shader source: "+source));
   }
   return shader;
 }
@@ -1098,67 +1098,69 @@ Magi.Geometry.QuadMesh = {
 };
 
 Magi.Geometry.Cube = {
-  vertices : new Float32Array([  0.5, -0.5,  0.5, // +X
-                0.5, -0.5, -0.5,
-                0.5,  0.5, -0.5,
-                0.5,  0.5,  0.5,
+  vertices : new Float32Array([
+    0.5, -0.5,  0.5, // +X
+    0.5, -0.5, -0.5,
+    0.5,  0.5, -0.5,
+    0.5,  0.5,  0.5,
 
-                0.5,  0.5,  0.5, // +Y
-                0.5,  0.5, -0.5,
-                -0.5,  0.5, -0.5,
-                -0.5,  0.5,  0.5,
+    0.5,  0.5,  0.5, // +Y
+    0.5,  0.5, -0.5,
+    -0.5,  0.5, -0.5,
+    -0.5,  0.5,  0.5,
 
-                0.5,  0.5,  0.5, // +Z
-                -0.5,  0.5,  0.5,
-                -0.5, -0.5,  0.5,
-                0.5, -0.5,  0.5,
+    0.5,  0.5,  0.5, // +Z
+    -0.5,  0.5,  0.5,
+    -0.5, -0.5,  0.5,
+    0.5, -0.5,  0.5,
 
-                -0.5, -0.5,  0.5, // -X
-                -0.5,  0.5,  0.5,
-                -0.5,  0.5, -0.5,
-                -0.5, -0.5, -0.5,
+    -0.5, -0.5,  0.5, // -X
+    -0.5,  0.5,  0.5,
+    -0.5,  0.5, -0.5,
+    -0.5, -0.5, -0.5,
 
-                -0.5, -0.5,  0.5, // -Y
-                -0.5, -0.5, -0.5,
-                0.5, -0.5, -0.5,
-                0.5, -0.5,  0.5,
+    -0.5, -0.5,  0.5, // -Y
+    -0.5, -0.5, -0.5,
+    0.5, -0.5, -0.5,
+    0.5, -0.5,  0.5,
 
-                -0.5, -0.5, -0.5, // -Z
-                -0.5,  0.5, -0.5,
-                0.5,  0.5, -0.5,
-                0.5, -0.5, -0.5,
-      ]),
+    -0.5, -0.5, -0.5, // -Z
+    -0.5,  0.5, -0.5,
+    0.5,  0.5, -0.5,
+    0.5, -0.5, -0.5
+  ]),
 
-  normals : new Float32Array([ 1, 0, 0,
-              1, 0, 0,
-              1, 0, 0,
-              1, 0, 0,
+  normals : new Float32Array([
+    1, 0, 0,
+    1, 0, 0,
+    1, 0, 0,
+    1, 0, 0,
 
-              0, 1, 0,
-              0, 1, 0,
-              0, 1, 0,
-              0, 1, 0,
+    0, 1, 0,
+    0, 1, 0,
+    0, 1, 0,
+    0, 1, 0,
 
-              0, 0, 1,
-              0, 0, 1,
-              0, 0, 1,
-              0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
+    0, 0, 1,
 
-              -1, 0, 0,
-              -1, 0, 0,
-              -1, 0, 0,
-              -1, 0, 0,
+    -1, 0, 0,
+    -1, 0, 0,
+    -1, 0, 0,
+    -1, 0, 0,
 
-              0,-1, 0,
-              0,-1, 0,
-              0,-1, 0,
-              0,-1, 0,
+    0,-1, 0,
+    0,-1, 0,
+    0,-1, 0,
+    0,-1, 0,
 
-              0, 0,-1,
-              0, 0,-1,
-              0, 0,-1,
-              0, 0,-1
-      ]),
+    0, 0,-1,
+    0, 0,-1,
+    0, 0,-1,
+    0, 0,-1
+  ]),
 
   texcoords :  new Float32Array([
     0,0,  0,1,  1,1, 1,0,
@@ -1198,6 +1200,73 @@ Magi.Geometry.Cube = {
   }
 };
 Magi.Geometry.Cube.create();
+
+Magi.Geometry.CubeArray = {
+  pushNormals : function(normals, idx) {
+    normals.push(Magi.Geometry.Cube.normals[idx*3 + 0]);
+    normals.push(Magi.Geometry.Cube.normals[idx*3 + 1]);
+    normals.push(Magi.Geometry.Cube.normals[idx*3 + 2]);
+  },
+
+  pushCubeNormals : function(cubeNormals) {
+    for (var i = 0; i < 6; i++) {
+      this.pushNormals(cubeNormals, i*4 + 0);
+      this.pushNormals(cubeNormals, i*4 + 1);
+      this.pushNormals(cubeNormals, i*4 + 3);
+      this.pushNormals(cubeNormals, i*4 + 1);
+      this.pushNormals(cubeNormals, i*4 + 2);
+      this.pushNormals(cubeNormals, i*4 + 3);
+    }
+  },
+
+  pushCubeVerts : function(verts, x,y,w,h, idx) {
+    verts.push((2*Magi.Geometry.Cube.vertices[idx*3 + 0]+1+2*x)/w-1);
+    verts.push((2*Magi.Geometry.Cube.vertices[idx*3 + 1]+1+2*y)/h-1);
+    verts.push(Magi.Geometry.Cube.vertices[idx*3 + 2]);
+  },
+
+  pushCube : function(verts, x,y,w,h) {
+    for (var i = 0; i < 6; i++) {
+      this.pushCubeVerts(verts, x, y, w, h, i*4 + 0);
+      this.pushCubeVerts(verts, x, y, w, h, i*4 + 1);
+      this.pushCubeVerts(verts, x, y, w, h, i*4 + 3);
+      this.pushCubeVerts(verts, x, y, w, h, i*4 + 1);
+      this.pushCubeVerts(verts, x, y, w, h, i*4 + 2);
+      this.pushCubeVerts(verts, x, y, w, h, i*4 + 3);
+    }
+  },
+
+  makeVBO : function(gl, xCount, yCount) {
+    var vertices = [], normals = [], texcoords = [];
+    for (var x=0; x<xCount; x++) {
+      for (var y=0; y<yCount; y++) {
+        this.pushCube(vertices, x,y,xCount,yCount);
+        this.pushCubeNormals(normals);
+        for (var i=0; i<6*6; i++)
+          texcoords.push(x/xCount, y/yCount);
+      }
+    }
+    return new Magi.VBO(gl,
+        {size:3, data: new Float32Array(vertices)},
+        {size:3, data: new Float32Array(normals)},
+        {size:2, data: new Float32Array(texcoords)}
+    )
+  },
+  cache: {},
+  getCachedVBO : function(gl, xCount, yCount) {
+    xCount = xCount || 50;
+    yCount = yCount || 50;
+    var k = xCount +":"+ yCount;
+    if (!this.cache[gl]) {
+      this.cache[gl] = {};
+    }
+    if (!this.cache[gl][k]) {
+      this.cache[gl][k] = this.makeVBO(gl, xCount, yCount);
+    }
+    return this.cache[gl][k];
+  }
+};
+
 
 Magi.Geometry.Sphere = {
   vertices : [],
