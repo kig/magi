@@ -1,11 +1,38 @@
 body {
   margin: 0;
   padding: 0;
-  background: #C0C8D0;
+  background: #333333;
   font-family: Arial;
 }
 #slides {
   text-align: center;
+}
+canvas{
+  box-shadow: 0px 0px 20px rgba(0,0,0,1);
+  -webkit-box-shadow: 0px 0px 20px rgba(0,0,0,1);
+  -moz-box-shadow: 0px 0px 20px rgba(0,0,0,1);
+}
+textarea {
+  position: relative;
+  font-family: sans-serif;
+  white-space: pre;
+  width: 474px;
+  min-height: 40px;
+  height: auto;
+  overflow: visible;
+  resize: none;
+  background-color: rgba(255,255,255,0.8);
+  border: 0px;
+  margin: 0px;
+  margin-right: 10px;
+  margin-top: 8px;
+  padding: 4px;
+  padding-left: 8px;
+  line-height: 1.5em;
+  text-align: left
+}
+textarea:focus {
+  background: white;
 }
 h1 {
   font-family: Century Gothic,URW Gothic L,Tahoma,Arial;

@@ -23,6 +23,8 @@ Slides = Klass({
 
   pulse : 0,
 
+  editorWidth: 520,
+
   wavyText : true,
   cycleColors : false,
 
@@ -46,6 +48,7 @@ Slides = Klass({
       this.rendererGoTo = this.htmlGoTo;
     }
     this.setSlideElement(elem);
+    this.toggleEditMode();
   },
 
   htmlGoTo : function() {
@@ -132,7 +135,7 @@ Slides = Klass({
     });
 
     window.addEventListener('resize', function() {
-      self.canvas.width = window.innerWidth;
+      self.canvas.width = window.innerWidth - (self.editing ? self.editorWidth : 0);
       self.canvas.height = window.innerHeight;
       self.display.changed = true;
     }, false);
@@ -246,6 +249,218 @@ Slides = Klass({
     });
   },
 
+  textualize : function(e, level, prefix) {
+    var strs = [];
+    if (level == null) level = 0;
+    switch (e.tagName) {
+      case 'IMG':
+      case 'MODEL':
+        strs.push(e.tagName + " " + e.getAttribute('src'));
+        break;
+      case 'VIDEO':
+        var src = e.getAttribute('src');
+        var srcs = toArray(e.getElementsByTagName('source')).map(function(c){
+          return c.getAttribute('src');
+        });
+        var srcstr = (src ? src + " " : "") + srcs.join(" ");
+        strs.push(e.tagName + " " + srcstr);
+        break;
+      case 'LI':
+        var indent = "";
+        for (var i=1; i<level; i++) indent += "  ";
+        strs.push(indent + prefix + " " + e.textContent);
+        break;
+      case 'UL':
+        prefix = '*';
+        level++;
+        break;
+      case 'OL':
+        prefix = '#';
+        level++;
+        break;
+      case 'H1':
+      case 'H2':
+      case 'H3':
+      case 'P':
+        strs.push(e.tagName + " " + e.textContent);
+        break;
+    }
+    var cc = e.childNodes;
+    for (var i=0; i<cc.length; i++) {
+      var txt = this.textualize(cc[i], level, prefix);
+      if (txt.length > 0)
+        strs.push(txt);
+    }
+    return strs.join("\n")
+  },
+
+  parseMarkup : function(str) {
+    var lines = str.split("\n");
+    var top = DIV();
+    var lists = [];
+    for (var i=0; i<lines.length; i++) {
+      var line = lines[i].replace(/^\s+|\s+$/g, '');
+      var ocmd = line.split(" ",1)[0]
+      var cmd = ocmd.toUpperCase();
+      var content = line.slice(cmd.length+1);
+      var endList = true;
+      switch (cmd) {
+        case 'IMG':
+        case 'MODEL':
+          top.appendChild(E(cmd, {src: content}));
+          break;
+        case 'VIDEO':
+          var srcs = content.split(" ");
+          var e = E('VIDEO');
+          if (srcs.length == 1) {
+            e.setAttribute('src', srcs[0]);
+          } else {
+            srcs.forEach(function(src) {
+              e.appendChild(E('SOURCE', {src: src}));
+            });
+          }
+          top.appendChild(e);
+          break;
+        case '*':
+          var l;
+          while (l=lists[lists.length-1] && l.tagName != 'UL')
+            lists.pop();
+          if (lists.length == 0) {
+            l = UL();
+            lists.push(l);
+            top.appendChild(l)
+          }
+          lists[lists.length-1].appendChild(LI(T(content)));
+          endList = false;
+          break;
+        case '#':
+          var l;
+          while (l=lists[lists.length-1] && l.tagName != 'OL')
+            lists.pop();
+          if (lists.length == 0) {
+            l = OL();
+            lists.push(l);
+            top.appendChild(l)
+          }
+          lists[lists.length-1].appendChild(LI(T(content)));
+          endList = false;
+          break;
+        case 'H1':
+        case 'H2':
+        case 'H3':
+        case 'P':
+          top.appendChild(E(cmd, T(content)));
+          break;
+        default:
+          top.appendChild(E(i == 0 ? 'H1' : 'H2', T(line)));
+      }
+      if (endList && lists.length > 0)
+        lists.splice(0);
+    }
+    return top;
+  },
+
+  toggleEditMode : function() {
+    this.editing = !this.editing;
+    if (this.editing) {
+      if (!this.editor) {
+        // createNewSlide
+        // gotoCurrentSlide
+        // edit slideshow style (BG, fonts, transitions)
+        // save slideshow html
+        // deleteSlide
+        // change slide style (BG, fonts, transitions)
+        // change slide order
+        this.editorButtons = DIV(
+          BUTTON("New slide"),
+          BUTTON("Edit global style"),
+          BUTTON("Save slideshow", {style: {marginRight: '2px'}}),
+          {style: {
+            position: 'absolute',
+            right: '0px',
+            bottom: '0px',
+            width: '510px',
+            textAlign: 'right'
+          }}
+        );
+        this.editorSlides = DIV(
+          {style: {
+            position: 'absolute',
+            right: '0px',
+            top: '0px',
+            bottom: '32px',
+            width: '510px',
+            overflow: 'auto'
+          }}
+        );
+        var self = this;
+        toArray(this.slideElement.childNodes).forEach(function(c) {
+          if (!c.tagName) return;
+          var ta = TEXTAREA(T(self.textualize(c)),
+            { style: {
+
+              },
+              onkeyup : function() {
+                var content = this.value;
+                if (this.previousContent != content) {
+                  this.style.height = this.scrollHeight+'px';
+                  this.previousContent = content;
+                  var dom = self.parseMarkup(content);
+                  while (c.firstChild) {
+                    c.removeChild(c.firstChild);
+                  }
+                  while (dom.firstChild) {
+                    var d = dom.firstChild;
+                    dom.removeChild(d);
+                    c.appendChild(d);
+                  }
+                  var slide = self.parseSlide(c);
+                  var a = toArray(this.parentNode.parentNode.childNodes);
+                  var idx = a.indexOf(this.parentNode);
+                  self.replaceSlide(idx, slide);
+                }
+              },
+              onfocus : function() {
+                this.style.height = this.scrollHeight+'px';
+                var a = toArray(this.parentNode.parentNode.childNodes);
+                self.setSlide(a.indexOf(this.parentNode));
+              }
+            }
+          );
+          ta.addEventListener('DOMNodeInserted', function() {
+            var s = this;
+            setTimeout(function() {
+              s.style.height = s.scrollHeight+'px';
+            }, 10);
+          }, false);
+          self.editorSlides.appendChild(
+            DIV(
+              { style: {textAlign: 'right'} },
+              ta
+            )
+          );
+        });
+        this.editor = DIV(this.editorSlides, this.editorButtons,
+          {style: {
+            position: 'fixed',
+            right: '0px',
+            top: '0px',
+            bottom: '8px'
+          }}
+        );
+        document.body.appendChild(this.editor);
+      }
+      this.editor.style.display = 'block';
+      this.display.camera.targetFov *= 1.0/0.6;
+      this.canvas.width -= this.editorWidth;
+    } else {
+      this.editor.style.display = 'none';
+      this.display.camera.targetFov *= 0.6;
+      this.canvas.width += this.editorWidth;
+    }
+    this.display.changed = true;
+  },
+
   toggleApp : function() {
     if (this.disabled) {
       this.canvas.style.display = 'block';
@@ -280,7 +495,14 @@ Slides = Klass({
     var before = this.currentSlide
     this.currentSlide = index % this.slideCount;
     this.rendererGoTo(before, this.currentSlide);
-    if (this.editor && this.editor.parentNode) this.editSlide();
+    if (this.editing) {
+      var c = this.editorSlides.childNodes[this.currentSlide];
+      c.firstChild.focus();
+      if (this.editorSlides.scrollTop > c.offsetTop + (c.offsetHeight-50) ||
+          this.editorSlides.scrollTop + this.editorSlides.offsetHeight < c.offsetTop+50) {
+        this.editorSlides.scrollTop = c.offsetTop - 50;
+      }
+    }
     document.location.replace("#"+this.currentSlide);
   },
 
@@ -302,35 +524,6 @@ Slides = Klass({
       node.alignedNode.material.floats.xScale = node.width;
       node.alignedNode.material.floats.yScale = node.height;
     }
-  },
-
-  editSlide : function() {
-    var tc = this.slides.childNodes[this.currentSlide];
-    var texts = tc.getNodesByMethod('setText');
-    if (!this.editor)
-      this.editor = DIV({className: "editor"});
-    this.editor.innerHTML = "";
-    var self = this;
-    texts.forEach(function(txt) {
-      self.editor.appendChild(
-        TEXT(txt.text, {
-          onchange: function() {
-            self.updateText(txt, this.value);
-          },
-          onkeyup: function() {
-            self.updateText(txt, this.value);
-          }
-        })
-      );
-      self.editor.appendChild(BR());
-    });
-    this.editor.appendChild(BUTTON("Sulje", {
-      onclick : function(){
-        self.closeEditor();
-        self.canvas.focus();
-      }
-    }));
-    document.body.appendChild(this.editor);
   },
 
   closeEditor : function() {
@@ -358,6 +551,24 @@ Slides = Klass({
       top.appendChild(slide);
     });
     return top;
+  },
+
+  replaceSlide : function(index, slide) {
+    var ps = this.slides.childNodes[index];
+    if (!ps) {
+      var index = this.slides.childNodes.length;
+      slide.position[1] = Math.sin(2*Math.PI*index/10)*2500;
+      slide.position[0] = -index*10000;
+      slide.position[2] = Math.cos(2*Math.PI*index/10)*2500;
+      this.slides.appendChild(slide);
+    } else {
+      this.deleteTextures(ps);
+      var oldChildren = ps.childNodes.splice(0);
+      var cc = slide.childNodes;
+      while (cc.length > 0) {
+        ps.appendChild(cc.shift());
+      }
+    }
   },
 
   parseSlide : function(elem, acc, idx) {
