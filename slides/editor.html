@@ -1,0 +1,48 @@
+<html>
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Presentation</title>
+    <link rel="stylesheet" type="text/css" href="slides.css" />
+    <script type="text/javascript" src="../src/matrix.js"></script>
+    <script type="text/javascript" src="../src/gl_util.js"></script>
+    <script type="text/javascript" src="../src/scenegraph.js"></script>
+    <script type="text/javascript" src="../src/scene_util.js"></script>
+    <script type="text/javascript" src="../src/bin_loader.js"></script>
+    <script type="text/javascript" src="slides.js"></script>
+  </head>
+  <body>
+    <div id="slides">
+      <div>
+        <h1>Instructions</h1>
+        <h2>Click the button in the top-right corner</h2>
+        <h2>Edit the text boxes on the right</h2>
+        <p>Ctrl-Enter creates a new slide</p>
+        <p>Pressing delete or backspace in an empty slide deletes it</p>
+        <p>When you're done, close the editor and save this page</p>
+      </div>
+      <div>
+        <h1>Markup</h1>
+        <h2>Format: Command Content</h2>
+        <h3>E.g. H3 Some text here</h3>
+      </div>
+      <div>
+        <h1>Commands</h1>
+        <ul>
+          <li>H1 Big title</li>
+          <li>H2 Normal title</li>
+          <li>H3 Small title</li>
+          <li>P Even smaller text</li>
+          <li>* Bullet point list</li>
+          <li># Numbered list</li>
+          <li>IMG image_url.jpg</li>
+          <li>VIDEO video.mp4 alternative.webm</li>
+        </ul>
+      </div>
+    </div>
+    <script type="text/javascript">
+      App = new Slides(byId('slides'));
+    </script>
+	</body>
+
+</html>

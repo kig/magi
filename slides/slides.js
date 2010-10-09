@@ -28,7 +28,22 @@ Slides = Klass({
   wavyText : true,
   cycleColors : false,
 
+  webGLCanvasID : 'webgl-slides-canvas',
+  editorID : 'slides-editor',
+
   initialize : function(elem) {
+    var et = byId('editorToggle');
+    if (et) et.parentNode.removeChild(et);
+    et = BUTTON("Edit", {id: 'editorToggle'});
+    et.onclick = function() {
+      self.toggleEditMode();
+    };
+    this.editorToggleButton = et
+    document.body.insertBefore(this.editorToggleButton, elem);
+    var ed = byId(this.editorID);
+    if (ed) {
+      ed.parentNode.removeChild(ed);
+    }
     if (document.location.hash) {
       this.currentSlide = parseInt(document.location.hash.slice(1));
     } else {
@@ -48,7 +63,6 @@ Slides = Klass({
       this.rendererGoTo = this.htmlGoTo;
     }
     this.setSlideElement(elem);
-    this.toggleEditMode();
   },
 
   htmlGoTo : function() {
@@ -84,11 +98,15 @@ Slides = Klass({
   },
 
   initializeWebGL : function(elem) {
+    var oldCanvas = byId(this.webGLCanvasID);
+    if (oldCanvas) oldCanvas.parentNode.removeChild(oldCanvas);
     this.canvas = E.canvas(window.innerWidth, window.innerHeight);
+    this.canvas.setAttribute('id', this.webGLCanvasID);
+    this.canvas.id = this.webGLCanvasID;
     this.canvas.setAttribute('tabindex', '-1');
     this.canvas.style.position = 'absolute';
     this.canvas.style.left = this.canvas.style.top = '0px';
-    document.body.appendChild(this.canvas);
+    document.body.insertBefore(this.canvas, elem);
 
     this.realDisplay = new Magi.Scene(this.canvas);
     this.previousFrameFBO = new Magi.FBO(this.realDisplay.gl, this.canvas.width, this.canvas.height);
@@ -129,7 +147,7 @@ Slides = Klass({
 
     s.scene.addFrameListener(function(t,dt) {
       if (self.cycleColors) {
-        var rgb = Magi.Colors.hsv2rgb((t/100)%360, 0.9, 0.7);
+        var rgb = Magi.Colors.hsv2rgb((t/10)%360, 0.9, 0.7);
         vec3.set(rgb, s.bg);
       }
     });
@@ -254,7 +272,7 @@ Slides = Klass({
     if (level == null) level = 0;
     switch (e.tagName) {
       case 'IMG':
-      case 'MODEL':
+      //case 'MODEL':
         strs.push(e.tagName + " " + e.getAttribute('src'));
         break;
       case 'VIDEO':
@@ -306,7 +324,7 @@ Slides = Klass({
       var endList = true;
       switch (cmd) {
         case 'IMG':
-        case 'MODEL':
+        //case 'MODEL':
           top.appendChild(E(cmd, {src: content}));
           break;
         case 'VIDEO':
@@ -371,10 +389,27 @@ Slides = Klass({
         // deleteSlide
         // change slide style (BG, fonts, transitions)
         // change slide order
+        var self = this;
         this.editorButtons = DIV(
-          BUTTON("New slide"),
-          BUTTON("Edit global style"),
-          BUTTON("Save slideshow", {style: {marginRight: '2px'}}),
+          BUTTON("New slide", {
+            onclick : function(ev) {
+              self.createNewSlide();
+              ev.preventDefault();
+            }
+          }),
+          // BUTTON("Edit global style"),
+          BUTTON("Party on!", {
+            onclick : function(ev) {
+              self.cycleColors = !self.cycleColors;
+              ev.preventDefault();
+            }
+          }),
+          BUTTON("Toggle all slides visible", {style: {marginRight: '2px'},
+            onclick : function(ev) {
+              self.toggleAllSlidesVisible();
+              ev.preventDefault();
+            }
+          }),
           {style: {
             position: 'absolute',
             right: '0px',
@@ -393,72 +428,96 @@ Slides = Klass({
             overflow: 'auto'
           }}
         );
-        var self = this;
         toArray(this.slideElement.childNodes).forEach(function(c) {
           if (!c.tagName) return;
-          var ta = TEXTAREA(T(self.textualize(c)),
-            { style: {
-
-              },
-              onkeyup : function() {
-                var content = this.value;
-                if (this.previousContent != content) {
-                  this.style.height = this.scrollHeight+'px';
-                  this.previousContent = content;
-                  var dom = self.parseMarkup(content);
-                  while (c.firstChild) {
-                    c.removeChild(c.firstChild);
-                  }
-                  while (dom.firstChild) {
-                    var d = dom.firstChild;
-                    dom.removeChild(d);
-                    c.appendChild(d);
-                  }
-                  var slide = self.parseSlide(c);
-                  var a = toArray(this.parentNode.parentNode.childNodes);
-                  var idx = a.indexOf(this.parentNode);
-                  self.replaceSlide(idx, slide);
-                }
-              },
-              onfocus : function() {
-                this.style.height = this.scrollHeight+'px';
-                var a = toArray(this.parentNode.parentNode.childNodes);
-                self.setSlide(a.indexOf(this.parentNode));
-              }
-            }
-          );
+          var ta = TEXTAREA(T(self.textualize(c)), {
+            onkeyup : self.textareaKeyUpHandler(c),
+            onfocus : self.textareaFocusHandler(),
+          });
           ta.addEventListener('DOMNodeInserted', function() {
             var s = this;
             setTimeout(function() {
               s.style.height = s.scrollHeight+'px';
             }, 10);
           }, false);
-          self.editorSlides.appendChild(
-            DIV(
-              { style: {textAlign: 'right'} },
-              ta
-            )
-          );
+          self.editorSlides.appendChild(DIV({ style: {textAlign: 'right'} }, ta));
         });
         this.editor = DIV(this.editorSlides, this.editorButtons,
-          {style: {
-            position: 'fixed',
-            right: '0px',
-            top: '0px',
-            bottom: '8px'
-          }}
+          {
+            id: this.editorID,
+            style: {
+              position: 'fixed',
+              right: '0px',
+              top: '0px',
+              bottom: '8px'
+            }
+          }
         );
-        document.body.appendChild(this.editor);
       }
-      this.editor.style.display = 'block';
+      document.body.insertBefore(this.editor, this.slideElement);
       this.display.camera.targetFov *= 1.0/0.6;
       this.canvas.width -= this.editorWidth;
+      this.editorToggleButton.style.right = this.editorWidth + 'px';
     } else {
-      this.editor.style.display = 'none';
+      this.editor.parentNode.removeChild(this.editor);
       this.display.camera.targetFov *= 0.6;
       this.canvas.width += this.editorWidth;
+      this.editorToggleButton.style.right = '0px';
     }
     this.display.changed = true;
+  },
+
+  saveSlideshow : function() {
+    App.toggleApp();
+    document.body.removeChild(this.canvas);
+    document.body.removeChild(this.editorToggleButton);
+    if (this.editor)
+      document.body.removeChild(this.editor);
+    var html = document.documentElement.innerHTML;
+    document.body.insertBefore(this.editorToggleButton,this.slideElement);
+    document.body.insertBefore(this.canvas,this.slideElement);
+    document.body.insertBefore(this.editor,this.slideElement);
+    App.toggleApp();
+    return html;
+  },
+
+  textareaKeyUpHandler : function(e) {
+    var self = this;
+    return (function(ev) {
+      var content = this.value;
+      if (this.previousContent == "" && Key.match(ev, [Key.BACKSPACE, Key.DELETE])) {
+        var a = toArray(this.parentNode.parentNode.childNodes);
+        self.deleteSlide(a.indexOf(this.parentNode));
+      } else if (ev.ctrlKey && Key.match(ev, Key.ENTER)) {
+        self.createNewSlide();
+        ev.preventDefault();
+      } else if (this.previousContent != content) {
+        this.style.height = this.scrollHeight+'px';
+        this.previousContent = content;
+        var dom = self.parseMarkup(content);
+        while (e.firstChild) {
+          e.removeChild(e.firstChild);
+        }
+        while (dom.firstChild) {
+          var d = dom.firstChild;
+          dom.removeChild(d);
+          e.appendChild(d);
+        }
+        var slide = self.parseSlide(e);
+        var a = toArray(this.parentNode.parentNode.childNodes);
+        var idx = a.indexOf(this.parentNode);
+        self.replaceSlide(idx, slide);
+      }
+    });
+  },
+
+  textareaFocusHandler : function() {
+    var self = this;
+    return (function(ev) {
+      this.style.height = this.scrollHeight+'px';
+      var a = toArray(this.parentNode.parentNode.childNodes);
+      self.setSlide(a.indexOf(this.parentNode));
+    });
   },
 
   toggleApp : function() {
@@ -491,7 +550,7 @@ Slides = Klass({
   },
 
   setSlide : function(index) {
-    if (index < 0) index = this.slideCount+index;
+    if (index < 0) index = this.slideCount+(index%this.slideCount);
     var before = this.currentSlide
     this.currentSlide = index % this.slideCount;
     this.rendererGoTo(before, this.currentSlide);
@@ -553,14 +612,81 @@ Slides = Klass({
     return top;
   },
 
+  repositionSlides : function() {
+    var cc = this.slides.childNodes;
+    for (var i=0; i<cc.length; i++) {
+      cc[i].slideIndex = i;
+      var pos = cc[i].position;
+      pos[0] = -i*10000;
+      pos[1] = Math.sin(2*Math.PI*i/10)*2500;
+      pos[2] = Math.cos(2*Math.PI*i/10)*2500;
+    }
+    this.setSlide(this.currentSlide);
+  },
+
+  createNewSlide : function() {
+    var e = DIV();
+    var cc = this.slideElement.childNodes;
+    for (var i=0,j=0; i<cc.length; i++) {
+      while (cc[i] && !cc[i].tagName) i++;
+      if (j == this.currentSlide) {
+        if (cc[i] && cc[i].nextSibling) {
+          this.slideElement.insertBefore(e, cc[i].nextSibling);
+        } else {
+          this.slideElement.appendChild(e);
+        }
+        break;
+      }
+      if (cc[i] && cc[i].tagName) j++;
+    }
+    var slide = this.parseSlide(e, null, this.currentSlide+1);
+    this.slides.childNodes.splice(this.currentSlide+1, 0, slide);
+    if (this.editorSlides) {
+      var self = this;
+      var ta = TEXTAREA(T(self.textualize(e)), {
+        onkeyup : self.textareaKeyUpHandler(e),
+        onfocus : self.textareaFocusHandler(),
+      });
+      ta.addEventListener('DOMNodeInserted', function() {
+        var s = this;
+        setTimeout(function() {
+          s.style.height = s.scrollHeight+'px';
+        }, 10);
+      }, false);
+      var cci = this.editorSlides.childNodes[this.currentSlide];
+      var ediv = DIV( { style: {textAlign: 'right'} }, ta );
+      if (cci.nextSibling) {
+        this.editorSlides.insertBefore(ediv, cci.nextSibling);
+      } else {
+        this.editorSlides.appendChild(ediv);
+      }
+    }
+    this.slideCount++;
+    this.repositionSlides();
+    this.setSlide(this.currentSlide+1);
+  },
+
+  deleteSlide : function(index) {
+    if (this.slideCount == 1) return;
+    var ps = this.slides.childNodes[index];
+    this.deleteTextures(ps);
+    this.slides.childNodes.splice(index,1);
+    if ((this.currentSlide == index && index > 0) || this.currentSlide+1 == this.slideCount)
+      this.currentSlide--;
+    ps.element.parentNode.removeChild(ps.element);
+    if (this.editorSlides) {
+      var c = this.editorSlides.childNodes[index];
+      c.parentNode.removeChild(c);
+    }
+    this.slideCount--;
+    this.repositionSlides();
+  },
+
   replaceSlide : function(index, slide) {
     var ps = this.slides.childNodes[index];
     if (!ps) {
-      var index = this.slides.childNodes.length;
-      slide.position[1] = Math.sin(2*Math.PI*index/10)*2500;
-      slide.position[0] = -index*10000;
-      slide.position[2] = Math.cos(2*Math.PI*index/10)*2500;
       this.slides.appendChild(slide);
+      this.repositionSlides();
     } else {
       this.deleteTextures(ps);
       var oldChildren = ps.childNodes.splice(0);

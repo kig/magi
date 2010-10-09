@@ -54,6 +54,13 @@ p {
   margin-top: 0em;
   margin-bottom: 0.3em;
 }
+#editorToggle {
+  position: fixed;
+  top: 8px;
+  right: 0px;
+  margin-right: 10px;
+  z-index: 1000000;
+}
 #slides div {
   margin: 40px;
   padding: 0;
