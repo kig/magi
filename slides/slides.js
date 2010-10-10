@@ -345,27 +345,31 @@ Slides = Klass({
           top.appendChild(e);
           break;
         case '*':
-          var l;
-          while (l=lists[lists.length-1] && l.tagName != 'UL')
+          var l = lists[lists.length-1];
+          while (lists.length > 0 && l.tagName != 'UL') {
             lists.pop();
+            l = lists[lists.length-1];
+          }
           if (lists.length == 0) {
             l = UL();
             lists.push(l);
             top.appendChild(l)
           }
-          lists[lists.length-1].appendChild(LI(T(content)));
+          l.appendChild(LI(T(content)));
           endList = false;
           break;
         case '#':
-          var l;
-          while (l=lists[lists.length-1] && l.tagName != 'OL')
+          var l = lists[lists.length-1];
+          while (lists.length > 0 && l.tagName != 'OL') {
             lists.pop();
+            l = lists[lists.length-1];
+          }
           if (lists.length == 0) {
             l = OL();
             lists.push(l);
             top.appendChild(l)
           }
-          lists[lists.length-1].appendChild(LI(T(content)));
+          l.appendChild(LI(T(content)));
           endList = false;
           break;
         case 'H1':
@@ -377,8 +381,9 @@ Slides = Klass({
         default:
           top.appendChild(E(i == 0 ? 'H1' : 'H2', T(line)));
       }
-      if (endList && lists.length > 0)
+      if (endList && lists.length > 0) {
         lists.splice(0);
+      }
     }
     return top;
   },
@@ -442,7 +447,7 @@ Slides = Klass({
           ta.addEventListener('DOMNodeInserted', function() {
             var s = this;
             setTimeout(function() {
-              s.style.height = s.scrollHeight+8+'px';
+              s.style.height = s.scrollHeight+'px';
             }, 10);
           }, false);
           self.editorSlides.appendChild(DIV({ style: {textAlign: 'right'} }, ta));
@@ -497,7 +502,7 @@ Slides = Klass({
         self.createNewSlide();
         ev.preventDefault();
       } else if (this.previousContent != content) {
-        this.style.height = this.scrollHeight+8+'px';
+        this.style.height = this.scrollHeight+'px';
         this.previousContent = content;
         var dom = self.parseMarkup(content);
         while (e.firstChild) {
@@ -519,7 +524,7 @@ Slides = Klass({
   textareaFocusHandler : function() {
     var self = this;
     return (function(ev) {
-      this.style.height = this.scrollHeight+8+'px';
+      this.style.height = this.scrollHeight+'px';
       var a = toArray(this.parentNode.parentNode.childNodes);
       self.setSlide(a.indexOf(this.parentNode));
     });
@@ -655,7 +660,7 @@ Slides = Klass({
       ta.addEventListener('DOMNodeInserted', function() {
         var s = this;
         setTimeout(function() {
-          s.style.height = s.scrollHeight+8+'px';
+          s.style.height = s.scrollHeight+'px';
         }, 10);
       }, false);
       var cci = this.editorSlides.childNodes[this.currentSlide];
