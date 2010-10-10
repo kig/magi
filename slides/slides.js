@@ -80,7 +80,11 @@ Slides = Klass({
   
   makeKeydownHandler : function() {
     var self = this;
+    var skipTags = ['BUTTON', 'INPUT', 'TEXTAREA'];
     return function(ev) {
+      var t = ev.target.tagName;
+      if (skipTags.indexOf(t) != -1)
+        return;
       if (Key.match(ev, Key.SPACE)) {
         if (ev.shiftKey)
           self.previousSlide();
@@ -98,6 +102,7 @@ Slides = Klass({
   },
 
   initializeWebGL : function(elem) {
+    document.body.style.overflow = 'hidden';
     var oldCanvas = byId(this.webGLCanvasID);
     if (oldCanvas) oldCanvas.parentNode.removeChild(oldCanvas);
     this.canvas = E.canvas(window.innerWidth, window.innerHeight);
@@ -437,7 +442,7 @@ Slides = Klass({
           ta.addEventListener('DOMNodeInserted', function() {
             var s = this;
             setTimeout(function() {
-              s.style.height = s.scrollHeight+'px';
+              s.style.height = s.scrollHeight+8+'px';
             }, 10);
           }, false);
           self.editorSlides.appendChild(DIV({ style: {textAlign: 'right'} }, ta));
@@ -492,7 +497,7 @@ Slides = Klass({
         self.createNewSlide();
         ev.preventDefault();
       } else if (this.previousContent != content) {
-        this.style.height = this.scrollHeight+'px';
+        this.style.height = this.scrollHeight+8+'px';
         this.previousContent = content;
         var dom = self.parseMarkup(content);
         while (e.firstChild) {
@@ -514,7 +519,7 @@ Slides = Klass({
   textareaFocusHandler : function() {
     var self = this;
     return (function(ev) {
-      this.style.height = this.scrollHeight+'px';
+      this.style.height = this.scrollHeight+8+'px';
       var a = toArray(this.parentNode.parentNode.childNodes);
       self.setSlide(a.indexOf(this.parentNode));
     });
@@ -650,7 +655,7 @@ Slides = Klass({
       ta.addEventListener('DOMNodeInserted', function() {
         var s = this;
         setTimeout(function() {
-          s.style.height = s.scrollHeight+'px';
+          s.style.height = s.scrollHeight+8+'px';
         }, 10);
       }, false);
       var cci = this.editorSlides.childNodes[this.currentSlide];
