@@ -1,3 +1,37 @@
+Magi.log=function(msg) {
+  if (window.console)
+    console.log(msg);
+  if (this.logCanvas) {
+    var c = this.logCanvas;
+    var ctx = c.getContext('2d');
+    ctx.font = '14px Sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#c24';
+    ctx.fillText(msg,c.width/2,c.height/2,c.width-20);
+  }
+  if (this.logElement) {
+    this.logElement.appendChild(P(T(msg)));
+  }
+}
+Magi.GL_CONTEXT_ID = null;
+Magi.findGLContextId = function(c, args) {
+  var find=function(a,f){for(var i=0,j;j=a[i],i++<a.length;)if(f(j))return j};
+  var id = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n, args)}catch(e){}});
+  return id;
+}
+Magi.getGLContext = function(c, args){
+  if (!this.GL_CONTEXT_ID)
+    this.GL_CONTEXT_ID = Magi.findGLContextId(c, args);
+  if (!this.GL_CONTEXT_ID) {
+    this.logCanvas = c;
+    this.log("No WebGL context found. Click here for more details.");
+    var a = document.createElement('a');
+    a.href = "http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation";
+    c.parentNode.insertBefore(a, c);
+    a.appendChild(c);
+  }
+  else return c.getContext(this.GL_CONTEXT_ID, args);
+}
 
 /**
   Returns the error name for the WebGL error code.
@@ -1276,40 +1310,4 @@ Magi.Geometry.Ring = {
     }
     return this.cache[gl][k];
   }
-}
-
-
-Magi.log=function(msg) {
-  if (window.console)
-    console.log(msg);
-  if (this.logCanvas) {
-    var c = this.logCanvas;
-    var ctx = c.getContext('2d');
-    ctx.font = '14px Sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#c24';
-    ctx.fillText(msg,c.width/2,c.height/2,c.width-20);
-  }
-  if (this.logElement) {
-    this.logElement.appendChild(P(T(msg)));
-  }
-}
-Magi.GL_CONTEXT_ID = null;
-Magi.findGLContextId = function(c, args) {
-  var find=function(a,f){for(var i=0,j;j=a[i],i++<a.length;)if(f(j))return j};
-  var id = find(['webgl','experimental-webgl'],function(n){try{return c.getContext(n, args)}catch(e){}});
-  return id;
-}
-Magi.getGLContext = function(c, args){
-  if (!this.GL_CONTEXT_ID)
-    this.GL_CONTEXT_ID = Magi.findGLContextId(c, args);
-  if (!this.GL_CONTEXT_ID) {
-    this.logCanvas = c;
-    this.log("No WebGL context found. Click here for more details.");
-    var a = document.createElement('a');
-    a.href = "http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation";
-    c.parentNode.insertBefore(a, c);
-    a.appendChild(c);
-  }
-  else return c.getContext(this.GL_CONTEXT_ID, args); 
 }

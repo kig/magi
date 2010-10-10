@@ -31,6 +31,9 @@ Slides = Klass({
   webGLCanvasID : 'webgl-slides-canvas',
   editorID : 'slides-editor',
 
+  usingWebGL : false,
+  usingHTML : false,
+
   initialize : function(elem) {
     var et = byId('editorToggle');
     if (et) et.parentNode.removeChild(et);
@@ -57,10 +60,12 @@ Slides = Klass({
     }, false);
     if (this.isWebGLSupported()) { // render using WebGL
       this.initializeWebGL(elem);
+      this.usingWebGL = true;
     } else if (this.isSVGSupported()) { // SVG fallback
     } else { // JS + CSS fallback
       window.onkeydown = this.makeKeydownHandler();
       this.rendererGoTo = this.htmlGoTo;
+      this.usingHTML = true;
     }
     this.setSlideElement(elem);
   },
@@ -244,6 +249,7 @@ Slides = Klass({
   },
 
   visibleSlides : function(first, last) {
+    if (!this.usingWebGL) return;
     var min = Math.min(first, last);
     var max = Math.max(first, last);
     var cc = this.slides.childNodes;
@@ -450,7 +456,7 @@ Slides = Klass({
               s.style.height = s.scrollHeight+'px';
             }, 10);
           }, false);
-          self.editorSlides.appendChild(DIV({ style: {textAlign: 'right'} }, ta));
+          self.editorSlides.appendChild(DIV(ta));
         });
         this.editor = DIV(this.editorSlides, this.editorButtons,
           {
@@ -465,27 +471,34 @@ Slides = Klass({
         );
       }
       document.body.insertBefore(this.editor, this.slideElement);
-      this.display.camera.targetFov *= 1.0/0.6;
-      this.canvas.width -= this.editorWidth;
+      if (this.usingWebGL) {
+        this.display.camera.targetFov *= 1.0/0.6;
+        this.canvas.width -= this.editorWidth;
+        this.display.changed = true;
+      }
       this.editorToggleButton.style.right = this.editorWidth + 'px';
     } else {
       this.editor.parentNode.removeChild(this.editor);
-      this.display.camera.targetFov *= 0.6;
-      this.canvas.width += this.editorWidth;
+      if (this.usingWebGL) {
+        this.display.camera.targetFov *= 0.6;
+        this.canvas.width += this.editorWidth;
+        this.display.changed = true;
+      }
       this.editorToggleButton.style.right = '0px';
     }
-    this.display.changed = true;
   },
 
   saveSlideshow : function() {
     App.toggleApp();
-    document.body.removeChild(this.canvas);
+    if (this.canvas)
+      document.body.removeChild(this.canvas);
     document.body.removeChild(this.editorToggleButton);
     if (this.editor)
       document.body.removeChild(this.editor);
     var html = document.documentElement.innerHTML;
     document.body.insertBefore(this.editorToggleButton,this.slideElement);
-    document.body.insertBefore(this.canvas,this.slideElement);
+    if (this.canvas)
+      document.body.insertBefore(this.canvas,this.slideElement);
     document.body.insertBefore(this.editor,this.slideElement);
     App.toggleApp();
     return html;
@@ -513,10 +526,12 @@ Slides = Klass({
           dom.removeChild(d);
           e.appendChild(d);
         }
-        var slide = self.parseSlide(e);
-        var a = toArray(this.parentNode.parentNode.childNodes);
-        var idx = a.indexOf(this.parentNode);
-        self.replaceSlide(idx, slide);
+        if (self.usingWebGL) {
+          var slide = self.parseSlide(e);
+          var a = toArray(this.parentNode.parentNode.childNodes);
+          var idx = a.indexOf(this.parentNode);
+          self.replaceSlide(idx, slide);
+        }
       }
     });
   },
@@ -623,13 +638,15 @@ Slides = Klass({
   },
 
   repositionSlides : function() {
-    var cc = this.slides.childNodes;
-    for (var i=0; i<cc.length; i++) {
-      cc[i].slideIndex = i;
-      var pos = cc[i].position;
-      pos[0] = -i*10000;
-      pos[1] = Math.sin(2*Math.PI*i/10)*2500;
-      pos[2] = Math.cos(2*Math.PI*i/10)*2500;
+    if (this.usingWebGL) {
+      var cc = this.slides.childNodes;
+      for (var i=0; i<cc.length; i++) {
+        cc[i].slideIndex = i;
+        var pos = cc[i].position;
+        pos[0] = -i*10000;
+        pos[1] = Math.sin(2*Math.PI*i/10)*2500;
+        pos[2] = Math.cos(2*Math.PI*i/10)*2500;
+      }
     }
     this.setSlide(this.currentSlide);
   },
@@ -649,8 +666,10 @@ Slides = Klass({
       }
       if (cc[i] && cc[i].tagName) j++;
     }
-    var slide = this.parseSlide(e, null, this.currentSlide+1);
-    this.slides.childNodes.splice(this.currentSlide+1, 0, slide);
+    if (this.usingWebGL) {
+      var slide = this.parseSlide(e, null, this.currentSlide+1);
+      this.slides.childNodes.splice(this.currentSlide+1, 0, slide);
+    }
     if (this.editorSlides) {
       var self = this;
       var ta = TEXTAREA(T(self.textualize(e)), {
@@ -664,7 +683,7 @@ Slides = Klass({
         }, 10);
       }, false);
       var cci = this.editorSlides.childNodes[this.currentSlide];
-      var ediv = DIV( { style: {textAlign: 'right'} }, ta );
+      var ediv = DIV( ta );
       if (cci.nextSibling) {
         this.editorSlides.insertBefore(ediv, cci.nextSibling);
       } else {
@@ -678,17 +697,19 @@ Slides = Klass({
 
   deleteSlide : function(index) {
     if (this.slideCount == 1) return;
-    var ps = this.slides.childNodes[index];
-    this.deleteTextures(ps);
-    this.slides.childNodes.splice(index,1);
     if ((this.currentSlide == index && index > 0) || this.currentSlide+1 == this.slideCount)
       this.currentSlide--;
-    ps.element.parentNode.removeChild(ps.element);
+    this.slideCount--;
     if (this.editorSlides) {
       var c = this.editorSlides.childNodes[index];
       c.parentNode.removeChild(c);
     }
-    this.slideCount--;
+    if (this.usingWebGL) {
+      var ps = this.slides.childNodes[index];
+      this.deleteTextures(ps);
+      this.slides.childNodes.splice(index,1);
+      ps.element.parentNode.removeChild(ps.element);
+    }
     this.repositionSlides();
   },
 
