@@ -340,7 +340,7 @@ Slides = Klass({
           break;
         case 'VIDEO':
           var srcs = content.split(" ");
-          var e = E('VIDEO');
+          var e = E('VIDEO', {controls: 'on'});
           if (srcs.length == 1) {
             e.setAttribute('src', srcs[0]);
           } else {
@@ -385,7 +385,16 @@ Slides = Klass({
           top.appendChild(E(cmd, T(content)));
           break;
         default:
-          top.appendChild(E(i == 0 ? 'H1' : 'H2', T(line)));
+          var oneWord = !(/\s/).test(line);
+          if (oneWord && (/\.(jpe?g|png|gif)$/i).test(line)) {
+            top.appendChild(IMG({src: line}));
+          } else if (oneWord && (/\.(mp4|webm|og[gvm])$/i).test(line)) {
+            top.appendChild(VIDEO({src: line, controls: 'on'}));
+          } else if (oneWord && (/\.(mp3|oga)$/i).test(line)) {
+            top.appendChild(AUDIO({src: line, controls: 'on'}));
+          } else {
+            top.appendChild(E(i == 0 ? 'H1' : 'H2', T(line)));
+          }
       }
       if (endList && lists.length > 0) {
         lists.splice(0);
