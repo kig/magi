@@ -249,6 +249,8 @@ Magi.Node = Klass(Magi.Motion, {
       mat4.rotate(m, this.rotation.angle, this.rotation.axis);
     if (!this.scaleAfterRotate && doScaling)
       mat4.scale(m, s);
+    if (this.transform)
+      mat4.multiply(m, this.transform, m);
     if (this.isBillboard)
       mat4.billboard(m);
     mat4.toInverseMat3(m, this.normalMatrix);
@@ -461,6 +463,7 @@ Magi.Camera = Klass({
   blend : true,
   blendFuncSrc : 'ONE',
   blendFuncDst : 'ONE_MINUS_SRC_ALPHA',
+  useProjectionMatrix : false,
 
   initialize : function() {
     this.position = vec3.create([5,5,5]);
@@ -487,7 +490,7 @@ Magi.Camera = Klass({
   },
 
   getLookMatrix : function() {
-    if (this.useLookAt)
+    if (this.useLookAt && !this.useProjectionMatrix)
       mat4.lookAt(this.position, this.lookAt, this.up, this.matrix);
     else
       mat4.identity(this.matrix);
@@ -498,10 +501,12 @@ Magi.Camera = Klass({
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
-    if (this.ortho) {
-      mat4.ortho(x, width, -height, -y, this.zNear, this.zFar, this.perspectiveMatrix);
-    } else {
-      mat4.perspective(this.fov, width/height, this.zNear, this.zFar, this.perspectiveMatrix);
+    if (!this.useProjectionMatrix) {
+      if (this.ortho) {
+        mat4.ortho(x, width, -height, -y, this.zNear, this.zFar, this.perspectiveMatrix);
+      } else {
+        mat4.perspective(this.fov, width/height, this.zNear, this.zFar, this.perspectiveMatrix);
+      }
     }
     scene.updateTransform(this.getLookMatrix());
     var st = new Magi.GLDrawState();
