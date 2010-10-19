@@ -311,6 +311,16 @@ Magi.FilterQuad = Klass(Magi.Node, {
   }
 });
 
+Magi.FlipFilterQuad = Klass(Magi.Node, {
+  identityTransform : true,
+  depthMask : false,
+
+  initialize : function(frag) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Quad.getCachedVBO());
+    this.material = Magi.FlipFilterQuadMaterial.make(null, frag);
+  }
+});
+
 Magi.ColorQuad = Klass(Magi.Node, {
   initialize : function(r,g,b,a) {
     Magi.Node.initialize.call(this, Magi.Geometry.Quad.getCachedVBO());
@@ -569,6 +579,17 @@ Magi.FilterQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
   "{"+
   "  vec4 v = vec4(Vertex, 1.0);"+
   "  texCoord0 = texCoord();"+
+  "  gl_Position = v;"+
+  "}"
+)};
+
+Magi.FlipFilterQuadMaterial = Object.clone(Magi.FilterMaterial);
+Magi.FlipFilterQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
+  Magi.ShaderLib.defaultTransform+
+  "void main()"+
+  "{"+
+  "  vec4 v = vec4(Vertex, 1.0);"+
+  "  texCoord0 = flipTexCoord();"+
   "  gl_Position = v;"+
   "}"
 )};
