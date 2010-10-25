@@ -907,6 +907,18 @@ if (!Math.cosh) {
     return Math.log(x + Math.sqrt(x*x - 1))
   }
 }
+Math.Ln2 = Math.log(2);
+Math.Ln10 = Math.log(10);
+Math.log2 = function(x) {
+  return Math.log(x) / Math.Ln2;
+}
+Math.log10 = function(x) {
+  return Math.log(x) / Math.Ln10;
+}
+Math.isPowerOfTwo = function(x) {
+  var l = Math.log2(x);
+  return (Math.floor(l) == l);
+}
 
 /**
   Creates and configures a DOM element.
