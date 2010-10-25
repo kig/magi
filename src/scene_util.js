@@ -689,6 +689,7 @@ Magi.DefaultMaterial = {
     "uniform vec4 MaterialSpecular;"+
     "uniform vec4 MaterialDiffuse;"+
     "uniform vec4 MaterialAmbient;"+
+    "uniform vec4 MaterialEmit;"+
     "uniform vec4 GlobalAmbient;"+
     "uniform float MaterialShininess;"+
     "uniform sampler2D DiffTex, SpecTex, EmitTex;"+
@@ -699,7 +700,9 @@ Magi.DefaultMaterial = {
     "{"+
     "  vec4 color = GlobalAmbient * LightAmbient * MaterialAmbient;"+
     "  vec4 matDiff = MaterialDiffuse + texture2D(DiffTex, texCoord0);"+
+    "  matDiff.a = 1.0 - (1.0-MaterialDiffuse.a) * (1.0-texture2D(DiffTex, texCoord0).a);"+
     "  vec4 matSpec = MaterialSpecular + texture2D(SpecTex, texCoord0);"+
+    "  matSpec.a = 1.0 - (1.0-MaterialSpecular.a) * (1.0-texture2D(SpecTex, texCoord0).a);"+
     "  vec4 diffuse = LightDiffuse * matDiff;"+
     "  float lambertTerm = dot(normal, lightDir);"+
     "  vec4 lcolor = diffuse * lambertTerm * attenuation;"+
@@ -708,8 +711,8 @@ Magi.DefaultMaterial = {
     "  float specular = pow( max(dot(R, E), 0.0), MaterialShininess );"+
     "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
     "  if (lambertTerm > 0.0) color += lcolor * lambertTerm;"+
-    "  else color += diffuse * attenuation * 0.3 * -lambertTerm;"+
-    "  color += texture2D(EmitTex, texCoord0);" +
+    "  else color += diffuse * attenuation * MaterialAmbient.a * -lambertTerm;"+
+    "  color += MaterialEmit + texture2D(EmitTex, texCoord0);" +
     "  color *= matDiff.a;"+
     "  color.a = matDiff.a;"+
     "  gl_FragColor = color;"+
@@ -733,7 +736,8 @@ Magi.DefaultMaterial = {
     m.textures.DiffTex = m.textures.SpecTex = m.textures.EmitTex = null;
     m.floats.MaterialSpecular = vec4.create([1, 1, 1, 0]);
     m.floats.MaterialDiffuse = vec4.create([0.5, 0.5, 0.5, 1]);
-    m.floats.MaterialAmbient = vec4.create([1, 1, 1, 1]);
+    m.floats.MaterialAmbient = vec4.create([1, 1, 1, 0.3]);
+    m.floats.MaterialEmit = vec4.create([0, 0, 0, 0]);
     m.floats.MaterialShininess = 1.5;
     m.floats.LightMatrix = this.lightMatrix;
 
