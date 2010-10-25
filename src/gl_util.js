@@ -1289,32 +1289,31 @@ Magi.Geometry.Disk = {
   IN : 2,
   UP : 3,
   DOWN : 4,
-  vert : function(theta, y, r, vertices, normals, texcoords, dir, height, ty)
+  vert : function(theta, z, r, vertices, normals, texcoords, dir, height, ty)
   {
-    var x, y, z;
-
-    x = Math.sin(theta)*r;
-    z = y;
-    y = Math.cos(theta)*r;
+    var ux = Math.sin(theta);
+    var uy = Math.cos(theta);
+    var x = ux*r;
+    var y = uy*r;
     vertices.push(x, y, z);
 
     var tx = theta / (2*Math.PI);
 
     switch (dir) {
       case this.OUT:
-        normals.push(Math.sin(theta), 0, Math.cos(theta));
-        texcoords.push(tx, y/height);
+        normals.push(ux, uy, 0);
+        texcoords.push(tx, z/height);
         break;
       case this.IN:
-        normals.push(-Math.sin(theta), 0, -Math.cos(theta));
-        texcoords.push(tx, y/height);
+        normals.push(-ux, -uy, 0);
+        texcoords.push(tx, z/height);
         break;
       case this.UP:
-        normals.push(0, 0, -1);
+        normals.push(0, 0, 1);
         texcoords.push(tx, ty);
         break;
       case this.DOWN:
-        normals.push(0, 0, 1);
+        normals.push(0, 0, -1);
         texcoords.push(tx, ty);
         break;
     }
@@ -1325,7 +1324,7 @@ Magi.Geometry.Disk = {
     var vertices = [], normals = [], texcoords = [];
     var self = this;
     for (var yi = 0; yi < yCount; yi++) {
-      var y = y * height/yCount;
+      var y = yi * height/yCount;
       var y2 = y + height/yCount;
       for (var x = 0; x < xCount; x++) {
         var theta = x * 2*Math.PI/xCount;
