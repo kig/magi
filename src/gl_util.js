@@ -1229,41 +1229,160 @@ Magi.Geometry.CubeArray = {
 
 
 Magi.Geometry.Sphere = {
-  vertices : [],
-  normals : [],
-  indices : [],
-  create : function(){
-    var r = 0.75;
+  vert : function(theta, phi, vertices, normals, texcoords)
+  {
+    var x, y, z, nx, ny, nz;
+
+    nx = Math.sin(theta) * Math.cos(phi);
+    nz = Math.sin(phi);
+    ny = Math.cos(theta) * Math.cos(phi);
+    normals.push(nx, ny, nz);
+
+    x = Math.sin(theta) * Math.cos(phi);
+    z = Math.sin(phi);
+    y = Math.cos(theta) * Math.cos(phi);
+    vertices.push(x, y, z);
+
+    texcoords.push(1-(theta / (2*Math.PI)), 0.5 + 0.5 * Math.sin(phi));
+  },
+
+  makeVBO : function(gl, xCount, yCount) {
+    var vertices = [], normals = [], texcoords = [];
     var self = this;
-    function vert(theta, phi)
-    {
-      var r = 0.75;
-      var x, y, z, nx, ny, nz;
-
-      nx = Math.sin(theta) * Math.cos(phi);
-      ny = Math.sin(phi);
-      nz = Math.cos(theta) * Math.cos(phi);
-      self.normals.push(nx);
-      self.normals.push(ny);
-      self.normals.push(nz);
-
-      x = r * Math.sin(theta) * Math.cos(phi);
-      y = r * Math.sin(phi);
-      z = r * Math.cos(theta) * Math.cos(phi);
-      self.vertices.push(x);
-      self.vertices.push(y);
-      self.vertices.push(z);
-    }
-    for (var phi = -Math.PI/2; phi < Math.PI/2; phi += Math.PI/20) {
-      var phi2 = phi + Math.PI/20;
-      for (var theta = -Math.PI/2; theta <= Math.PI/2; theta += Math.PI/20) {
-        vert(theta, phi);
-        vert(theta, phi2);
+    for (var y=0; y<yCount; y++) {
+      var phi = -Math.PI/2 + Math.PI*y/yCount;
+      var phi2 = phi + Math.PI/yCount;
+      for (var x=0; x<xCount; x++) {
+        var theta = 2*Math.PI*x/xCount;
+        var theta2 = theta + 2*Math.PI/xCount;
+        this.vert(theta, phi, vertices, normals, texcoords);
+        this.vert(theta, phi2, vertices, normals, texcoords);
+        this.vert(theta2, phi2, vertices, normals, texcoords);
+        this.vert(theta, phi, vertices, normals, texcoords);
+        this.vert(theta2, phi2, vertices, normals, texcoords);
+        this.vert(theta2, phi, vertices, normals, texcoords);
       }
     }
+    return new Magi.VBO(gl,
+        {size:3, data: new Float32Array(vertices)},
+        {size:3, data: new Float32Array(normals)},
+        {size:2, data: new Float32Array(texcoords)}
+    );
+  },
+  cache: {},
+  getCachedVBO : function(gl, xCount, yCount) {
+    xCount = xCount || 10;
+    yCount = yCount || 10;
+    var k = xCount +":"+ yCount;
+    if (!this.cache[gl]) {
+      this.cache[gl] = {};
+    }
+    if (!this.cache[gl][k]) {
+      this.cache[gl][k] = this.makeVBO(gl, xCount, yCount);
+    }
+    return this.cache[gl][k];
   }
 };
-Magi.Geometry.Sphere.create();
+
+Magi.Geometry.Disk = {
+  OUT : 1,
+  IN : 2,
+  UP : 3,
+  DOWN : 4,
+  vert : function(theta, y, r, vertices, normals, texcoords, dir, height, ty)
+  {
+    var x, y, z;
+
+    x = Math.sin(theta)*r;
+    z = y;
+    y = Math.cos(theta)*r;
+    vertices.push(x, y, z);
+
+    var tx = theta / (2*Math.PI);
+
+    switch (dir) {
+      case this.OUT:
+        normals.push(Math.sin(theta), 0, Math.cos(theta));
+        texcoords.push(tx, y/height);
+        break;
+      case this.IN:
+        normals.push(-Math.sin(theta), 0, -Math.cos(theta));
+        texcoords.push(tx, y/height);
+        break;
+      case this.UP:
+        normals.push(0, 0, -1);
+        texcoords.push(tx, ty);
+        break;
+      case this.DOWN:
+        normals.push(0, 0, 1);
+        texcoords.push(tx, ty);
+        break;
+    }
+
+  },
+
+  makeVBO : function(gl, r1, r2, height, xCount, yCount) {
+    var vertices = [], normals = [], texcoords = [];
+    var self = this;
+    for (var yi = 0; yi < yCount; yi++) {
+      var y = y * height/yCount;
+      var y2 = y + height/yCount;
+      for (var x = 0; x < xCount; x++) {
+        var theta = x * 2*Math.PI/xCount;
+        var theta2 = theta + 2*Math.PI/xCount;
+        // outer ring
+        this.vert(theta, y, r2, vertices, normals, texcoords, this.OUT, height, 0);
+        this.vert(theta, y2, r2, vertices, normals, texcoords, this.OUT, height, 0);
+        this.vert(theta2, y2, r2, vertices, normals, texcoords, this.OUT, height, 0);
+        this.vert(theta, y, r2, vertices, normals, texcoords, this.OUT, height, 0);
+        this.vert(theta2, y2, r2, vertices, normals, texcoords, this.OUT, height, 0);
+        this.vert(theta2, y, r2, vertices, normals, texcoords, this.OUT, height, 0);
+        // inner ring
+        this.vert(theta2, y2, r1, vertices, normals, texcoords, this.IN, height, 0);
+        this.vert(theta, y2, r1, vertices, normals, texcoords, this.IN, height, 0);
+        this.vert(theta, y, r1, vertices, normals, texcoords, this.IN, height, 0);
+        this.vert(theta2, y, r1, vertices, normals, texcoords, this.IN, height, 0);
+        this.vert(theta2, y2, r1, vertices, normals, texcoords, this.IN, height, 0);
+        this.vert(theta, y, r1, vertices, normals, texcoords, this.IN, height, 0);
+        // top cap
+        this.vert(theta, y2, r2, vertices, normals, texcoords, this.UP, height, 0);
+        this.vert(theta, y2, r1, vertices, normals, texcoords, this.UP, height, 1);
+        this.vert(theta2, y2, r1, vertices, normals, texcoords, this.UP, height, 1);
+        this.vert(theta, y2, r2, vertices, normals, texcoords, this.UP, height, 0);
+        this.vert(theta2, y2, r1, vertices, normals, texcoords, this.UP, height, 1);
+        this.vert(theta2, y2, r2, vertices, normals, texcoords, this.UP, height, 0);
+        // bottom cap
+        this.vert(theta2, y, r1, vertices, normals, texcoords, this.DOWN, height, 1);
+        this.vert(theta, y, r1, vertices, normals, texcoords, this.DOWN, height, 1);
+        this.vert(theta, y, r2, vertices, normals, texcoords, this.DOWN, height, 0);
+        this.vert(theta2, y, r2, vertices, normals, texcoords, this.DOWN, height, 0);
+        this.vert(theta2, y, r1, vertices, normals, texcoords, this.DOWN, height, 1);
+        this.vert(theta, y, r2, vertices, normals, texcoords, this.DOWN, height, 0);
+      }
+    }
+    return new Magi.VBO(gl,
+        {size:3, data: new Float32Array(vertices)},
+        {size:3, data: new Float32Array(normals)},
+        {size:2, data: new Float32Array(texcoords)}
+    );
+  },
+  cache: {},
+  getCachedVBO : function(gl, r1, r2, height, xCount, yCount) {
+    r1 = r1 || 0.5;
+    r2 = r2 || 1.0;
+    height = height || 0.01;
+    xCount = xCount || 50;
+    yCount = yCount || 2;
+    var k = [r1,r2,height,xCount,yCount].join(":");
+    if (!this.cache[gl]) {
+      this.cache[gl] = {};
+    }
+    if (!this.cache[gl][k]) {
+      this.cache[gl][k] = this.makeVBO(gl, r1, r2, height, xCount, yCount);
+    }
+    return this.cache[gl][k];
+  }
+};
 
 
 Magi.Geometry.Ring = {

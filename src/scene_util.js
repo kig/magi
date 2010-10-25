@@ -301,6 +301,20 @@ Magi.Ring = Klass(Magi.Node, {
   }
 });
 
+Magi.Sphere = Klass(Magi.Node, {
+  initialize : function(xCount, yCount) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Sphere.getCachedVBO(null, xCount, yCount));
+    this.material = Magi.DefaultMaterial.get();
+  }
+});
+
+Magi.Disk = Klass(Magi.Node, {
+  initialize : function(r1, r2, height, xCount, yCount) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Disk.getCachedVBO(null, r1,r2,height,xCount, yCount));
+    this.material = Magi.DefaultMaterial.get();
+  }
+});
+
 Magi.FilterQuad = Klass(Magi.Node, {
   identityTransform : true,
   depthMask : false,
