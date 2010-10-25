@@ -676,7 +676,7 @@ Magi.DefaultMaterial = {
     "  lightDir = normalize(lightVector);"+
     "  float dist = length(lightVector);"+
     "  eyeVec = -vec3(worldPos);"+
-    "  attenuation = 1.0 / (LightConstantAtt + LightLinearAtt*dist + LightQuadraticAtt * dist*dist);"+
+    "  attenuation = 1.0 / (1.0 + LightConstantAtt + LightLinearAtt*dist + LightQuadraticAtt * dist*dist);"+
     "  gl_Position = PMatrix * worldPos;"+
     "}"
   )},
@@ -743,8 +743,8 @@ Magi.DefaultMaterial = {
     m.floats.LightDiffuse = vec4.create([0.7, 0.6, 0.9, 1]);
     m.floats.LightAmbient = vec4.create([0.1, 0.10, 0.2, 1]);
     m.floats.LightConstantAtt = 0.0;
-    m.floats.LightLinearAtt = 0.1;
-    m.floats.LightQuadraticAtt = 0.02;
+    m.floats.LightLinearAtt = 0.0;
+    m.floats.LightQuadraticAtt = 0.0;
     return m;
   }
 
