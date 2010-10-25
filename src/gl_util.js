@@ -246,6 +246,21 @@ Magi.Texture = Klass({
     this.gl = gl;
     Magi.AllocatedResources.addTexture(this);
   },
+  
+  load : function(src, callback) {
+    var img = new Image();
+    var tex = new Magi.Texture();
+    tex.generateMipmaps = false;
+    img.onload = function() {
+      tex.generateMipmaps = (this.width == this.height && Math.isPowerOfTwo(this.width));
+      tex.changed = true;
+      if (callback)
+        callback(tex);
+    };
+    img.src = src;
+    tex.image = img;
+    return tex;
+  },
 
   defaultTexCache : {},
   getDefaultTexture : function(gl) {
