@@ -182,10 +182,11 @@ Magi.Scene = Klass({
 
     var xRot = new Magi.Node();
     vec3.set([0,1,0], xRot.rotation.axis);
-
+    
     yRot.appendChild(xRot);
     xRot.appendChild(this.scene);
     this.root = yRot;
+    //this.root = this.scene;
 
     var wheelHandler = function(ev) {
       var ds = (ev.detail < 0 || ev.wheelDelta > 0) ? 1.25 : (1 / 1.25);
@@ -224,6 +225,13 @@ Magi.Scene = Klass({
           yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
           yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
         }
+        /*
+        var xa = xRot.rotation.angle;
+        var ya = yRot.rotation.angle;
+        var r = vec3.distance(s.camera.lookAt, s.camera.position);
+        var v = vec3.scale(vec3.normalize(vec3.create(Math.cos(xa), Math.sin(ya), Math.sin(xa))), r);
+        vec3.add(v, s.camera.lookAt, s.camera.position);
+        */
         ev.preventDefault();
         s.changed = true;
       }
