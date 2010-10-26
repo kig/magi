@@ -250,9 +250,7 @@ Magi.Texture = Klass({
   load : function(src, callback) {
     var img = new Image();
     var tex = new Magi.Texture();
-    tex.generateMipmaps = false;
     img.onload = function() {
-      tex.generateMipmaps = (this.width == this.height && Math.isPowerOfTwo(this.width));
       tex.changed = true;
       if (callback)
         callback(tex);
@@ -324,7 +322,25 @@ Magi.Texture = Klass({
     var target = gl[this.target];
     gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     if (this.generateMipmaps) {
-      gl.generateMipmap(target);
+      if (this.width == this.height && Math.isPowerOfTwo(this.width)) {
+        gl.generateMipmap(target);
+        Magi.throwError(gl, "Texture.regenerateMipmap: generateMipmap");
+      } else if (this.image) {
+        var wb = this.width, hb = this.height;
+        var levels = Math.floor(Math.log2(Math.max(wb, hb))+0.1) + 1;
+        var image = this.image;
+        for (var i=1; i<levels; i++) {
+          var w = Math.max(1, Math.floor(wb/Math.pow(2,i)+0.1));
+          var h = Math.max(1, Math.floor(hb/Math.pow(2,i)+0.1));
+          var tmpCanvas = E.canvas(w, h);
+          var ctx = tmpCanvas.getContext('2d');
+          ctx.globalCompositeOperation = 'copy';
+          ctx.drawImage(image, 0, 0, w, h);
+          gl.texImage2D(target, i, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tmpCanvas);
+          Magi.throwError(gl, "Texture.regenerateMipmap loop: "+[i,w,h].join(","));
+          image = tmpCanvas;
+        }
+      }
       gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     }
   },
