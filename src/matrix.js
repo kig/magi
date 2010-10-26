@@ -49,11 +49,15 @@ var vec3 = {};
  * Returns:
  * New vec3
  */
-vec3.create = function(vec) {
+vec3.create = function(vec, y, z) {
   var dest = new glMatrixArrayType(3);
   Magi.Stats.vec3CreateCount++;
   
-  if(vec) {
+  if (y != null) {
+    dest[0] = vec;
+    dest[1] = y;
+    dest[2] = z;
+  } else if (vec) {
     dest[0] = vec[0];
     dest[1] = vec[1];
     dest[2] = vec[2];
@@ -78,11 +82,16 @@ vec4 = {};
  * Returns:
  * New vec4
  */
-vec4.create = function(vec) {
+vec4.create = function(vec, y, z, w) {
   var dest = new glMatrixArrayType(4);
   Magi.Stats.vec4CreateCount++;
   
-  if(vec) {
+  if (y != null) {
+    dest[0] = vec;
+    dest[1] = y;
+    dest[2] = z;
+    dest[3] = w;
+  } else if(vec) {
     dest[0] = vec[0];
     dest[1] = vec[1];
     dest[2] = vec[2];
@@ -144,11 +153,14 @@ vec2 = {};
  * Returns:
  * New vec2
  */
-vec2.create = function(vec) {
+vec2.create = function(vec,y) {
   var dest = new glMatrixArrayType(2);
   Magi.Stats.vec2CreateCount++;
   
-  if(vec) {
+  if (y != null) {
+    dest[0] = vec;
+    dest[1] = y;
+  } else if(vec) {
     dest[0] = vec[0];
     dest[1] = vec[1];
   }
@@ -532,6 +544,26 @@ vec3.direction = function(vec, vec2, dest) {
   dest[1] = y * len; 
   dest[2] = z * len;
   return dest; 
+};
+
+/*
+ * vec3.distance
+ * Returns the distance between two vectors.
+ *
+ * Params:
+ * vec - vec3
+ * vec2 - another vec3
+ *
+ * Returns:
+ * distance between vec and vec2
+ */
+vec3.distance = function(vec, vec2) {
+  var x = vec[0] - vec2[0];
+  var y = vec[1] - vec2[1];
+  var z = vec[2] - vec2[2];
+  
+  var len = Math.sqrt(x*x + y*y + z*z);
+  return len;
 };
 
 /*
