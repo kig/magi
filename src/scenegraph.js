@@ -31,6 +31,7 @@ Magi.Node = Klass(Magi.Motion, {
 
   initialize : function(model) {
     this.model = model;
+    this.absolutePosition = vec3.create();
     this.renderPasses = {normal: true};
     this.material = new Magi.Material();
     this.matrix = mat4.identity();
@@ -257,9 +258,17 @@ Magi.Node = Klass(Magi.Motion, {
     mat3.transpose(this.normalMatrix);
     for (var i=0; i<this.childNodes.length; i++)
       this.childNodes[i].updateTransform(m);
+    this.absolutePosition[0] = m[12];
+    this.absolutePosition[1] = m[13];
+    this.absolutePosition[2] = m[14];
     for (var i=0; i<this.afterTransformListeners.length; i++) {
       this.afterTransformListeners[i].call(this,m);
     }
+  },
+  
+  getWorldPosition : function(worldOrigin, dst) {
+    if (dst == null) dst = vec3.create();
+    return vec3.sub(this.absolutePosition, worldOrigin, dst);
   },
   
   collectDrawList : function(arr) {
@@ -495,6 +504,13 @@ Magi.Camera = Klass({
     else
       mat4.identity(this.matrix);
     return this.matrix;
+  },
+  
+  moveTo : function(position) {
+    var tmp = vec3.create();
+    vec3.sub(position, this.lookAt, tmp);
+    vec3.add(this.lookAt, tmp);
+    vec3.add(this.position, tmp);
   },
 
   drawViewport : function(gl, x, y, width, height, scene) {
