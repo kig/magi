@@ -672,11 +672,27 @@ if (!Array.prototype.pluck) {
   }
 }
 
-Array.prototype.set = function(key, value) {
+Array.prototype.setProperty = function(key, value) {
   for (var i=0; i<this.length; i++) {
     this[i][key] = value
   }
 }
+
+// Match obj against pattern, return true if obj has all the keys in the pattern
+// with values that equal the pattern values.
+Object.match = function(obj, pattern) {
+  for (var k in pattern) {
+    var cond = pattern[k];
+    if (typeof obj[k] == 'object' && typeof cond == 'object') {
+      if (!Object.match(obj[k], cond))
+        return false;
+    } else {
+      if (obj[k] != cond)
+        return false;
+    }
+  }
+  return;
+};
 
 Array.prototype.allWith = function() {
   var a = []
@@ -684,8 +700,17 @@ Array.prototype.allWith = function() {
   for (var i=0; i<this.length; i++) {
     var e = this[i]
     for (var j=0; j<arguments.length; j++) {
-      if (!this[i][arguments[j]])
-        continue topLoop
+      var cond = arguments[j];
+      if (typeof cond == 'object') {
+        if (!Object.match(this[i], cond))
+          continue topLoop
+      } else if (typeof cond == 'function') {
+        if (!this[i][cond(i)])
+          continue topLoop
+      } else {
+        if (!this[i][cond])
+          continue topLoop
+      }
     }
     a[a.length] = e
   }
@@ -793,6 +818,14 @@ Array.prototype.map = function(f) {
   else
     for (var i=0; i<this.length; i++) na[i] = this[i]
   return na
+}
+Array.prototype.unique = function() {
+  var a = [this[0]];
+  for (var i=1; i<this.length; i++) {
+    if (this[i] != this[i-1]) 
+      a.push(this[i]);
+  }
+  return a;
 }
 Array.prototype.forEach = function(f) {
   for (var i=0; i<this.length; i++) f(this[i], i, this)
