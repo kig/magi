@@ -400,6 +400,14 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       this.texture = tex;
       this.alignedNode.material.textures.Texture0 = this.texture;
     }
+    return this;
+  },
+  
+  setSize : function(sz) {
+    this.size = sz;
+    if (this.image && this.image.tagName && Object.isImageLoaded(this.image))
+      this.setImage(this.image);
+    return this;
   },
 
   setImage : function(src) {
@@ -418,10 +426,16 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       }, false);
     }
     this.image.width; // workaround for strange chrome bug
-    this.width = this.image.width;
-    this.height = this.image.height;
-    this.alignedNode.scaling[0] = this.image.width / 2;
-    this.alignedNode.scaling[1] = this.image.height / 2;
+    var w = this.image.width, h = this.image.height;
+    if (this.size != null) {
+      var f = Math.min(this.size/w, this.size/h);
+      w = (w*f);
+      h = (h*f);
+    }
+    this.width = w;
+    this.height = h;
+    this.alignedNode.scaling[0] = w / 2;
+    this.alignedNode.scaling[1] = h / 2;
     this.updateAlign();
     if (this.image instanceof Magi.Texture) {
       this.setTexture(this.image);
@@ -429,6 +443,7 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       this.texture.image = this.image;
       this.texture.changed = true;
     }
+    return this;
   }
 });
 
@@ -460,21 +475,25 @@ Magi.Text = Klass(Magi.Image, Magi.Alignable, {
     ctx.fillStyle = this.color;
     ctx.fillText(this.text, 0, this.fontSize);
     this.setImage(this.canvas);
+    return this;
   },
 
   setFontSize : function(fontSize) {
     this.fontSize = fontSize;
     this.setText(this.text);
+    return this;
   },
   
   setFont : function(font) {
     this.font = font;
     this.setText(this.text);
+    return this;
   },
 
   setColor : function(color) {
     this.color = color;
     this.setText(this.text);
+    return this;
   },
 });
 
@@ -504,6 +523,7 @@ Magi.CubeText = Klass(Magi.Text, {
     Magi.Text.setText.apply(this,arguments);
     this.alignedNode.material.floats.width = this.width;
     this.alignedNode.material.floats.height = this.height;
+    return this;
   }
 });
 
