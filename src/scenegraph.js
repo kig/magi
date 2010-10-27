@@ -295,7 +295,7 @@ Magi.Material = Klass({
 
   copyValue : function(v){
     if (typeof v == 'number') return v;
-    var a = [];
+    var a = new v.__proto__.constructor(v.length);
     for (var i=0; i<v.length; i++) a[i] = v[i];
     return a;
   },
