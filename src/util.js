@@ -830,10 +830,10 @@ Array.prototype.unique = function() {
 Array.prototype.forEach = function(f) {
   for (var i=0; i<this.length; i++) f(this[i], i, this)
 }
-Array.prototype.set = function() {
-  this.splice(arguments.length);
-  for (var i=0; i<arguments.length; i++)
-    this[i] = arguments[i];
+Array.prototype.set = function(newVal) {
+  this.splice(newVal.length);
+  for (var i=0; i<newVal.length; i++)
+    this[i] = newVal[i];
   return this;
 }
 if (!Array.prototype.reduce) {
