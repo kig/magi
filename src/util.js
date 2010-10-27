@@ -830,6 +830,12 @@ Array.prototype.unique = function() {
 Array.prototype.forEach = function(f) {
   for (var i=0; i<this.length; i++) f(this[i], i, this)
 }
+Array.prototype.set = function() {
+  this.splice(arguments.length);
+  for (var i=0; i<arguments.length; i++)
+    this[i] = arguments[i];
+  return this;
+}
 if (!Array.prototype.reduce) {
   Array.prototype.reduce = function(f, s) {
     var i = 0
