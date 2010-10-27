@@ -91,7 +91,7 @@ vec4.create = function(vec, y, z, w) {
     dest[1] = y;
     dest[2] = z;
     dest[3] = w;
-  } else if(vec) {
+  } else if (vec) {
     dest[0] = vec[0];
     dest[1] = vec[1];
     dest[2] = vec[2];
@@ -160,7 +160,7 @@ vec2.create = function(vec,y) {
   if (y != null) {
     dest[0] = vec;
     dest[1] = y;
-  } else if(vec) {
+  } else if (vec) {
     dest[0] = vec[0];
     dest[1] = vec[1];
   }
