@@ -27,11 +27,14 @@ Magi.Scene = Klass({
         Object.extend(defaultArgs, args);
       this.gl = Magi.getGLContext(canvas, defaultArgs);
       this.fbo = new Magi.FBO(this.gl, canvas.width*2, canvas.height*2, true);
-      this.idFilter = new Magi.FilterQuad(Magi.IdFilterMaterial.frag);
     } else {
       this.fbo = canvas;
       this.gl = this.fbo.gl;
     }
+    this.idFilter = new Magi.IdFilter();
+    this.postFBO1 = new Magi.FBO(this.gl, 1, 1, false);
+    this.postFBO2 = new Magi.FBO(this.gl, 1, 1, false);
+    this.preEffects = [];
     this.postEffects = [];
     this.clearBits = this.gl.COLOR_BUFFER_BIT |
                      this.gl.DEPTH_BUFFER_BIT |
@@ -127,13 +130,13 @@ Magi.Scene = Klass({
 
     if (this.drawOnlyWhenChanged && !this.changed) return;
 
+    this.fbo.use();
+
     if (this.canvas) {
       this.width = this.canvas.width;
       this.height = this.canvas.height;
-      this.fbo.use();
       this.fbo.resize(this.width*2, this.height*2);
     } else {
-      this.fbo.use();
       this.width = this.fbo.width;
       this.height = this.fbo.height;
     }
@@ -145,18 +148,21 @@ Magi.Scene = Klass({
       Magi.throwError(this.gl, "clear");
     }
 
+    if (this.preEffects.length > 0)
+      this.drawEffects(this.fbo, this.preEffects, this.fbo.texture);
+
     var f = this.canvas ? 2 : 1;
     this.camera.draw(this.gl, this.width*f, this.height*f, this.root);
 
-    if (this.canvas && this.fbo) {
+    if (this.canvas) {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
       this.gl.depthMask(true);
       this.gl.clearColor(0,0,0,0);
       this.gl.clear(this.clearBits);
       Magi.throwError(this.gl, "clear");
-      this.idFilter.material.textures.Texture0 = this.fbo.texture;
-      this.camera.draw(this.gl, this.width, this.height, this.idFilter);
     }
+
+    this.drawEffects(this.canvas||this.fbo, this.postEffects, this.fbo.texture);
 
     this.drawTime = new Date() - t;
 
@@ -171,6 +177,34 @@ Magi.Scene = Klass({
         Magi.Stats.reset();
       }
     }
+  },
+  
+  // applies effects (magi nodes) to tex and draws the result to target (fbo or canvas)
+  // does not modify tex (unless it's the texture of target fbo)
+  drawEffects : function(target, effects, tex) {
+    var fbo = this.postFBO1;
+    var postFBO = this.postFBO2;
+    fbo.resize(target.width, target.height);
+    postFBO.resize(target.width, target.height);
+    for (var i=0; i<effects.length; i++) {
+      // draw effect applied to tex onto postFBO
+      postFBO.use();
+      var fx = effects[i];
+      fx.material.textures.Texture0 = tex;
+      tex = postFBO.texture;
+      this.camera.draw(this.gl, postFBO.width, postFBO.height, fx);
+      // swap fbos for next effect
+      var tmp = fbo;
+      fbo = postFBO;
+      postFBO = tmp;
+    }
+    // draw result fbo texture to target
+    if (target.tagName)
+      this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    else
+      target.use();
+    this.idFilter.material.textures.Texture0 = tex;
+    this.camera.draw(this.gl, target.width, target.height, this.idFilter);
   },
 
   updateFps : function(frames,real_dt) {
@@ -364,6 +398,20 @@ Magi.ColorQuad = Klass(Magi.Node, {
     this.material = Magi.ColorQuadMaterial.get(null);
     this.transparent = this.a < 1;
     this.material.floats.Color = vec4.create([r,g,b,a]);
+  }
+});
+
+Magi.RadialGlowFilter = Klass(Magi.FilterQuad, {
+  initialize : function() {
+    Magi.FilterQuad.initialize.call(this);
+    this.material = Magi.RadialGlowMaterial.get();
+  }
+});
+
+Magi.IdFilter = Klass(Magi.FilterQuad, {
+  initialize : function() {
+    Magi.FilterQuad.initialize.call(this);
+    this.material = Magi.IdFilterMaterial.get();
   }
 });
 
@@ -620,18 +668,6 @@ Magi.FilterMaterial = {
   }
 };
 
-Magi.IdFilterMaterial = Object.clone(Magi.FilterMaterial);
-Magi.IdFilterMaterial.frag = {type: 'FRAGMENT_SHADER', text: (
-  "precision highp float;"+
-  "uniform sampler2D Texture0;"+
-  "varying vec2 texCoord0;"+
-  "void main()"+
-  "{"+
-  "  vec4 c = texture2D(Texture0, texCoord0);"+
-  "  gl_FragColor = c;"+
-  "}"
-)};
-
 Magi.FlipFilterMaterial = Object.clone(Magi.FilterMaterial);
 Magi.FlipFilterMaterial.vert = {type: 'VERTEX_SHADER', text: (
   Magi.ShaderLib.defaultTransform+
@@ -663,6 +699,18 @@ Magi.FlipFilterQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
   "}"
 )};
 
+Magi.IdFilterMaterial = Object.clone(Magi.FilterQuadMaterial);
+Magi.IdFilterMaterial.frag = {type: 'FRAGMENT_SHADER', text: (
+  "precision highp float;"+
+  "uniform sampler2D Texture0;"+
+  "varying vec2 texCoord0;"+
+  "void main()"+
+  "{"+
+  "  vec4 c = texture2D(Texture0, texCoord0);"+
+  "  gl_FragColor = c;"+
+  "}"
+)};
+
 Magi.RadialGlowMaterial = Object.clone(Magi.FilterQuadMaterial);
 Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "precision highp float;"+
@@ -674,15 +722,23 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "{"+
   "  float samples = 30.0;"+
   "  vec2 dir = (radius/samples) * normalize(center - texCoord0);"+
-  "  vec4 c = vec4(0.0);"+
-  "  for (float r=0.0; r < samples; r++) {"+
+  "  vec4 c = texture2D(Texture0, texCoord0);"+
+  "  float d = 1e-1;"+
+  "  for (float r=1.0; r <= samples; r++) {"+
   "    vec4 pc = texture2D(Texture0, texCoord0 + (r*dir));"+
-  "    c += pc;"+
+  "    c += pc*d;"+
+  "    d *= 9e-1;"+
   "  }"+
-  "  c *= 1.0/samples;"+
   "  gl_FragColor = c*c.a;"+
   "}"
 )};
+Magi.RadialGlowMaterial.setupMaterial = function(shader) {
+  var m = new Magi.Material(shader);
+  m.textures.Texture0 = null;
+  m.floats.center = vec2.create(0.5, 0.5);
+  m.floats.radius = 0.05;
+  return m;
+}
 
 Magi.CubeArrayMaterial = Object.clone(Magi.FilterMaterial);
 Magi.CubeArrayMaterial.vert = {type: 'VERTEX_SHADER', text: (

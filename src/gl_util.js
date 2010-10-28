@@ -888,14 +888,14 @@ Magi.FBO = Klass({
       return;
     this.width = w;
     this.height = h;
+    if (!this.initialized)
+      return;
+    var gl = this.gl;
     this.texture.width = this.width;
     this.texture.height = this.height;
     this.texture.changed = true;
-    var gl = this.gl;
-    if (gl) {
-      this.texture.use();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.textureObject, 0);
+    this.texture.use();
+    if (this.useDepth) {
       gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbo);
       Magi.throwError(gl, "FBO.resize bindRenderbuffer");
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
