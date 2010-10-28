@@ -119,16 +119,16 @@ Slides = Klass({
     document.body.insertBefore(this.canvas, elem);
 
     this.realDisplay = new Magi.Scene(this.canvas);
-    this.previousFrameFBO = new Magi.FBO(this.realDisplay.gl, this.canvas.width, this.canvas.height);
+    this.previousFrameFBO = new Magi.FBO(this.realDisplay.gl, this.canvas.width*2, this.canvas.height*2);
     this.previousFrameFBO.use();
-    this.fbo = new Magi.FBO(this.realDisplay.gl, this.canvas.width, this.canvas.height);
+    this.fbo = new Magi.FBO(this.realDisplay.gl, this.canvas.width*2, this.canvas.height*2);
     this.fbo.use();
     var showFBO = new Magi.FilterQuad();
     var self = this;
     showFBO.addFrameListener(function(t,dt){
       this.material.textures.Texture0 = self.fbo.texture;
       self.display.fbo = self.fbo;
-      self.fbo.setSize(self.canvas.width, self.canvas.height);
+      self.fbo.setSize(self.canvas.width*2, self.canvas.height*2);
       self.display.draw(t,dt);
       var f = self.previousFrameFBO;
       self.previousFrameFBO = self.fbo;
@@ -850,6 +850,7 @@ Slides = Klass({
         case "SELF":
           node = new Magi.Image(self.previousFrameFBO.texture, true);
           node.addFrameListener(function() {
+            this.setSize(Math.max(self.previousFrameFBO.width, self.previousFrameFBO.height)/4);
             this.setImage(self.previousFrameFBO.texture);
           });
           node.setVAlign(node.topAlign);

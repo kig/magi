@@ -325,6 +325,7 @@ Magi.Texture = Klass({
       if (this.width == this.height && Math.isPowerOfTwo(this.width)) {
         gl.generateMipmap(target);
         Magi.throwError(gl, "Texture.regenerateMipmap: generateMipmap");
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       } else if (this.image) {
         var wb = this.width, hb = this.height;
         var levels = Math.floor(Math.log2(Math.max(wb, hb))+0.1) + 1;
@@ -340,8 +341,8 @@ Magi.Texture = Klass({
           Magi.throwError(gl, "Texture.regenerateMipmap loop: "+[i,w,h].join(","));
           image = tmpCanvas;
         }
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       }
-      gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     }
   },
   
@@ -885,17 +886,24 @@ Magi.FBO = Klass({
   setSize : function(w, h) {
     if (w == this.width && h == this.height)
       return;
-    var gl = this.gl;
     this.width = w;
     this.height = h;
     this.texture.width = this.width;
     this.texture.height = this.height;
     this.texture.changed = true;
-    this.texture.use();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbo);
-    Magi.throwError(gl, "FBO.resize bindRenderbuffer");
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-    Magi.throwError(gl, "FBO.resize renderbufferStorage");
+    var gl = this.gl;
+    if (gl) {
+      this.texture.use();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.textureObject, 0);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbo);
+      Magi.throwError(gl, "FBO.resize bindRenderbuffer");
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+      Magi.throwError(gl, "FBO.resize renderbufferStorage");
+    }
+  },
+  resize : function(w, h) {
+    return this.setSize(w, h);
   },
 
   init : function() {

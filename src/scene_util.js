@@ -26,10 +26,13 @@ Magi.Scene = Klass({
       if (args)
         Object.extend(defaultArgs, args);
       this.gl = Magi.getGLContext(canvas, defaultArgs);
+      this.fbo = new Magi.FBO(this.gl, canvas.width*2, canvas.height*2, true);
+      this.idFilter = new Magi.FilterQuad(Magi.IdFilterMaterial.frag);
     } else {
       this.fbo = canvas;
       this.gl = this.fbo.gl;
     }
+    this.postEffects = [];
     this.clearBits = this.gl.COLOR_BUFFER_BIT |
                      this.gl.DEPTH_BUFFER_BIT |
                      this.gl.STENCIL_BUFFER_BIT;
@@ -124,14 +127,15 @@ Magi.Scene = Klass({
 
     if (this.drawOnlyWhenChanged && !this.changed) return;
 
-    if (this.fbo) {
+    if (this.canvas) {
+      this.width = this.canvas.width;
+      this.height = this.canvas.height;
+      this.fbo.use();
+      this.fbo.resize(this.width*2, this.height*2);
+    } else {
       this.fbo.use();
       this.width = this.fbo.width;
       this.height = this.fbo.height;
-    } else {
-      this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-      this.width = this.canvas.width;
-      this.height = this.canvas.height;
     }
 
     if (this.clear) {
@@ -141,7 +145,18 @@ Magi.Scene = Klass({
       Magi.throwError(this.gl, "clear");
     }
 
-    this.camera.draw(this.gl, this.width, this.height, this.root);
+    var f = this.canvas ? 2 : 1;
+    this.camera.draw(this.gl, this.width*f, this.height*f, this.root);
+
+    if (this.canvas && this.fbo) {
+      this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+      this.gl.depthMask(true);
+      this.gl.clearColor(0,0,0,0);
+      this.gl.clear(this.clearBits);
+      Magi.throwError(this.gl, "clear");
+      this.idFilter.material.textures.Texture0 = this.fbo.texture;
+      this.camera.draw(this.gl, this.width, this.height, this.idFilter);
+    }
 
     this.drawTime = new Date() - t;
 
@@ -605,6 +620,18 @@ Magi.FilterMaterial = {
   }
 };
 
+Magi.IdFilterMaterial = Object.clone(Magi.FilterMaterial);
+Magi.IdFilterMaterial.frag = {type: 'FRAGMENT_SHADER', text: (
+  "precision highp float;"+
+  "uniform sampler2D Texture0;"+
+  "varying vec2 texCoord0;"+
+  "void main()"+
+  "{"+
+  "  vec4 c = texture2D(Texture0, texCoord0);"+
+  "  gl_FragColor = c;"+
+  "}"
+)};
+
 Magi.FlipFilterMaterial = Object.clone(Magi.FilterMaterial);
 Magi.FlipFilterMaterial.vert = {type: 'VERTEX_SHADER', text: (
   Magi.ShaderLib.defaultTransform+
@@ -633,6 +660,27 @@ Magi.FlipFilterQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
   "  vec4 v = vec4(Vertex, 1.0);"+
   "  texCoord0 = flipTexCoord();"+
   "  gl_Position = v;"+
+  "}"
+)};
+
+Magi.RadialGlowMaterial = Object.clone(Magi.FilterQuadMaterial);
+Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
+  "precision highp float;"+
+  "uniform sampler2D Texture0;"+
+  "varying vec2 texCoord0;"+
+  "uniform vec2 center;"+
+  "uniform float radius;"+
+  "void main()"+
+  "{"+
+  "  float samples = 30.0;"+
+  "  vec2 dir = (radius/samples) * normalize(center - texCoord0);"+
+  "  vec4 c = vec4(0.0);"+
+  "  for (float r=0.0; r < samples; r++) {"+
+  "    vec4 pc = texture2D(Texture0, texCoord0 + (r*dir));"+
+  "    c += pc;"+
+  "  }"+
+  "  c *= 1.0/samples;"+
+  "  gl_FragColor = c*c.a;"+
   "}"
 )};
 
