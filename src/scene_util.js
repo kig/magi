@@ -14,19 +14,21 @@ Magi.Scene = Klass({
   paused : false,
   showStats : false,
   
+  supersample : 1,
+  
   initialize : function(canvas, scene, cam, args) {
     if (!scene) scene = new Magi.Node();
     if (!cam) cam = Magi.Scene.getDefaultCamera();
     if (canvas.tagName == "CANVAS") {
       this.canvas = canvas;
       var defaultArgs = {
-        alpha: true, depth: true, stencil: true, antialias: true,
+        alpha: true, depth: true, stencil: true, antialias: false,
         premultipliedAlpha: true
       };
       if (args)
         Object.extend(defaultArgs, args);
       this.gl = Magi.getGLContext(canvas, defaultArgs);
-      this.fbo = new Magi.FBO(this.gl, canvas.width*2, canvas.height*2, true);
+      this.fbo = new Magi.FBO(this.gl, canvas.width*this.supersample, canvas.height*this.supersample, true);
     } else {
       this.fbo = canvas;
       this.gl = this.fbo.gl;
@@ -61,8 +63,8 @@ Magi.Scene = Klass({
 
   getDefaultCamera : function() {
     var cam = new Magi.Camera();
-    vec3.set([0, 1.0, 0], cam.lookAt);
-    vec3.set([Math.cos(1)*7, 3, Math.sin(1)*7], cam.position);
+    vec3.set([0, 0, 0], cam.lookAt);
+    vec3.set([0, 0, 10], cam.position);
     cam.fov = 45;
     cam.angle = 1;
     return cam;
@@ -130,16 +132,16 @@ Magi.Scene = Klass({
 
     if (this.drawOnlyWhenChanged && !this.changed) return;
 
-    this.fbo.use();
-
     if (this.canvas) {
       this.width = this.canvas.width;
       this.height = this.canvas.height;
-      this.fbo.resize(this.width*2, this.height*2);
+      this.fbo.resize(this.width*this.supersample, this.height*this.supersample);
     } else {
       this.width = this.fbo.width;
       this.height = this.fbo.height;
     }
+
+    this.fbo.use();
 
     if (this.clear) {
       this.gl.depthMask(true);
@@ -151,7 +153,7 @@ Magi.Scene = Klass({
     if (this.preEffects.length > 0)
       this.drawEffects(this.fbo, this.preEffects, this.fbo.texture);
 
-    var f = this.canvas ? 2 : 1;
+    var f = this.canvas ? this.supersample : 1;
     this.camera.draw(this.gl, this.width*f, this.height*f, this.root);
 
     if (this.canvas) {
@@ -235,16 +237,14 @@ Magi.Scene = Klass({
     yRot.appendChild(xRot);
     xRot.appendChild(this.scene);
     this.root = yRot;
-    //this.root = this.scene;
+    this.root = this.scene;
 
     var wheelHandler = function(ev) {
-      var ds = (ev.detail < 0 || ev.wheelDelta > 0) ? 1.25 : (1 / 1.25);
+      var ds = (ev.detail < 0 || ev.wheelDelta > 0) ? (1/1.25) : 1.25;
       if (ev.shiftKey) {
-        yRot.scaling[0] *= ds;
-        yRot.scaling[1] *= ds;
-        yRot.scaling[2] *= ds;
+        s.camera.targetFov *= ds;
       } else {
-        s.camera.targetFov /= ds;
+        s.camera.multiplyDistance(ds);
       }
       s.changed = true;
       ev.preventDefault();
@@ -274,13 +274,13 @@ Magi.Scene = Klass({
           yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
           yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
         }
-        /*
+        
         var xa = xRot.rotation.angle;
         var ya = yRot.rotation.angle;
         var r = vec3.distance(s.camera.lookAt, s.camera.position);
         var v = vec3.scale(vec3.normalize(vec3.create(Math.cos(xa), Math.sin(ya), Math.sin(xa))), r);
         vec3.add(v, s.camera.lookAt, s.camera.position);
-        */
+        
         ev.preventDefault();
         s.changed = true;
       }
@@ -291,6 +291,11 @@ Magi.Scene = Klass({
         ev.preventDefault();
       }
     }, false);
+    var xa = xRot.rotation.angle;
+    var ya = yRot.rotation.angle;
+    var r = vec3.distance(s.camera.lookAt, s.camera.position);
+    var v = vec3.scale(vec3.normalize(vec3.create(Math.cos(xa), Math.sin(ya), Math.sin(xa))), r);
+    vec3.add(v, s.camera.lookAt, s.camera.position);
     s.changed = true;
   }
 });
@@ -721,13 +726,15 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "void main()"+
   "{"+
   "  float samples = 30.0;"+
-  "  vec2 dir = (radius/samples) * normalize(center - texCoord0);"+
+  "  float rs = radius/samples;"+
+  "  vec2 dir = rs * normalize(center - texCoord0);"+
   "  vec4 c = texture2D(Texture0, texCoord0);"+
   "  float d = 1e-1;"+
   "  for (float r=1.0; r <= samples; r++) {"+
-  "    vec4 pc = texture2D(Texture0, texCoord0 + (r*dir));"+
+  "    vec2 tc = texCoord0 + (r*dir);"+
+  "    vec4 pc = texture2D(Texture0, tc + rs);"+
   "    c += pc*d;"+
-  "    d *= 9e-1;"+
+  "    d *= 90e-2;"+
   "  }"+
   "  gl_FragColor = c*c.a;"+
   "}"
@@ -736,7 +743,7 @@ Magi.RadialGlowMaterial.setupMaterial = function(shader) {
   var m = new Magi.Material(shader);
   m.textures.Texture0 = null;
   m.floats.center = vec2.create(0.5, 0.5);
-  m.floats.radius = 0.05;
+  m.floats.radius = 0.034;
   return m;
 }
 

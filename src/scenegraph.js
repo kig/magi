@@ -475,12 +475,13 @@ Magi.Camera = Klass({
   useProjectionMatrix : false,
 
   initialize : function() {
-    this.position = vec3.create([5,5,5]);
+    this.position = vec3.create([0,0,10]);
     this.lookAt = vec3.create([0,0,0]);
     this.up = vec3.create([0,1,0]);
     this.matrix = mat4.create();
     this.perspectiveMatrix = mat4.create();
     this.frameListeners = [];
+    this.afterTransformListeners = [];
   },
   
   addFrameListener : Magi.Node.prototype.addFrameListener,
@@ -498,6 +499,10 @@ Magi.Camera = Klass({
       this.fov += (this.targetFov - this.fov) * (1-Math.pow(0.7, (dt/30)));
   },
 
+  afterTransform : function(f) {
+    this.afterTransformListeners.push(f);
+  },
+
   getLookMatrix : function() {
     if (this.useLookAt && !this.useProjectionMatrix)
       mat4.lookAt(this.position, this.lookAt, this.up, this.matrix);
@@ -512,11 +517,31 @@ Magi.Camera = Klass({
     vec3.add(this.lookAt, tmp);
     vec3.add(this.position, tmp);
   },
+  
+  setDistance : function(d) {
+    var tmp = vec3.create();
+    vec3.sub(this.position, this.lookAt, tmp);
+    vec3.scale(tmp, d / vec3.length(tmp));
+    vec3.add(this.lookAt, tmp, this.position);
+  },
+  
+  multiplyDistance : function(d) {
+    var tmp = vec3.create();
+    vec3.sub(this.position, this.lookAt, tmp);
+    vec3.scale(tmp, d);
+    vec3.add(this.lookAt, tmp, this.position);
+  },
 
   drawViewport : function(gl, x, y, width, height, scene) {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
+
+    scene.updateTransform(mat4.identity());
+
+    for (var i=0; i<this.afterTransformListeners.length; i++)
+      this.afterTransformListeners[i].call(this);
+
     if (!this.useProjectionMatrix) {
       if (this.ortho) {
         mat4.ortho(x, width, -height, -y, this.zNear, this.zFar, this.perspectiveMatrix);
@@ -524,7 +549,8 @@ Magi.Camera = Klass({
         mat4.perspective(this.fov, width/height, this.zNear, this.zFar, this.perspectiveMatrix);
       }
     }
-    scene.updateTransform(this.getLookMatrix());
+    mat4.multiply(this.perspectiveMatrix, this.getLookMatrix());
+
     var st = new Magi.GLDrawState();
     this.resetState(gl, st);
 
