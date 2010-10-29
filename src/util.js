@@ -1247,7 +1247,7 @@ Object.clone = function(src) {
   @return The created Image object
   @type {Image}
   */
-Object.loadImage = function(src, onload) {
+Image.load = function(src, onload) {
   var img = new Image();
   if (onload)
     img.onload = onload;
