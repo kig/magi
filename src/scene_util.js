@@ -413,6 +413,13 @@ Magi.RadialGlowFilter = Klass(Magi.FilterQuad, {
   }
 });
 
+Magi.FlipRadialGlowFilter = Klass(Magi.FilterQuad, {
+  initialize : function() {
+    Magi.FilterQuad.initialize.call(this);
+    this.material = Magi.FlipRadialGlowMaterial.get();
+  }
+});
+
 Magi.IdFilter = Klass(Magi.FilterQuad, {
   initialize : function() {
     Magi.FilterQuad.initialize.call(this);
@@ -466,7 +473,7 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
     this.appendChild(this.alignedNode);
     this.setTexture(new Magi.Texture());
     this.texture.generateMipmaps = false;
-    this.setImage(src);
+    if (src) this.setImage(src);
   },
 
   setTexture : function(tex) {
@@ -482,8 +489,22 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
   setSize : function(sz) {
     this.size = sz;
     if (this.image && this.image.tagName && Object.isImageLoaded(this.image))
-      this.setImage(this.image);
+      this.reposition();
     return this;
+  },
+  
+  reposition : function() {
+    var w = this.image.width, h = this.image.height;
+    if (this.size != null) {
+      var f = Math.min(this.size/w, this.size/h);
+      w = (w*f);
+      h = (h*f);
+    }
+    this.width = w;
+    this.height = h;
+    this.alignedNode.scaling[0] = w / 2;
+    this.alignedNode.scaling[1] = h / 2;
+    this.updateAlign();
   },
 
   setImage : function(src) {
@@ -502,17 +523,7 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       }, false);
     }
     this.image.width; // workaround for strange chrome bug
-    var w = this.image.width, h = this.image.height;
-    if (this.size != null) {
-      var f = Math.min(this.size/w, this.size/h);
-      w = (w*f);
-      h = (h*f);
-    }
-    this.width = w;
-    this.height = h;
-    this.alignedNode.scaling[0] = w / 2;
-    this.alignedNode.scaling[1] = h / 2;
-    this.updateAlign();
+    this.reposition();
     if (this.image instanceof Magi.Texture) {
       this.setTexture(this.image);
     } else {
@@ -723,18 +734,22 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "varying vec2 texCoord0;"+
   "uniform vec2 center;"+
   "uniform float radius;"+
+  "uniform float currentFactor;"+
+  "uniform float intensity;"+
+  "uniform float falloff;"+
   "void main()"+
   "{"+
-  "  float samples = 30.0;"+
-  "  float rs = radius/samples;"+
+  "  float samples = 15.0;"+
+  "  float len = length(center - texCoord0);"+
+  "  float rs = min(len,radius)/samples;"+
   "  vec2 dir = rs * normalize(center - texCoord0);"+
-  "  vec4 c = texture2D(Texture0, texCoord0);"+
-  "  float d = 1e-1;"+
+  "  vec4 c = currentFactor * texture2D(Texture0, texCoord0);"+
+  "  float d = intensity/10.0;"+
   "  for (float r=1.0; r <= samples; r++) {"+
   "    vec2 tc = texCoord0 + (r*dir);"+
   "    vec4 pc = texture2D(Texture0, tc + rs);"+
   "    c += pc*d;"+
-  "    d *= 90e-2;"+
+  "    d *= falloff;"+
   "  }"+
   "  gl_FragColor = c*c.a;"+
   "}"
@@ -744,8 +759,14 @@ Magi.RadialGlowMaterial.setupMaterial = function(shader) {
   m.textures.Texture0 = null;
   m.floats.center = vec2.create(0.5, 0.5);
   m.floats.radius = 0.034;
+  m.floats.intensity = 1.0;
+  m.floats.falloff = 0.9;
+  m.floats.currentFactor = 1.0;
   return m;
 }
+
+Magi.FlipRadialGlowMaterial = Object.clone(Magi.RadialGlowMaterial);
+Magi.FlipRadialGlowMaterial.vert = Magi.FlipFilterQuadMaterial.vert;
 
 Magi.CubeArrayMaterial = Object.clone(Magi.FilterMaterial);
 Magi.CubeArrayMaterial.vert = {type: 'VERTEX_SHADER', text: (
