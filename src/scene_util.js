@@ -513,14 +513,19 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       image = new Image();
       image.src = src;
     }
+    if (this.image && this.image.__imageLoadHandler) {
+      this.image.removeEventListener('load', 
+        this.image.__imageLoadHandler, false);
+    }
     this.image = image;
     if (image.tagName && !Object.isImageLoaded(image)) {
       var self = this;
-      image.addEventListener('load', function() {
+      image.__imageLoadHandler = function() {
         if (self.image == this) {
           self.setImage(this);
         }
-      }, false);
+      };
+      image.addEventListener('load', image.__imageLoadHandler, false);
     }
     this.image.width; // workaround for strange chrome bug
     this.reposition();
