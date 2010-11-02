@@ -294,8 +294,8 @@ Magi.Texture = Klass({
             .drawImage(this.image, 0, 0, this.image.width, this.image.height);
         img = this.image.tmpCanvas;
       }
-      this.width = img.width;
-      this.height = img.height;
+      this.width = img.naturalWidth || img.videoWidth || img.width;
+      this.height = img.naturalHeight || img.videoHeight || img.height;
       if (this.previousWidth == this.width && this.previousHeight == this.height)
       {
         gl.texSubImage2D(target, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -359,12 +359,24 @@ Magi.Texture = Klass({
     gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     this.regenerateMipmap();
   },
+
+  needsUpload : function() {
+    if (this.image && this.image.tagName == 'VIDEO') {
+      if (this.image.currentTime != this.previousVideoTime) {
+	this.previousVideoTime = this.image.currentTime;
+        return true;
+      }
+    }
+    if (this.image && this.image.tagName == 'CANVAS' && this.image.changed)
+      return true;
+    return this.changed;
+  },
   
   use : function() {
     if (this.textureObject == null)
       this.compile();
     this.gl.bindTexture(this.gl[this.target], this.textureObject);
-    if (this.changed) {
+    if (this.needsUpload()) {
       this.changed = false;
       this.upload();
       this.regenerateMipmap();
