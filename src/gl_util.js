@@ -910,7 +910,7 @@ Magi.FBO = Klass({
     if (this.useDepth) {
       gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbo);
       Magi.throwError(gl, "FBO.resize bindRenderbuffer");
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.stencilWorks ? gl.DEPTH_STENCIL : gl.DEPTH_COMPONENT16, this.width, this.height);
       Magi.throwError(gl, "FBO.resize renderbufferStorage");
     }
   },
@@ -943,10 +943,19 @@ Magi.FBO = Klass({
       rb = this.rbo != null ? this.rbo : gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
       Magi.throwError(gl, "FBO.init bindRenderbuffer");
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-      Magi.throwError(gl, "FBO.init renderbufferStorage");
-      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
-      Magi.throwError(gl, "FBO.init bind depth buffer");
+      try {
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
+        Magi.throwError(gl, "FBO.init depth renderbufferStorage");
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rb);
+        Magi.throwError(gl, "FBO.init bind depth buffer");
+        gl.stencilWorks = true;
+      } catch(e) { gl.stencilWorks = false; }
+      if (!gl.stencilWorks) {
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+        Magi.throwError(gl, "FBO.init depth renderbufferStorage");
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+        Magi.throwError(gl, "FBO.init bind depth buffer");
+      }
     }
 
     var fbstat = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
