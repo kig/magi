@@ -164,6 +164,7 @@ Magi.Node = Klass(Magi.Motion, {
     var dt = state.depthTest;
     var poly = state.polygonOffset;
     var bl = state.blend;
+    var cl = state.cullFace;
     if (this.polygonOffset) {
       gl.polygonOffset(this.polygonOffset.factor, this.polygonOffset.units);
     }
@@ -183,6 +184,10 @@ Magi.Node = Klass(Magi.Motion, {
       if (this.blend) gl.enable(gl.BLEND);
       else gl.disable(gl.BLEND);
     }
+    if (this.cullFace != null && this.cullFace != state.cullFace) {
+      gl.enable(gl.CULL_FACE);
+      gl.cullFace(gl[this.cullFace]);
+    }
 
     this.model.draw(
       state.currentShader.attrib('Vertex'),
@@ -190,6 +195,10 @@ Magi.Node = Klass(Magi.Motion, {
       state.currentShader.attrib('TexCoord')
     );
 
+    if (this.cullFace != null && this.cullFace != state.cullFace) {
+      if (cl) gl.cullFace(gl[cl]);
+      else gl.disable(gl.CULL_FACE);
+    }
     if (this.blend != null && this.blend != state.blend) {
       if (bl) gl.enable(gl.BLEND);
       else gl.disable(gl.BLEND);
