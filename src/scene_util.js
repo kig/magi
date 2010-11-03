@@ -14,7 +14,7 @@ Magi.Scene = Klass({
   paused : false,
   showStats : false,
   
-  supersample : 1,
+  supersample : 2,
   
   initialize : function(canvas, scene, cam, args) {
     if (!scene) scene = new Magi.Node();
@@ -156,6 +156,7 @@ Magi.Scene = Klass({
     var f = this.canvas ? this.supersample : 1;
     this.camera.draw(this.gl, this.width*f, this.height*f, this.root);
 
+    
     if (this.canvas) {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
       this.gl.depthMask(true);
@@ -165,6 +166,7 @@ Magi.Scene = Klass({
     }
 
     this.drawEffects(this.canvas||this.fbo, this.postEffects, this.fbo.texture);
+    
 
     this.drawTime = new Date() - t;
 
@@ -373,6 +375,13 @@ Magi.Sphere = Klass(Magi.Node, {
 Magi.Disk = Klass(Magi.Node, {
   initialize : function(r1, r2, height, xCount, yCount) {
     Magi.Node.initialize.call(this, Magi.Geometry.Disk.getCachedVBO(null, r1,r2,height,xCount, yCount));
+    this.material = Magi.DefaultMaterial.get();
+  }
+});
+
+Magi.Quad = Klass(Magi.Node, {
+  initialize : function(frag) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Quad.getCachedVBO());
     this.material = Magi.DefaultMaterial.get();
   }
 });
