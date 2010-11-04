@@ -247,9 +247,10 @@ Magi.Texture = Klass({
     Magi.AllocatedResources.addTexture(this);
   },
   
-  load : function(src, callback) {
+  load : function(src, callback, mipmaps) {
     var img = new Image();
     var tex = new Magi.Texture();
+    tex.generateMipmaps = mipmaps;
     img.onload = function() {
       tex.changed = true;
       if (callback)
@@ -1274,7 +1275,7 @@ Magi.Geometry.CubeArray = {
 
 
 Magi.Geometry.Sphere = {
-  vert : function(theta, phi, vertices, normals, texcoords)
+  vert : function(theta, phi, vertices, normals, texcoords, wrappedTex)
   {
     var x, y, z, nx, ny, nz;
 
@@ -1288,10 +1289,10 @@ Magi.Geometry.Sphere = {
     y = Math.cos(theta) * Math.cos(phi);
     vertices.push(x, y, z);
 
-    texcoords.push(1-(theta / (2*Math.PI)), 0.5 + 0.5 * Math.sin(phi));
+    texcoords.push(1-(theta / (2*Math.PI)), wrappedTex ? ((phi+Math.PI/2)/Math.PI) : 0.5+0.5*Math.sin(phi));
   },
 
-  makeVBO : function(gl, xCount, yCount) {
+  makeVBO : function(gl, xCount, yCount, wrappedTex) {
     var vertices = [], normals = [], texcoords = [];
     var self = this;
     for (var y=0; y<yCount; y++) {
@@ -1300,12 +1301,12 @@ Magi.Geometry.Sphere = {
       for (var x=0; x<xCount; x++) {
         var theta = 2*Math.PI*x/xCount;
         var theta2 = theta + 2*Math.PI/xCount;
-        this.vert(theta, phi, vertices, normals, texcoords);
-        this.vert(theta, phi2, vertices, normals, texcoords);
-        this.vert(theta2, phi2, vertices, normals, texcoords);
-        this.vert(theta, phi, vertices, normals, texcoords);
-        this.vert(theta2, phi2, vertices, normals, texcoords);
-        this.vert(theta2, phi, vertices, normals, texcoords);
+        this.vert(theta, phi, vertices, normals, texcoords, wrappedTex);
+        this.vert(theta, phi2, vertices, normals, texcoords, wrappedTex);
+        this.vert(theta2, phi2, vertices, normals, texcoords, wrappedTex);
+        this.vert(theta, phi, vertices, normals, texcoords, wrappedTex);
+        this.vert(theta2, phi2, vertices, normals, texcoords, wrappedTex);
+        this.vert(theta2, phi, vertices, normals, texcoords, wrappedTex);
       }
     }
     return new Magi.VBO(gl,
@@ -1315,15 +1316,15 @@ Magi.Geometry.Sphere = {
     );
   },
   cache: {},
-  getCachedVBO : function(gl, xCount, yCount) {
+  getCachedVBO : function(gl, xCount, yCount, wrappedTex) {
     xCount = xCount || 10;
     yCount = yCount || 10;
-    var k = xCount +":"+ yCount;
+    var k = xCount +":"+ yCount +":"+ wrappedTex;
     if (!this.cache[gl]) {
       this.cache[gl] = {};
     }
     if (!this.cache[gl][k]) {
-      this.cache[gl][k] = this.makeVBO(gl, xCount, yCount);
+      this.cache[gl][k] = this.makeVBO(gl, xCount, yCount, wrappedTex);
     }
     return this.cache[gl][k];
   }

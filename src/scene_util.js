@@ -366,8 +366,8 @@ Magi.Ring = Klass(Magi.Node, {
 });
 
 Magi.Sphere = Klass(Magi.Node, {
-  initialize : function(xCount, yCount) {
-    Magi.Node.initialize.call(this, Magi.Geometry.Sphere.getCachedVBO(null, xCount, yCount));
+  initialize : function(xCount, yCount, wrappedTex) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Sphere.getCachedVBO(null, xCount, yCount, wrappedTex));
     this.material = Magi.DefaultMaterial.get();
   }
 });
@@ -813,6 +813,23 @@ Magi.ColorQuadMaterial.vert = {type: 'VERTEX_SHADER', text: (
   "}"
 )};
 Magi.ColorQuadMaterial.frag = {type: 'FRAGMENT_SHADER', text: (
+  "precision highp float;"+
+  "uniform vec4 Color;"+
+  "void main()"+
+  "{"+
+  "  gl_FragColor = Color;"+
+  "}"
+)};
+
+Magi.ColorMaterial = Object.clone(Magi.FilterMaterial);
+Magi.ColorMaterial.vert = {type: 'VERTEX_SHADER', text: (
+  Magi.ShaderLib.defaultTransform+
+  "void main()"+
+  "{"+
+  "  gl_Position = transform();"+
+  "}"
+)};
+Magi.ColorMaterial.frag = {type: 'FRAGMENT_SHADER', text: (
   "precision highp float;"+
   "uniform vec4 Color;"+
   "void main()"+
