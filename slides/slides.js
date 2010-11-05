@@ -139,14 +139,14 @@ Slides = Klass({
     this.display = new Magi.Scene(this.fbo);
     this.scene = this.display.scene;
     var s = this.display;
+    s.bg = [0.3, 0.7, 0.9, 1];
     s.camera.targetFov = 40;
     s.useDefaultCameraControls(this.canvas);
-    s.root.setX(0.02).setY(1.0).setAngle(-0.1);
-    s.root.childNodes[0].setAngle(-0.05);
+    s.yRot.setX(0.02).setY(1.0).setAngle(-0.1);
+    s.xRot.setAngle(-0.05);
     vec3.set([0,0,8], s.camera.position);
     vec3.set([0,0,0], s.camera.lookAt);
-    s.bg = [0.3, 0.7, 0.9, 1];
-    s.root.childNodes[0].setScale(1/200);
+    s.scene.setScale(1/200);
 
     var grad = new Magi.FilterQuad(this.shaders.bgFrag);
     grad.material.floats.aspect = 4/3;

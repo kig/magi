@@ -1413,9 +1413,9 @@ Magi.Geometry.Disk = {
   },
   cache: {},
   getCachedVBO : function(gl, r1, r2, height, xCount, yCount) {
-    r1 = r1 || 0.5;
-    r2 = r2 || 1.0;
-    height = height || 0.01;
+    r1 = r1 == null ? 0.5 : r1;
+    r2 = r2 == null ? 1.0 : r2;
+    height = height == null ? 0.01 : height;
     xCount = xCount || 50;
     yCount = yCount || 2;
     var k = [r1,r2,height,xCount,yCount].join(":");
@@ -1476,10 +1476,10 @@ Magi.Geometry.Ring = {
   },
   cache: {},
   getCachedVBO : function(gl, height, segments, yCount, angle) {
-    height = height || 0.1;
+    height = height == null ? 0.1 : height;
     segments = segments || 256;
     yCount = yCount || 10;
-    angle = angle || Math.PI*2;
+    angle = angle == null ? Math.PI*2 : angle;
     var k = segments +":"+ yCount + ":" + angle + ":" + height;
     if (!this.cache[gl]) {
       this.cache[gl] = {};

@@ -28,6 +28,7 @@ Magi.Node = Klass(Magi.Motion, {
   display : true,
   transparent : false,
   id : null,
+  parentNode : null,
 
   initialize : function(model) {
     this.model = model;
@@ -237,15 +238,33 @@ Magi.Node = Klass(Magi.Motion, {
       if (this.frameListeners.indexOf(a[i]) != -1)
         a[i].call(this, t, dt, this);
     }
-    for (var i=0; i<this.childNodes.length; i++)
+    for (var i=0; i<this.childNodes.length; i++) {
+      this.childNodes[i].parentNode = this;
       this.childNodes[i].update(t, dt);
+    }
   },
   
   appendChild : function(c) {
     this.childNodes.push(c);
+    c.parentNode = this;
   },
-  
-  updateTransform : function(matrix) {
+
+  removeChild : function(c) {
+	    var idx = this.childNodes.indexOf(c);
+	    while (idx != -1) {
+                this.childNodes[idx].parentNode = null;
+		this.childNodes.splice(idx,1);
+		idx = this.childNodes.indexOf(c);
+	    }
+            c.parentNode = null;
+  },
+
+  removeSelf : function() {
+    if (this.parentNode)
+      this.parentNode.removeChild(this);
+  },
+
+  updateTransform : function(matrix,t,dt) {
     var m = this.matrix;
     mat4.set(matrix, m);
     var p = this.position;
@@ -260,19 +279,19 @@ Magi.Node = Klass(Magi.Motion, {
     if (!this.scaleAfterRotate && doScaling)
       mat4.scale(m, s);
     if (this.transform)
-      mat4.multiply(m, this.transform, m);
+	mat4.multiply(this.transform, m, m);
     if (this.isBillboard)
       mat4.billboard(m);
     mat4.toInverseMat3(m, this.normalMatrix);
     mat3.transpose(this.normalMatrix);
-    for (var i=0; i<this.childNodes.length; i++)
-      this.childNodes[i].updateTransform(m);
     this.absolutePosition[0] = m[12];
     this.absolutePosition[1] = m[13];
     this.absolutePosition[2] = m[14];
     for (var i=0; i<this.afterTransformListeners.length; i++) {
-      this.afterTransformListeners[i].call(this,m);
+      this.afterTransformListeners[i].call(this,m,t,dt);
     }
+    for (var i=0; i<this.childNodes.length; i++)
+      this.childNodes[i].updateTransform(m,t,dt);
   },
   
   getWorldPosition : function(worldOrigin, dst) {
@@ -541,15 +560,15 @@ Magi.Camera = Klass({
     vec3.add(this.lookAt, tmp, this.position);
   },
 
-  drawViewport : function(gl, x, y, width, height, scene) {
+  drawViewport : function(gl, x, y, width, height, scene, t, dt) {
     gl.enable(gl.SCISSOR_TEST);
     gl.viewport(x,y,width,height);
     gl.scissor(x,y,width,height);
 
-    scene.updateTransform(mat4.identity());
+    scene.updateTransform(mat4.identity(),t,dt);
 
     for (var i=0; i<this.afterTransformListeners.length; i++)
-      this.afterTransformListeners[i].call(this);
+      this.afterTransformListeners[i].call(this,this.perspectiveMatrix,t,dt);
 
     if (!this.useProjectionMatrix) {
       if (this.ortho) {
@@ -621,7 +640,7 @@ Magi.Camera = Klass({
     st.depthMask = true;
   },
   
-  draw : function(gl, width, height, scene) {
+  draw : function(gl, width, height, scene,t,dt) {
     if (this.stereo) {
       var p = vec3.create(this.position);
       var sep = vec3.create();
@@ -630,14 +649,14 @@ Magi.Camera = Klass({
       vec3.scale(sep, this.stereoSeparation/2, sep);
 
       vec3.subtract(p, sep, this.position);
-      this.drawViewport(gl, 0, 0, width/2, height, scene);
+      this.drawViewport(gl, 0, 0, width/2, height, scene,t,dt);
       
       vec3.add(p, sep, this.position);
-      this.drawViewport(gl, width/2, 0, width/2, height, scene);
+      this.drawViewport(gl, width/2, 0, width/2, height, scene,t,dt);
 
       vec3.set(p, this.position);
     } else {
-      this.drawViewport(gl, 0, 0, width, height, scene);
+      this.drawViewport(gl, 0, 0, width, height, scene,t,dt);
     }
   }
 });

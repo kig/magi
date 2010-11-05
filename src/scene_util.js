@@ -151,10 +151,10 @@ Magi.Scene = Klass({
     }
 
     if (this.preEffects.length > 0)
-      this.drawEffects(this.fbo, this.preEffects, this.fbo.texture);
+      this.drawEffects(this.fbo, this.preEffects, this.fbo.texture,t,dt);
 
     var f = this.canvas ? this.supersample : 1;
-    this.camera.draw(this.gl, this.width*f, this.height*f, this.root);
+    this.camera.draw(this.gl, this.width*f, this.height*f, this.root,t,dt);
 
     
     if (this.canvas) {
@@ -165,7 +165,7 @@ Magi.Scene = Klass({
       Magi.throwError(this.gl, "clear");
     }
 
-    this.drawEffects(this.canvas||this.fbo, this.postEffects, this.fbo.texture);
+    this.drawEffects(this.canvas||this.fbo, this.postEffects, this.fbo.texture,t,dt);
     
 
     this.drawTime = new Date() - t;
@@ -185,7 +185,9 @@ Magi.Scene = Klass({
   
   // applies effects (magi nodes) to tex and draws the result to target (fbo or canvas)
   // does not modify tex (unless it's the texture of target fbo)
-  drawEffects : function(target, effects, tex) {
+  drawEffects : function(target, effects, tex,t,dt) {
+    if (effects.length == 0 && tex == target.texture)
+      return;
     var fbo = this.postFBO1;
     var postFBO = this.postFBO2;
     fbo.resize(target.width, target.height);
@@ -196,7 +198,7 @@ Magi.Scene = Klass({
       var fx = effects[i];
       fx.material.textures.Texture0 = tex;
       tex = postFBO.texture;
-      this.camera.draw(this.gl, postFBO.width, postFBO.height, fx);
+      this.camera.draw(this.gl, postFBO.width, postFBO.height, fx,t,dt);
       // swap fbos for next effect
       var tmp = fbo;
       fbo = postFBO;
@@ -237,8 +239,11 @@ Magi.Scene = Klass({
     vec3.set([0,1,0], xRot.rotation.axis);
     
     yRot.appendChild(xRot);
-    xRot.appendChild(this.scene);
+    //xRot.appendChild(this.scene);
     this.root = yRot;
+    this.yRot = yRot;
+    this.xRot = xRot;
+
     this.root = this.scene;
 
     var wheelHandler = function(ev) {
@@ -672,10 +677,14 @@ Magi.FilterMaterial = {
   frag : {type: 'FRAGMENT_SHADER', text: (
     "precision highp float;"+
     "uniform sampler2D Texture0;"+
+    "uniform float offsetY;"+
+    "uniform float offsetX;"+
     "varying vec2 texCoord0;"+
     "void main()"+
     "{"+
-    "  vec4 c = texture2D(Texture0, texCoord0);"+
+    "  vec2 v = vec2(texCoord0.s/(1.0-offsetX), texCoord0.t/(1.0-offsetY));"+
+    "  vec4 c = texture2D(Texture0, v);"+
+    "  if (v.s < 0.0 || v.s > 1.0 || v.t < 0.0 || v.t > 1.0) c = vec4(0.0);"+
     "  gl_FragColor = c*c.a;"+
     "}"
   )},
