@@ -94,7 +94,7 @@ Magi.Node = Klass(Magi.Motion, {
     this.position[1] = x;
     return this;
   },
-  
+
   setZ : function(x) {
     this.position[2] = x;
     return this;
@@ -190,11 +190,21 @@ Magi.Node = Klass(Magi.Motion, {
       gl.cullFace(gl[this.cullFace]);
     }
 
-    this.model.draw(
-      state.currentShader.attrib('Vertex'),
-      state.currentShader.attrib('Normal'),
-      state.currentShader.attrib('TexCoord')
-    );
+    if (this.model.attributes) {
+      if (!this.model.attributeIdxs) {
+        this.model.attributeIdxs = [];
+      }
+      for (var i=0; i<this.model.attributes.length; i++) {
+        this.model.attributeIdxs[i] = state.currentShader.attrib(this.model.attributes[i]);
+      }
+      this.model.draw.apply(this.model, this.model.attributeIdxs);
+    } else {
+      this.model.draw(
+        state.currentShader.attrib('Vertex'),
+        state.currentShader.attrib('Normal'),
+        state.currentShader.attrib('TexCoord')
+      );
+    }
 
     if (this.cullFace != null && this.cullFace != state.cullFace) {
       if (cl) gl.cullFace(gl[cl]);
@@ -220,7 +230,7 @@ Magi.Node = Klass(Magi.Motion, {
       gl.polygonOffset(poly.factor, poly.units);
     }
   },
-  
+
   addFrameListener : function(f) {
     this.frameListeners.push(f);
   },
@@ -228,7 +238,7 @@ Magi.Node = Klass(Magi.Motion, {
   afterTransform : function(f) {
     this.afterTransformListeners.push(f);
   },
-  
+
   update : function(t, dt) {
     var a = [];
     for (var i=0; i<this.frameListeners.length; i++) {
@@ -243,7 +253,7 @@ Magi.Node = Klass(Magi.Motion, {
       this.childNodes[i].update(t, dt);
     }
   },
-  
+
   appendChild : function(c) {
     this.childNodes.push(c);
     c.parentNode = this;
@@ -293,12 +303,12 @@ Magi.Node = Klass(Magi.Motion, {
     for (var i=0; i<this.childNodes.length; i++)
       this.childNodes[i].updateTransform(m,t,dt);
   },
-  
+
   getWorldPosition : function(worldOrigin, dst) {
     if (dst == null) dst = vec3.create();
     return vec3.sub(this.absolutePosition, worldOrigin, dst);
   },
-  
+
   collectDrawList : function(arr) {
     if (!arr) arr = [];
     if (this.display) {
@@ -327,7 +337,7 @@ Magi.Material = Klass({
     for (var i=0; i<v.length; i++) a[i] = v[i];
     return a;
   },
-  
+
   copy : function(){
     var m = new Magi.Material();
     for (var i in this.floats) m.floats[i] = this.copyValue(this.floats[i]);
@@ -336,7 +346,7 @@ Magi.Material = Klass({
     m.shader = this.shader;
     return m;
   },
-  
+
   apply : function(gl, state, perspectiveMatrix, matrix, normalMatrix) {
     var shader = this.shader;
     if (shader && shader.gl == null) shader.gl = gl;
@@ -357,7 +367,7 @@ Magi.Material = Klass({
     this.applyFloats();
     this.applyInts();
   },
-  
+
   applyTextures : function(gl, state) {
     var texUnit = 0;
     for (var name in this.textures) {
@@ -397,7 +407,7 @@ Magi.Material = Klass({
       dst[i] = src[i];
     return dst;
   },
-  
+
   applyFloats : function() {
     var shader = this.shader;
     for (var name in this.floats) {
@@ -435,7 +445,7 @@ Magi.Material = Klass({
       }
     }
   },
-  
+
   applyInts : function() {
     var shader = this.shader;
     for (var name in this.ints) {
@@ -467,7 +477,7 @@ Magi.Material = Klass({
       }
     }
   }
-  
+
 });
 
 Magi.GLDrawState = Klass({
@@ -480,7 +490,7 @@ Magi.GLDrawState = Klass({
   depthMask : true,
   depthTest : true,
   blend : true,
-  
+
   initialize: function(){
     this.polygonOffset = {factor: 0, units: 0},
     this.textures = [];
@@ -511,7 +521,7 @@ Magi.Camera = Klass({
     this.frameListeners = [];
     this.afterTransformListeners = [];
   },
-  
+
   addFrameListener : Magi.Node.prototype.addFrameListener,
 
   update : function(t, dt) {
@@ -538,21 +548,21 @@ Magi.Camera = Klass({
       mat4.identity(this.matrix);
     return this.matrix;
   },
-  
+
   moveTo : function(position) {
     var tmp = vec3.create();
     vec3.sub(position, this.lookAt, tmp);
     vec3.add(this.lookAt, tmp);
     vec3.add(this.position, tmp);
   },
-  
+
   setDistance : function(d) {
     var tmp = vec3.create();
     vec3.sub(this.position, this.lookAt, tmp);
     vec3.scale(tmp, d / vec3.length(tmp));
     vec3.add(this.lookAt, tmp, this.position);
   },
-  
+
   multiplyDistance : function(d) {
     var tmp = vec3.create();
     vec3.sub(this.position, this.lookAt, tmp);
@@ -595,7 +605,7 @@ Magi.Camera = Klass({
         d.draw(gl, st, this.perspectiveMatrix);
       }
     }
-    
+
     this.normalDrawTime = new Date() - t;
     transparents.stableSort(function(a,b) {
       return a.matrix[14] - b.matrix[14];
@@ -606,7 +616,7 @@ Magi.Camera = Klass({
 
     gl.depthMask(false);
     st.depthMask = false;
-    
+
     for (var i=0; i<transparents.length; i++) {
       var d = transparents[i];
       d.draw(gl, st, this.perspectiveMatrix);
@@ -639,7 +649,7 @@ Magi.Camera = Klass({
     gl.depthMask(true);
     st.depthMask = true;
   },
-  
+
   draw : function(gl, width, height, scene,t,dt) {
     if (this.stereo) {
       var p = vec3.create(this.position);
@@ -650,7 +660,7 @@ Magi.Camera = Klass({
 
       vec3.subtract(p, sep, this.position);
       this.drawViewport(gl, 0, 0, width/2, height, scene,t,dt);
-      
+
       vec3.add(p, sep, this.position);
       this.drawViewport(gl, width/2, 0, width/2, height, scene,t,dt);
 

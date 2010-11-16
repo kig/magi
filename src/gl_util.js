@@ -53,7 +53,7 @@ Magi.errorName = function(gl, errorCode) {
 
 /**
   Logs GL errors.
-  
+
   GetErrors the given WebGL context and logs the error
   alongside the given message using Magi.log().
 
@@ -71,7 +71,7 @@ Magi.checkError = function(gl, msg) {
 
 /**
   Turns a GL error into an exception.
-  
+
   If the given WebGL context returns non-zero to getError,
   throws an exception with the name of the error and the
   given additional message.
@@ -116,7 +116,7 @@ Magi.AllocatedResources = {
 
   /**
     Add a texture to track. If the texture is already tracked, does nothing.
-    
+
     @param tex Magi.Texture to track.
   */
   addTexture : function(tex) {
@@ -126,7 +126,7 @@ Magi.AllocatedResources = {
 
   /**
     Add a shader to track. If the shader is already tracked, does nothing.
-    
+
     @param tex Magi.Shader to track.
   */
   addShader : function(tex) {
@@ -136,7 +136,7 @@ Magi.AllocatedResources = {
 
   /**
     Add a VBO to track. If the VBO is already tracked, does nothing.
-    
+
     @param tex Magi.VBO to track.
   */
   addVBO : function(tex) {
@@ -146,7 +146,7 @@ Magi.AllocatedResources = {
 
   /**
     Add a FBO to track. If the FBO is already tracked, does nothing.
-    
+
     @param tex Magi.FBO to track.
   */
   addFBO : function(tex) {
@@ -246,7 +246,7 @@ Magi.Texture = Klass({
     this.gl = gl;
     Magi.AllocatedResources.addTexture(this);
   },
-  
+
   load : function(src, callback, mipmaps) {
     var img = new Image();
     var tex = new Magi.Texture();
@@ -317,7 +317,7 @@ Magi.Texture = Klass({
     this.previousHeight = this.height;
     Magi.throwError(gl, "Texture.upload");
   },
-  
+
   regenerateMipmap : function() {
     var gl = this.gl;
     var target = gl[this.target];
@@ -346,7 +346,7 @@ Magi.Texture = Klass({
       }
     }
   },
-  
+
   compile: function(){
     var gl = this.gl;
     var target = gl[this.target];
@@ -372,7 +372,7 @@ Magi.Texture = Klass({
       return true;
     return this.changed;
   },
-  
+
   use : function() {
     if (this.textureObject == null)
       this.compile();
@@ -419,7 +419,7 @@ Magi.Shader = Klass({
   },
 
   destroy : function() {
-    if (this.shader != null) 
+    if (this.shader != null)
       Magi.Shader.deleteShader(this.gl, this.shader);
     Magi.AllocatedResources.deleteShader(this);
   },
@@ -433,9 +433,9 @@ Magi.Shader = Klass({
       this.compile();
     this.gl.useProgram(this.shader.program);
   },
-  
+
   getInfoLog : function() {
-    if (this.shader == null) 
+    if (this.shader == null)
       this.compile();
     var gl = this.gl;
     var plog = gl.getProgramInfoLog(this.shader.program);
@@ -462,7 +462,7 @@ Magi.Shader = Klass({
     var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform4fv(loc, value);
   },
-  
+
   uniform1f : function(name, value) {
     var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform1f(loc, value);
@@ -482,7 +482,7 @@ Magi.Shader = Klass({
     var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform4f(loc, v1, v2, v3, v4);
   },
-  
+
   uniform1iv : function(name, value) {
     var loc = this.uniform(name).index;
     if (loc != null) this.gl.uniform1iv(loc, value);
@@ -774,7 +774,7 @@ Magi.VBO = Klass({
   init : function() {
     this.clear();
     var gl = this.gl;
-   
+
     gl.getError();
     var vbos = [];
     var length = 0;
@@ -786,30 +786,49 @@ Magi.VBO = Klass({
       Magi.throwError(gl, "genBuffers");
       for (var i = 0; i<this.data.length; i++) {
         var d = this.data[i];
+        if (d.data == null) continue;
         var dlen = Math.floor(d.data.length / d.size);
         if (i == 0 || dlen < length)
             length = dlen;
-        if (!d.floatArray)
-          d.floatArray = new Float32Array(d.data);
+        if (!d.typedArray) {
+          switch (d.type) {
+            case gl.UNSIGNED_INT:
+              d.typedArray = new Uint32Array(d.data); break;
+            case gl.INT:
+              d.typedArray = new Int32Array(d.data); break;
+            case gl.UNSIGNED_SHORT:
+              d.typedArray = new Uint16Array(d.data); break;
+            case gl.SHORT:
+              d.typedArray = new Int16Array(d.data); break;
+            case gl.UNSIGNED_BYTE:
+              d.typedArray = new Uint8Array(d.data); break;
+            case gl.BYTE:
+              d.typedArray = new Int8Array(d.data); break;
+            default:
+              d.type = gl.FLOAT;
+              d.typedArray = new Float32Array(d.data);
+          }
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, vbos[i]);
         Magi.Stats.bindBufferCount++;
         Magi.throwError(gl, "bindBuffer");
-        gl.bufferData(gl.ARRAY_BUFFER, d.floatArray, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, d.typedArray, gl.STATIC_DRAW);
         Magi.throwError(gl, "bufferData");
       }
       if (this.elementsVBO != null) {
         var d = this.elements;
         this.elementsLength = d.data.length;
-        this.elementsType = d.type == gl.UNSIGNED_BYTE ? d.type : gl.UNSIGNED_SHORT;
+        this.elementsType = d.type == gl.UNSIGNED_BYTE ? gl.UNSIGNED_BYTE : gl.UNSIGNED_SHORT;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.elementsVBO);
         Magi.Stats.bindBufferCount++;
         Magi.throwError(gl, "bindBuffer ELEMENT_ARRAY_BUFFER");
-        if (this.elementsType == gl.UNSIGNED_SHORT && !d.ushortArray) {
-          d.ushortArray = new Uint16Array(d.data);
-          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d.ushortArray, gl.STATIC_DRAW);
-        } else if (this.elementsType == gl.UNSIGNED_BYTE && !d.ubyteArray) {
-          d.ubyteArray = new Uint8Array(d.data);
-          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d.ubyteArray, gl.STATIC_DRAW);
+        if (!d.typedArray) {
+          if (this.elementsType == gl.UNSIGNED_SHORT) {
+            d.typedArray = new Uint16Array(d.data);
+          } else if (this.elementsType == gl.UNSIGNED_BYTE) {
+            d.typedArray = new Uint8Array(d.data);
+          }
+          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d.typedArray, gl.STATIC_DRAW);
         }
         Magi.throwError(gl, "bufferData ELEMENT_ARRAY_BUFFER");
       }
@@ -826,7 +845,7 @@ Magi.VBO = Klass({
 
     this.length = length;
     this.vbos = vbos;
-  
+
     this.initialized = true;
   },
 
@@ -835,7 +854,7 @@ Magi.VBO = Klass({
     var gl = this.gl;
     for (var i=0; i<arguments.length; i++) {
       var arg = arguments[i];
-      var vbo = this.vbos[i];
+      var vbo = (this.data[i] && this.data[i].data != null) ? this.vbos[i] : null;
       if (arg == null || arg.index == null || arg.index == -1) continue;
       if (!vbo) {
         gl.disableVertexAttribArray(arg.index);
@@ -843,7 +862,7 @@ Magi.VBO = Klass({
       }
       if (Magi.VBO[arg.index] !== vbo) {
         gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-        gl.vertexAttribPointer(arg.index, this.data[i].size, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(arg.index, this.data[i].size, this.data[i].type, false, 0, 0);
         Magi.Stats.bindBufferCount++;
         Magi.Stats.vertexAttribPointerCount++;
       }
@@ -1176,7 +1195,7 @@ Magi.Geometry.Cube = {
     0,0,  0,1,  1,1, 1,0,
     0,0,  0,1,  1,1, 1,0
   ]),
-      
+
   indices : [],
   create : function(){
     for (var i = 0; i < 6; i++) {

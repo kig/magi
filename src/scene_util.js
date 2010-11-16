@@ -13,9 +13,9 @@ Magi.Scene = Klass({
 
   paused : false,
   showStats : false,
-  
+
   supersample : 2,
-  
+
   initialize : function(canvas, scene, cam, args) {
     if (!scene) scene = new Magi.Node();
     if (!cam) cam = Magi.Scene.getDefaultCamera();
@@ -69,7 +69,7 @@ Magi.Scene = Klass({
     cam.angle = 1;
     return cam;
   },
-  
+
   startFrameLoop : function() {
     this.previousTime = new Date;
     clearInterval(this.drawInterval);
@@ -85,7 +85,7 @@ Magi.Scene = Klass({
     this.mouse.x = ev.clientX;
     this.mouse.y = ev.clientY;
   },
-  
+
   setupEventListeners : function() {
     var t = this;
     window.addEventListener('mousedown',  function(ev){
@@ -123,7 +123,7 @@ Magi.Scene = Klass({
     this.time += dt;
     this.previousTime = newTime;
     this.frameTime = real_dt;
-    
+
     this.camera.update(this.time, dt);
     this.scene.update(this.time, dt);
 
@@ -156,7 +156,7 @@ Magi.Scene = Klass({
     var f = this.canvas ? this.supersample : 1;
     this.camera.draw(this.gl, this.width*f, this.height*f, this.root,t,dt);
 
-    
+
     if (this.canvas) {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
       this.gl.depthMask(true);
@@ -166,7 +166,7 @@ Magi.Scene = Klass({
     }
 
     this.drawEffects(this.canvas||this.fbo, this.postEffects, this.fbo.texture,t,dt);
-    
+
 
     this.drawTime = new Date() - t;
 
@@ -182,7 +182,7 @@ Magi.Scene = Klass({
       }
     }
   },
-  
+
   // applies effects (magi nodes) to tex and draws the result to target (fbo or canvas)
   // does not modify tex (unless it's the texture of target fbo)
   drawEffects : function(target, effects, tex,t,dt) {
@@ -237,7 +237,7 @@ Magi.Scene = Klass({
 
     var xRot = new Magi.Node();
     vec3.set([0,1,0], xRot.rotation.axis);
-    
+
     yRot.appendChild(xRot);
     //xRot.appendChild(this.scene);
     this.root = yRot;
@@ -281,13 +281,13 @@ Magi.Scene = Klass({
           yRot.position[0] += dx * 0.01 * (s.camera.fov / 45);
           yRot.position[1] -= dy * 0.01 * (s.camera.fov / 45);
         }
-        
+
         var xa = xRot.rotation.angle;
         var ya = yRot.rotation.angle;
         var r = vec3.distance(s.camera.lookAt, s.camera.position);
         var v = vec3.scale(vec3.normalize(vec3.create(Math.cos(xa), Math.sin(ya), Math.sin(xa))), r);
         vec3.add(v, s.camera.lookAt, s.camera.position);
-        
+
         ev.preventDefault();
         s.changed = true;
       }
@@ -499,14 +499,14 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
     }
     return this;
   },
-  
+
   setSize : function(sz) {
     this.size = sz;
     if (this.image && this.image.tagName && Object.isImageLoaded(this.image))
       this.reposition();
     return this;
   },
-  
+
   reposition : function() {
     var w = this.image.width, h = this.image.height;
     if (this.size != null) {
@@ -528,7 +528,7 @@ Magi.Image = Klass(Magi.Node, Magi.Alignable, {
       image.src = src;
     }
     if (this.image && this.image.__imageLoadHandler) {
-      this.image.removeEventListener('load', 
+      this.image.removeEventListener('load',
         this.image.__imageLoadHandler, false);
     }
     this.image = image;
@@ -589,7 +589,7 @@ Magi.Text = Klass(Magi.Image, Magi.Alignable, {
     this.setText(this.text);
     return this;
   },
-  
+
   setFont : function(font) {
     this.font = font;
     this.setText(this.text);
@@ -946,6 +946,121 @@ Magi.DefaultMaterial = {
     m.floats.LightSpecular = vec4.create([0.8, 0.8, 0.95, 1]);
     m.floats.LightDiffuse = vec4.create([0.7, 0.6, 0.9, 1]);
     m.floats.LightAmbient = vec4.create([0.1, 0.10, 0.2, 1]);
+    m.floats.LightConstantAtt = 0.0;
+    m.floats.LightLinearAtt = 0.0;
+    m.floats.LightQuadraticAtt = 0.0;
+    return m;
+  }
+
+}
+
+
+Magi.MultiMaterial = {
+  vert : {type: 'VERTEX_SHADER', text: (
+    "precision highp float;"+
+    "attribute vec3 Vertex;"+
+    "attribute vec3 Normal;"+
+    "attribute vec2 TexCoord;"+
+    "attribute float MaterialIndex;"+
+    "uniform mat4 PMatrix;"+
+    "uniform mat4 MVMatrix;"+
+    "uniform mat4 LightMatrix;"+
+    "uniform mat3 NMatrix;"+
+    "uniform float LightConstantAtt;"+
+    "uniform float LightLinearAtt;"+
+    "uniform float LightQuadraticAtt;"+
+    "uniform vec4 LightPos;"+
+    "varying vec3 normal, lightDir, eyeVec;"+
+    "varying vec2 texCoord0;"+
+    "varying float attenuation;"+
+    "varying float materialIndex;"+
+    "void main()"+
+    "{"+
+    "  vec3 lightVector;"+
+    "  vec4 v = vec4(Vertex, 1.0);"+
+    "  texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);"+
+    "  materialIndex = MaterialIndex;"+
+    "  normal = normalize(NMatrix * Normal);"+
+    "  vec4 worldPos = MVMatrix * v;"+
+    "  vec4 lightWorldPos = LightMatrix * LightPos;"+
+    "  lightVector = vec3(lightWorldPos - worldPos);"+
+    "  lightDir = normalize(lightVector);"+
+    "  float dist = length(lightVector);"+
+    "  eyeVec = -vec3(worldPos);"+
+    "  attenuation = 1.0 / (1.0 + LightConstantAtt + LightLinearAtt*dist + LightQuadraticAtt * dist*dist);"+
+    "  gl_Position = PMatrix * worldPos;"+
+    "}"
+  )},
+
+  frag : {type: 'FRAGMENT_SHADER', text: (
+    "#define MAX_MATERIALS 4\n"+
+    "precision highp float;"+
+    "precision highp int;"+
+    "struct material {"+
+    "  vec4 diffuse; vec4 specular; vec4 ambient; vec4 emit; float shininess;"+
+    "};"+
+    "uniform material Material0;"+
+    "uniform material Material1;"+
+    "uniform material Material2;"+
+    "uniform material Material3;"+
+    "uniform vec4 LightDiffuse;"+
+    "uniform vec4 LightSpecular;"+
+    "uniform vec4 LightAmbient;"+
+    "uniform vec4 GlobalAmbient;"+
+    "uniform sampler2D DiffTex, SpecTex, EmitTex;"+
+    "varying vec3 normal, lightDir, eyeVec;"+
+    "varying vec2 texCoord0;"+
+    "varying float materialIndex;"+
+    "varying float attenuation;"+
+    "void main()"+
+    "{"+
+    "  int midx = int(clamp(materialIndex, 0.0, float(MAX_MATERIALS-1)));"+
+    "  material M[4]; M[0]=Material0; M[1]=Material1; M[2]=Material2; M[3]=Material3;"+
+    "  material mat = M[midx];"+
+    "  vec4 color = GlobalAmbient * LightAmbient * mat.ambient;"+
+    "  vec4 matDiff = mat.diffuse + texture2D(DiffTex, texCoord0);"+
+    "  matDiff.a = 1.0 - (1.0-mat.diffuse.a) * (1.0-texture2D(DiffTex, texCoord0).a);"+
+    "  vec4 matSpec = mat.specular + texture2D(SpecTex, texCoord0);"+
+    "  matSpec.a = 1.0 - (1.0-mat.specular.a) * (1.0-texture2D(SpecTex, texCoord0).a);"+
+    "  vec4 diffuse = LightDiffuse * matDiff;"+
+    "  float lambertTerm = dot(normal, lightDir);"+
+    "  vec4 lcolor = diffuse * lambertTerm * attenuation;"+
+    "  vec3 E = normalize(eyeVec);"+
+    "  vec3 R = reflect(-lightDir, normal);"+
+    "  float specular = pow( max(dot(R, E), 0.0), mat.shininess );"+
+    "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
+    "  if (lambertTerm > 0.0) color += lcolor * lambertTerm;"+
+    "  else color += diffuse * attenuation * mat.ambient.a * -lambertTerm;"+
+    "  color += mat.emit + texture2D(EmitTex, texCoord0);" +
+    "  color *= matDiff.a;"+
+    "  color.a = matDiff.a;"+
+    "  gl_FragColor = color;"+
+    "}"
+  )},
+
+  get : function(gl) {
+    if (!this.cached) {
+      var shader = new Magi.Shader(null, this.vert, this.frag);
+      this.cached = this.setupMaterial(shader);
+    }
+    var c = this.cached.copy();
+    c.floats.LightMatrix = this.lightMatrix;
+    return c;
+  },
+
+  lightMatrix : mat4.identity(),
+
+  setupMaterial : function(shader) {
+    var m = new Magi.Material(shader);
+    m.textures.DiffTex = m.textures.SpecTex = m.textures.EmitTex = null;
+
+    m.floats.LightMatrix = this.lightMatrix;
+
+    m.floats.LightPos = vec4.create([1, 1, 1, 1.0]);
+    m.floats.GlobalAmbient = vec4.create([1, 1, 1, 1]);
+    m.floats.LightSpecular = vec4.create([1, 1, 1, 1]);
+    m.floats.LightDiffuse = vec4.create([1, 1, 1, 1]);
+    m.floats.LightAmbient = vec4.create([0.1, 0.1, 0.1, 1]);
     m.floats.LightConstantAtt = 0.0;
     m.floats.LightLinearAtt = 0.0;
     m.floats.LightQuadraticAtt = 0.0;
