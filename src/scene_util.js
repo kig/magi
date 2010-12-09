@@ -1014,9 +1014,12 @@ Magi.MultiMaterial = {
     "varying float attenuation;"+
     "void main()"+
     "{"+
-    "  int midx = int(clamp(materialIndex, 0.0, float(MAX_MATERIALS-1)));"+
-    "  material M[4]; M[0]=Material0; M[1]=Material1; M[2]=Material2; M[3]=Material3;"+
-    "  material mat = M[midx];"+
+    "  float midx = floor(clamp(materialIndex, 0.0, float(MAX_MATERIALS-1)));"+
+    "  material mat;" +
+    "  if (midx == 0.0) mat = Material0;"+
+    "  else if (midx == 1.0) mat = Material1;"+
+    "  else if (midx == 2.0) mat = Material2;"+
+    "  else mat = Material3;"+
     "  vec4 color = GlobalAmbient * LightAmbient * mat.ambient;"+
     "  vec4 matDiff = mat.diffuse + texture2D(DiffTex, texCoord0);"+
     "  matDiff.a = 1.0 - (1.0-mat.diffuse.a) * (1.0-texture2D(DiffTex, texCoord0).a);"+

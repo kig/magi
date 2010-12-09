@@ -260,13 +260,13 @@ Magi.Node = Klass(Magi.Motion, {
   },
 
   removeChild : function(c) {
-	    var idx = this.childNodes.indexOf(c);
-	    while (idx != -1) {
-                this.childNodes[idx].parentNode = null;
-		this.childNodes.splice(idx,1);
-		idx = this.childNodes.indexOf(c);
-	    }
-            c.parentNode = null;
+    var idx = this.childNodes.indexOf(c);
+    while (idx != -1) {
+      this.childNodes[idx].parentNode = null;
+    this.childNodes.splice(idx,1);
+    idx = this.childNodes.indexOf(c);
+    }
+    c.parentNode = null;
   },
 
   removeSelf : function() {
@@ -289,7 +289,7 @@ Magi.Node = Klass(Magi.Motion, {
     if (!this.scaleAfterRotate && doScaling)
       mat4.scale(m, s);
     if (this.transform)
-	mat4.multiply(this.transform, m, m);
+      mat4.multiply(this.transform, m, m);
     if (this.isBillboard)
       mat4.billboard(m);
     mat4.toInverseMat3(m, this.normalMatrix);
