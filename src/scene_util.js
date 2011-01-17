@@ -956,8 +956,17 @@ Magi.DefaultMaterial = {
 
 
 Magi.MultiMaterial = {
+  frag : {
+    type: Magi.DefaultMaterial.frag.type,
+    text: Magi.DefaultMaterial.frag.text.replace(/uniform (\S+ Material)/g, 'varying $1')
+  },
   vert : {type: 'VERTEX_SHADER', text: (
+    "#define MAX_MATERIALS 4\n"+
     "precision highp float;"+
+    "precision highp int;"+
+    "struct material {"+
+    "  vec4 diffuse; vec4 specular; vec4 ambient; vec4 emit; float shininess;"+
+    "};"+
     "attribute vec3 Vertex;"+
     "attribute vec3 Normal;"+
     "attribute vec2 TexCoord;"+
@@ -970,74 +979,42 @@ Magi.MultiMaterial = {
     "uniform float LightLinearAtt;"+
     "uniform float LightQuadraticAtt;"+
     "uniform vec4 LightPos;"+
+    "uniform material Material0;"+
+    "uniform material Material1;"+
+    "uniform material Material2;"+
+    "uniform material Material3;"+
     "varying vec3 normal, lightDir, eyeVec;"+
     "varying vec2 texCoord0;"+
     "varying float attenuation;"+
-    "varying float materialIndex;"+
+    "varying vec4 MaterialDiffuse;"+
+    "varying vec4 MaterialSpecular;"+
+    "varying vec4 MaterialAmbient;"+
+    "varying vec4 MaterialEmit;"+
+    "varying float MaterialShininess;"+
     "void main()"+
     "{"+
     "  vec3 lightVector;"+
     "  vec4 v = vec4(Vertex, 1.0);"+
     "  texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);"+
-    "  materialIndex = MaterialIndex;"+
     "  normal = normalize(NMatrix * Normal);"+
     "  vec4 worldPos = MVMatrix * v;"+
     "  vec4 lightWorldPos = LightMatrix * LightPos;"+
     "  lightVector = vec3(lightWorldPos - worldPos);"+
     "  lightDir = normalize(lightVector);"+
     "  float dist = length(lightVector);"+
-    "  eyeVec = -vec3(worldPos);"+
+    "  eyeVec = normalize(-vec3(worldPos));"+
     "  attenuation = 1.0 / (1.0 + LightConstantAtt + LightLinearAtt*dist + LightQuadraticAtt * dist*dist);"+
     "  gl_Position = PMatrix * worldPos;"+
-    "}"
-  )},
-
-  frag : {type: 'FRAGMENT_SHADER', text: (
-    "#define MAX_MATERIALS 4\n"+
-    "precision highp float;"+
-    "precision highp int;"+
-    "struct material {"+
-    "  vec4 diffuse; vec4 specular; vec4 ambient; vec4 emit; float shininess;"+
-    "};"+
-    "uniform material Material0;"+
-    "uniform material Material1;"+
-    "uniform material Material2;"+
-    "uniform material Material3;"+
-    "uniform vec4 LightDiffuse;"+
-    "uniform vec4 LightSpecular;"+
-    "uniform vec4 LightAmbient;"+
-    "uniform vec4 GlobalAmbient;"+
-    "uniform sampler2D DiffTex, SpecTex, EmitTex;"+
-    "varying vec3 normal, lightDir, eyeVec;"+
-    "varying vec2 texCoord0;"+
-    "varying float materialIndex;"+
-    "varying float attenuation;"+
-    "void main()"+
-    "{"+
-    "  float midx = floor(clamp(materialIndex, 0.0, float(MAX_MATERIALS-1)));"+
-    "  material mat;" +
+    "  float midx = MaterialIndex;"+
+    "  material mat = Material3;"+
     "  if (midx == 0.0) mat = Material0;"+
-    "  else if (midx == 1.0) mat = Material1;"+
-    "  else if (midx == 2.0) mat = Material2;"+
-    "  else mat = Material3;"+
-    "  vec4 color = GlobalAmbient * LightAmbient * mat.ambient;"+
-    "  vec4 matDiff = mat.diffuse + texture2D(DiffTex, texCoord0);"+
-    "  matDiff.a = 1.0 - (1.0-mat.diffuse.a) * (1.0-texture2D(DiffTex, texCoord0).a);"+
-    "  vec4 matSpec = mat.specular + texture2D(SpecTex, texCoord0);"+
-    "  matSpec.a = 1.0 - (1.0-mat.specular.a) * (1.0-texture2D(SpecTex, texCoord0).a);"+
-    "  vec4 diffuse = LightDiffuse * matDiff;"+
-    "  float lambertTerm = dot(normal, lightDir);"+
-    "  vec4 lcolor = diffuse * lambertTerm * attenuation;"+
-    "  vec3 E = normalize(eyeVec);"+
-    "  vec3 R = reflect(-lightDir, normal);"+
-    "  float specular = pow( max(dot(R, E), 0.0), mat.shininess );"+
-    "  lcolor += matSpec * LightSpecular * specular * attenuation;"+
-    "  if (lambertTerm > 0.0) color += lcolor * lambertTerm;"+
-    "  else color += diffuse * attenuation * mat.ambient.a * -lambertTerm;"+
-    "  color += mat.emit + texture2D(EmitTex, texCoord0);" +
-    "  color *= matDiff.a;"+
-    "  color.a = matDiff.a;"+
-    "  gl_FragColor = color;"+
+    "  if (midx == 1.0) mat = Material1;"+
+    "  if (midx == 2.0) mat = Material2;"+
+    "  MaterialDiffuse = mat.diffuse;"+
+    "  MaterialSpecular = mat.specular;"+
+    "  MaterialAmbient = mat.ambient;"+
+    "  MaterialEmit = mat.emit;"+
+    "  MaterialShininess = mat.shininess;"+
     "}"
   )},
 
