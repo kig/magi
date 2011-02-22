@@ -822,7 +822,7 @@ Array.prototype.map = function(f) {
 Array.prototype.unique = function() {
   var a = [this[0]];
   for (var i=1; i<this.length; i++) {
-    if (this[i] != this[i-1]) 
+    if (this[i] != this[i-1])
       a.push(this[i]);
   }
   return a;
@@ -1125,7 +1125,7 @@ E.tags = "a abbr acronym address area audio b base bdo big blockquote body br bu
     TEXT( {id : 'foo', value : 'bar'} );
   is equivalent to
     E('INPUT', {type: 'TEXT'}, {id : 'foo', value : 'bar'});
-  
+
 */
 (function() {
   E.tags.forEach(function(t) {
@@ -1409,12 +1409,14 @@ Key = {
 
   match : function(event, key) {
     for (var i=1; i<arguments.length; i++) {
-      if (arguments[i].length != null && typeof arguments[i] != 'string') {
-        for (var j=0; j<arguments[i].length; j++) {
-          if (Key.matchCode(event, arguments[i][j])) return true;
+      var arg = arguments[i];
+      if (arg == null) continue;
+      if (arg.length != null && typeof arg != 'string') {
+        for (var j=0; j<arg.length; j++) {
+          if (Key.matchCode(event, arg[j])) return true;
         }
       } else {
-        if (Key.matchCode(event, arguments[i])) return true;
+        if (Key.matchCode(event, arg)) return true;
       }
     }
     return false;
