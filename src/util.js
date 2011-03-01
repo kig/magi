@@ -1398,13 +1398,24 @@ Event = {
 
 Key = {
   matchCode : function(event, code) {
-    if (typeof code == 'string')
-      code = code.toUpperCase().charCodeAt(0);
-    return (
-      event.which == code ||
-      event.keyCode == code ||
-      event.charCode == code
-    );
+    if (typeof code == 'string') {
+      var codeL = code.toLowerCase().charCodeAt(0);
+      var codeU = code.toUpperCase().charCodeAt(0);
+      return (
+        event.which == codeL ||
+        event.which == codeU ||
+        event.keyCode == codeL ||
+        event.keyCode == codeU ||
+        event.charCode == codeL ||
+        event.charCode == codeU
+      );
+    } else {
+      return (
+        event.which == code ||
+        event.keyCode == code ||
+        event.charCode == code
+      );
+    }
   },
 
   match : function(event, key) {
@@ -1467,7 +1478,9 @@ Key = {
 }
 
 
-Query = {
+if (typeof window.Query == 'undefined')
+  window.Query = {};
+Object.extend(window.Query, {
   parse : function(params) {
     var obj = {}
     if (!params) return obj
@@ -1491,9 +1504,11 @@ Query = {
     }
     return a.map(function(p){ return p.map(encodeURIComponent).join("=") }).join("&")
   }
-}
+});
 
-URL = {
+if (typeof window.URL == 'undefined')
+  window.URL = {};
+Object.extend(window.URL, {
   build : function(base, params, fragment) {
     return base + (params != null ? '?'+Query.build(params) : '') +
                   (fragment != null ? '#'+Query.build(fragment) : '')
@@ -1520,4 +1535,4 @@ URL = {
     return URL.build(this.base, this.query, this.fragment)
   }
 
-}
+});
