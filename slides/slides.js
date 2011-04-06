@@ -200,16 +200,18 @@ Slides = Klass({
     this.canvas.focus();
 
     this.targetPos = vec3.create();
+    this.top = new Magi.Node();
+    this.scene.appendChild(this.top);
     this.cube = this.makeCube();
-    this.scene.appendChild(this.cube);
+    this.top.appendChild(this.cube);
     this.rendererGoTo = this.webGLGoTo;
     var d = vec3.create();
     this.scene.addFrameListener(function(t,dt) {
-      vec3.sub(self.targetPos, self.scene.position, d);
+      vec3.sub(self.targetPos, self.top.position, d);
       if (vec3.lengthSquare(d) > 1) {
         var f = 1-Math.pow(0.75, dt/33);
         vec3.scale(d, f);
-        vec3.add(self.scene.position, d);
+        vec3.add(self.top.position, d);
       } else {
         self.visibleSlides(self.currentSlide, self.currentSlide);
       }
@@ -240,6 +242,7 @@ Slides = Klass({
 
   webGLGoTo : function(before, current) {
     vec3.negate(this.slides.childNodes[current].position, this.targetPos);
+
     this.visibleSlides(before, current);
   },
 
@@ -578,7 +581,7 @@ Slides = Klass({
     if (this.scene) {
       this.slideElement.style.display = 'none';
       this.slides = this.parseSlides(elem);
-      this.scene.appendChild(this.slides);
+      this.top.appendChild(this.slides);
     }
     this.setSlide(this.currentSlide);
   },
