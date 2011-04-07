@@ -1,3 +1,14 @@
+window.requestAnimFrame = (function(){
+  return  window.requestAnimationFrame       || 
+          window.webkitRequestAnimationFrame || 
+          window.mozRequestAnimationFrame    || 
+          window.oRequestAnimationFrame      || 
+          window.msRequestAnimationFrame     || 
+          function(/* function */ callback, /* DOMElement */ element){
+            window.setTimeout(callback, 1000 / 60);
+          };
+})();
+
 Magi.Scene = Klass({
   frameDuration : 13,
   time : 0,
@@ -70,11 +81,16 @@ Magi.Scene = Klass({
     return cam;
   },
 
+  animLoop : function() {
+    this.draw();
+    var t = this;
+    requestAnimFrame(function(){ t.animLoop(); }, this.canvas);
+  },
+
   startFrameLoop : function() {
     this.previousTime = new Date;
-    clearInterval(this.drawInterval);
     var t = this;
-    this.drawInterval = setInterval(function(){ t.draw(); }, this.frameDuration);
+    requestAnimFrame(function(){ t.animLoop(); }, this.canvas);
   },
 
   updateMouse : function(ev) {
@@ -574,7 +590,7 @@ Magi.Text = Klass(Magi.Image, Magi.Alignable, {
     ctx.font = sf;
     var dims = ctx.measureText(text);
     this.canvas.width = Math.max(1, Math.min(2048, dims.width));
-    this.canvas.height = Math.max(1, Math.min(2048, Math.ceil(this.fontSize*1.2)));
+    this.canvas.height = Math.max(1, Math.min(2048, Math.ceil(this.fontSize*1.25)));
     var ctx = this.canvas.getContext('2d');
     ctx.font = sf;
     ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
