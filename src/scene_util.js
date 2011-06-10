@@ -450,6 +450,13 @@ Magi.RadialGlowFilter = Klass(Magi.FilterQuad, {
   }
 });
 
+Magi.ChromaticAberrationFilter = Klass(Magi.FilterQuad, {
+  initialize : function() {
+    Magi.FilterQuad.initialize.call(this);
+    this.material = Magi.ChromaticAberrationMaterial.get();
+  }
+});
+
 Magi.FlipRadialGlowFilter = Klass(Magi.FilterQuad, {
   initialize : function() {
     Magi.FilterQuad.initialize.call(this);
@@ -787,32 +794,60 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "{"+
   "  float samples = 15.0;"+
   "  float len = length(center - texCoord0);"+
-  "  float rs = min(len,radius)/samples;"+
+  "  float rs = len*radius/samples;"+
   "  vec2 dir = rs * normalize(center - texCoord0);"+
   "  vec4 c = currentFactor * texture2D(Texture0, texCoord0);"+
-  "  float d = intensity/10.0;"+
-  "  for (float r=1.0; r <= samples; r++) {"+
-  "    vec2 tc = texCoord0 + (r*dir);"+
+  "  float d = intensity;"+
+  "  float count = 0.0;"+
+  "  float ran = 1.0 + 0.01*sin(texCoord0.t*123.489);"+
+  "  for (float r=1.0; r <= 15.0; r++) {"+
+  "    vec2 tc = texCoord0 + (r*dir) * ran;"+
   "    vec4 pc = texture2D(Texture0, tc + rs);"+
   "    c += pc*d;"+
+  "    count += d;"+
   "    d *= falloff;"+
   "  }"+
-  "  gl_FragColor = c*c.a;"+
+  "  c /= count;"+
+  "  c.a = 1.0;"+
+  "  gl_FragColor = c;"+
   "}"
 )};
 Magi.RadialGlowMaterial.setupMaterial = function(shader) {
   var m = new Magi.Material(shader);
   m.textures.Texture0 = null;
-  m.floats.center = vec2.create(0.5, 0.5);
-  m.floats.radius = 0.034;
+  m.floats.center = vec2.create(0.1, 0.1);
+  m.floats.radius = 0.04;
   m.floats.intensity = 1.0;
-  m.floats.falloff = 0.9;
-  m.floats.currentFactor = 1.0;
+  m.floats.falloff = 0.87;
+  m.floats.currentFactor = 0.0;
   return m;
 }
-
 Magi.FlipRadialGlowMaterial = Object.clone(Magi.RadialGlowMaterial);
 Magi.FlipRadialGlowMaterial.vert = Magi.FlipFilterQuadMaterial.vert;
+
+
+Magi.ChromaticAberrationMaterial = Object.clone(Magi.FilterQuadMaterial);
+Magi.ChromaticAberrationMaterial.frag = {type:'FRAGMENT_SHADER', text: (
+  "precision highp float;"+
+  "uniform sampler2D Texture0;"+
+  "varying vec2 texCoord0;"+
+  "uniform vec2 shift;"+
+  "void main()"+
+  "{"+
+  "  vec4 r = texture2D(Texture0, texCoord0+shift);"+
+  "  vec4 g = texture2D(Texture0, texCoord0);"+
+  "  vec4 b = texture2D(Texture0, texCoord0-shift);"+
+  "  gl_FragColor = vec4(r.r, g.g, b.b, g.a);"+
+  "}"
+)};
+Magi.ChromaticAberrationMaterial.setupMaterial = function(shader) {
+  var m = new Magi.Material(shader);
+  m.textures.Texture0 = null;
+  m.floats.shift= vec2.create(0.01, 0.01);
+  return m;
+}
+Magi.FlipChromaticAberrationMaterial = Object.clone(Magi.ChromaticAberrationMaterial);
+Magi.FlipChromaticAberrationMaterial.vert = Magi.FlipFilterQuadMaterial.vert;
 
 Magi.CubeArrayMaterial = Object.clone(Magi.FilterMaterial);
 Magi.CubeArrayMaterial.vert = {type: 'VERTEX_SHADER', text: (
