@@ -520,6 +520,8 @@ Magi.Camera = Klass({
     this.perspectiveMatrix = mat4.create();
     this.frameListeners = [];
     this.afterTransformListeners = [];
+    this.tmpMatrixA = mat4.create();
+    this.tmpMatrixB = mat4.create();
   },
 
   addFrameListener : Magi.Node.prototype.addFrameListener,
@@ -587,7 +589,8 @@ Magi.Camera = Klass({
         mat4.perspective(this.fov, width/height, this.zNear, this.zFar, this.perspectiveMatrix);
       }
     }
-    mat4.multiply(this.perspectiveMatrix, this.getLookMatrix());
+    var lookMatrix = this.getLookMatrix();
+    mat4.multiply(this.perspectiveMatrix, lookMatrix);
 
     var st = new Magi.GLDrawState();
     this.resetState(gl, st);
@@ -607,8 +610,12 @@ Magi.Camera = Klass({
     }
 
     this.normalDrawTime = new Date() - t;
+    var matA = this.tmpMatrixA;
+    var matB = this.tmpMatrixB;
     transparents.stableSort(function(a,b) {
-      return a.matrix[14] - b.matrix[14];
+      mat4.multiply(lookMatrix, a.matrix, matA);
+      mat4.multiply(lookMatrix, b.matrix, matB);
+      return matA[14] - matB[14];
     });
 
     var st = new Magi.GLDrawState();
