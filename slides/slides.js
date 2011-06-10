@@ -144,8 +144,8 @@ Slides = Klass({
     s.useDefaultCameraControls(this.canvas);
     s.yRot.setX(0.02).setY(1.0).setAngle(-0.1);
     s.xRot.setAngle(-0.05);
-    vec3.set([0,0,8], s.camera.position);
-    vec3.set([0,0,0], s.camera.lookAt);
+    vec3.set([0,0,10], s.camera.position);
+    vec3.set([0,-0.5,0], s.camera.lookAt);
     s.scene.setScale(1/200);
 
     var grad = new Magi.FilterQuad(this.shaders.bgFrag);
