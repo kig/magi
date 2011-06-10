@@ -815,7 +815,7 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
 Magi.RadialGlowMaterial.setupMaterial = function(shader) {
   var m = new Magi.Material(shader);
   m.textures.Texture0 = null;
-  m.floats.center = vec2.create(0.1, 0.1);
+  m.floats.center = vec2.create(0.5, -0.2);
   m.floats.radius = 0.04;
   m.floats.intensity = 1.0;
   m.floats.falloff = 0.87;
@@ -831,9 +831,11 @@ Magi.ChromaticAberrationMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "precision highp float;"+
   "uniform sampler2D Texture0;"+
   "varying vec2 texCoord0;"+
-  "uniform vec2 shift;"+
+  "uniform vec2 center;"+
+  "uniform float radius;"+
   "void main()"+
   "{"+
+  "  vec2 shift = radius * (center - texCoord0);"+
   "  vec4 r = texture2D(Texture0, texCoord0+shift);"+
   "  vec4 g = texture2D(Texture0, texCoord0);"+
   "  vec4 b = texture2D(Texture0, texCoord0-shift);"+
@@ -843,7 +845,8 @@ Magi.ChromaticAberrationMaterial.frag = {type:'FRAGMENT_SHADER', text: (
 Magi.ChromaticAberrationMaterial.setupMaterial = function(shader) {
   var m = new Magi.Material(shader);
   m.textures.Texture0 = null;
-  m.floats.shift= vec2.create(0.01, 0.01);
+  m.floats.center = vec2.create(0.5, 0.5);
+  m.floats.radius = 0.01;
   return m;
 }
 Magi.FlipChromaticAberrationMaterial = Object.clone(Magi.ChromaticAberrationMaterial);
