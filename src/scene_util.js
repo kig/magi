@@ -1,9 +1,9 @@
 window.requestAnimFrame = (function(){
-  return  window.requestAnimationFrame       || 
-          window.webkitRequestAnimationFrame || 
-          window.mozRequestAnimationFrame    || 
-          window.oRequestAnimationFrame      || 
-          window.msRequestAnimationFrame     || 
+  return  window.requestAnimationFrame       ||
+          window.webkitRequestAnimationFrame ||
+          window.mozRequestAnimationFrame    ||
+          window.oRequestAnimationFrame      ||
+          window.msRequestAnimationFrame     ||
           function(/* function */ callback, /* DOMElement */ element){
             window.setTimeout(callback, 1000 / 60);
           };
@@ -366,6 +366,13 @@ Magi.UberShader = Klass({
 Magi.Cube = Klass(Magi.Node, {
   initialize : function() {
     Magi.Node.initialize.call(this, Magi.Geometry.Cube.getCachedVBO());
+    this.material = Magi.DefaultMaterial.get();
+  }
+});
+
+Magi.Crystal = Klass(Magi.Node, {
+  initialize : function(aspect, pointiness) {
+    Magi.Node.initialize.call(this, Magi.Geometry.Crystal.getCachedVBO(null, aspect, pointiness));
     this.material = Magi.DefaultMaterial.get();
   }
 });

@@ -1035,6 +1035,39 @@ Magi.wrapGLContext = function(gl) {
 
 Magi.Geometry = {};
 
+Magi.Geometry.computeNormals = function(verts) {
+  var norms = new Float32Array(verts.length);
+  for (var i=0; i<verts.length; i+=9) {
+    var normal = this.findNormal(
+      verts[i  ], verts[i+1], verts[i+2],
+      verts[i+3], verts[i+4], verts[i+5],
+      verts[i+6], verts[i+7], verts[i+8]);
+    for (var j=0; j<3; j++) {
+      norms[i+j*3+0] = normal[0];
+      norms[i+j*3+1] = normal[1];
+      norms[i+j*3+2] = normal[2];
+    }
+  }
+  return norms;
+};
+
+Magi.Geometry.findNormal = function(x0,y0,z0, x1,y1,z1, x2,y2,z2) {
+  var u = vec3.create([x0-x1, y0-y1, z0-z1]);
+  var v = vec3.create([x1-x2, y1-y2, z1-z2]);
+  var w = vec3.create([x2-x0, y2-y0, z2-z0]);
+  var n = vec3.cross(u,v,vec3.create());
+  if (vec3.lengthSquare(n) == 0)
+    vec3.cross(v,w,n);
+  if (vec3.lengthSquare(n) == 0)
+    vec3.cross(w,u,n);
+  if (vec3.lengthSquare(n) == 0) {
+    n[0] = 0;
+    n[1] = 0;
+    n[2] = 1;
+  }
+  return vec3.normalize(n);
+};
+
 Magi.Geometry.Quad = {
   vertices : new Float32Array([
     -1,-1,0,
@@ -1225,6 +1258,104 @@ Magi.Geometry.Cube = {
   }
 };
 Magi.Geometry.Cube.create();
+
+
+Magi.Geometry.Crystal = {
+  vertices : new Float32Array([
+    0.5, -0.5,  0.5, // +X
+    0.5, -0.5, -0.5,
+    0.5,  0.5, -0.5,
+    0.5,  0.5,  0.5,
+
+    0.5,  0.5,  0.5, // +Y
+    0.5,  0.5, -0.5,
+    -0.5,  0.5, -0.5,
+    -0.5,  0.5,  0.5,
+
+    0.5,  0.5,  0.5, // +Z
+    -0.5,  0.5,  0.5,
+    -0.5, -0.5,  0.5,
+    0.5, -0.5,  0.5,
+
+    -0.5, -0.5,  0.5, // -X
+    -0.5,  0.5,  0.5,
+    -0.5,  0.5, -0.5,
+    -0.5, -0.5, -0.5,
+
+    -0.5, -0.5,  0.5, // -Y
+    -0.5, -0.5, -0.5,
+    0.5, -0.5, -0.5,
+    0.5, -0.5,  0.5,
+
+    -0.5, -0.5, -0.5, // -Z
+    -0.5,  0.5, -0.5,
+    0.5,  0.5, -0.5,
+    0.5, -0.5, -0.5,
+
+    0.0, -0.5, 0.0,
+    0.0, 0.5, 0.0
+  ]),
+
+  texcoords :  new Float32Array([
+    0,0,  0,1,  1,1, 1,0,
+    0,0,  0,1,  1,1, 1,0,
+    0,0,  0,1,  1,1, 1,0,
+    0,0,  0,1,  1,1, 1,0,
+    0,0,  0,1,  1,1, 1,0,
+    0,0,  0,1,  1,1, 1,0,
+    0.5,0.5, 0.5,0.5
+  ]),
+
+  indices : [],
+  create : function(){
+    for (var i = 0; i < 6; i++) {
+      this.indices.push(i*4 + 0);
+      this.indices.push(i*4 + 1);
+      this.indices.push(i*4 + 3);
+      this.indices.push(i*4 + 1);
+      this.indices.push(i*4 + 2);
+      this.indices.push(i*4 + 3);
+    }
+    this.indices.push(16, 24, 19, 19, 24, 18, 18, 24, 17, 17, 24, 16);
+    this.indices.push(4, 25, 7, 7, 25, 6, 6, 25, 5, 5, 25, 4);
+  },
+
+  makeVBO : function(gl, aspect, pointiness) {
+    if (aspect == null)
+      aspect = 3;
+    if (pointiness == null)
+      pointiness = 0.33;
+    var raspect = 1/aspect;
+    this.vertices[24*3+1] = -(0.5+pointiness); // up point
+    this.vertices[25*3+1] = (0.5+pointiness); // down point
+    var verts = new Float32Array(this.indices.length*3);
+    var texcoords = new Float32Array(this.indices.length*2);
+    for (var i=0,j=0,k=0; i<verts.length; i+=3,j++,k+=2) {
+      var idx = this.indices[j];
+      verts[i+0] = this.vertices[idx*3+0]*raspect;
+      verts[i+1] = this.vertices[idx*3+1];
+      verts[i+2] = this.vertices[idx*3+2]*raspect;
+      texcoords[k+0] = this.texcoords[idx*2+0];
+      texcoords[k+1] = this.texcoords[idx*2+1];
+    }
+    var normals = Magi.Geometry.computeNormals(verts);
+    return new Magi.VBO(gl,
+        {size:3, data: verts},
+        {size:3, data: normals},
+        {size:2, data: texcoords}
+    );
+  },
+  cache : {},
+  getCachedVBO : function(gl, aspect, pointiness) {
+    var key = aspect+":"+pointiness;
+    if (!this.cache[gl])
+      this.cache[gl] = {};
+    if (!this.cache[gl][key])
+      this.cache[gl][key] = this.makeVBO(gl, aspect, pointiness);
+    return this.cache[gl][key];
+  }
+};
+Magi.Geometry.Crystal.create();
 
 Magi.Geometry.CubeArray = {
   pushNormals : function(normals, idx) {
