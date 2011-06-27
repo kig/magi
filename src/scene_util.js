@@ -209,6 +209,8 @@ Magi.Scene = Klass({
     fbo.resize(target.width, target.height);
     postFBO.resize(target.width, target.height);
     for (var i=0; i<effects.length; i++) {
+      if (!effects[i].display)
+        continue;
       // draw effect applied to tex onto postFBO
       postFBO.use();
       var fx = effects[i];
@@ -468,6 +470,14 @@ Magi.FlipRadialGlowFilter = Klass(Magi.FilterQuad, {
 Magi.IdFilter = Klass(Magi.FilterQuad, {
   initialize : function() {
     Magi.FilterQuad.initialize.call(this, Magi.IdFilterMaterial.get());
+  }
+});
+
+Magi.ImageQuad = Klass(Magi.FlipFilterQuad, {
+  initialize : function(image) {
+    Magi.FlipFilterQuad.initialize.call(this, Magi.IdFilterMaterial.frag);
+    this.texture = new Magi.Texture(image);
+    this.material.textures.Texture0 = this.texture;
   }
 });
 
@@ -792,7 +802,7 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "uniform float falloff;"+
   "void main()"+
   "{"+
-  "  float samples = 15.0;"+
+  "  float samples = 8.0;"+
   "  float len = length(center - texCoord0);"+
   "  float rs = len*radius/samples;"+
   "  vec2 dir = rs * normalize(center - texCoord0);"+
@@ -800,7 +810,7 @@ Magi.RadialGlowMaterial.frag = {type:'FRAGMENT_SHADER', text: (
   "  float d = intensity;"+
   "  float count = 0.0;"+
   "  float ran = 1.0 + 0.01*sin(texCoord0.t*123.489);"+
-  "  for (float r=1.0; r <= 15.0; r++) {"+
+  "  for (float r=1.0; r <= 8.0; r++) {"+
   "    vec2 tc = texCoord0 + (r*dir) * ran;"+
   "    vec4 pc = texture2D(Texture0, tc + rs);"+
   "    c += pc*d;"+
@@ -902,6 +912,40 @@ Magi.ThresholdMaterial.setupMaterial = function(shader) {
 }
 Magi.FlipThresholdMaterial = Object.clone(Magi.ThresholdMaterial);
 Magi.FlipThresholdMaterial.vert = Magi.FlipFilterQuadMaterial.vert;
+
+
+Magi.Convolution3x3Material = Object.clone(Magi.FilterQuadMaterial);
+Magi.Convolution3x3Material.frag = {type:'FRAGMENT_SHADER', text: (
+  "precision highp float;"+
+  "uniform sampler2D Texture0;"+
+  "varying vec2 texCoord0;"+
+  "uniform vec2 PixelSize;"+
+  "uniform mat3 Kernel;"+
+  "void main()"+
+  "{"+
+  "  vec4 c = vec4(0.0);"+
+  "  c += Kernel[0][0] * texture2D(Texture0, texCoord0+vec2(-PixelSize.x, -PixelSize.y));"+
+  "  c += Kernel[0][1] * texture2D(Texture0, texCoord0+vec2(-PixelSize.x,  0.0));"+
+  "  c += Kernel[0][2] * texture2D(Texture0, texCoord0+vec2(-PixelSize.x,  PixelSize.y));"+
+  "  c += Kernel[1][0] * texture2D(Texture0, texCoord0+vec2(       0.0,   -PixelSize.y));"+
+  "  c += Kernel[1][1] * texture2D(Texture0, texCoord0+vec2(       0.0,    0.0));"+
+  "  c += Kernel[1][2] * texture2D(Texture0, texCoord0+vec2(       0.0,    PixelSize.y));"+
+  "  c += Kernel[2][0] * texture2D(Texture0, texCoord0+vec2( PixelSize.x, -PixelSize.y));"+
+  "  c += Kernel[2][1] * texture2D(Texture0, texCoord0+vec2( PixelSize.x,  0.0));"+
+  "  c += Kernel[2][2] * texture2D(Texture0, texCoord0+vec2( PixelSize.x,  PixelSize.y));"+
+  "  c.a = 1.0;"+
+  "  gl_FragColor = c;"+
+  "}"
+)};
+Magi.Convolution3x3Material.setupMaterial = function(shader) {
+  var m = new Magi.Material(shader);
+  m.textures.Texture0 = null;
+  m.floats.PixelSize = vec2.create(1/500, 1/500);
+  m.floats.Kernel = mat3.identity();
+  return m;
+}
+Magi.FlipConvolution3x3Material = Object.clone(Magi.Convolution3x3Material);
+Magi.FlipConvolution3x3Material.vert = Magi.FlipFilterQuadMaterial.vert;
 
 
 Magi.CubeArrayMaterial = Object.clone(Magi.FilterMaterial);
