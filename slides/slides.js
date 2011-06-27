@@ -18,6 +18,7 @@ Slides = Klass({
   h3Font : 'Arial',
   listFont : 'Arial',
   pFont : 'Arial',
+  preFont : 'Droid Mono,Monaco,Courier New',
 
   listBullet : "\u2605", // filled star
 
@@ -144,8 +145,8 @@ Slides = Klass({
     s.useDefaultCameraControls(this.canvas);
     s.yRot.setX(0.02).setY(1.0).setAngle(-0.1);
     s.xRot.setAngle(-0.05);
-    vec3.set([0,0,10], s.camera.position);
-    vec3.set([0,-0.5,0], s.camera.lookAt);
+    vec3.set([2.5,-3,7.5], s.camera.position);
+    vec3.set([0.5,-2,0], s.camera.lookAt);
     s.scene.setScale(1/200);
 
     var grad = new Magi.FilterQuad(this.shaders.bgFrag);
@@ -222,14 +223,18 @@ Slides = Klass({
         var f = 1-Math.pow(0.85, dt/33);
         vec3.scale(d, f);
         vec3.add(self.cube.position, d);
-        self.cube.outerCube.setScale(Math.max(0.3, Math.min(1.0, 100.0/dist)));
+        self.cube.outerCube.setScale(Math.max(0.3, Math.min(0.8, 100.0/dist)));
         self.cube.outerCube.rotationSpeed = Math.min(50, 1+dist/10);
         if (dist < 80 && dist > 50 && self.pulse <= 0) {
           self.pulse = 330;
         }
+        self.cube.counter = 1000;
       } else {
-        self.cube.outerCube.setScale(1.0);
-        self.cube.outerCube.rotationSpeed = 1;
+        self.cube.outerCube.setScale(0.8);
+        self.cube.outerCube.rotationSpeed = Math.sqrt(self.cube.counter / 1000);
+        self.cube.counter -= dt;
+        if (self.cube.counter < 10)
+          self.cube.counter = 10;
       }
       if (self.pulse>0) {
         self.cube.innerCube.setScale(0.8-(self.pulse/33)*0.02);
@@ -310,6 +315,9 @@ Slides = Klass({
         prefix = '#';
         level++;
         break;
+      case 'PRE':
+        strs.push('> '+ e.textContent);
+        break;
       case 'H1':
       case 'H2':
       case 'H3':
@@ -380,6 +388,9 @@ Slides = Klass({
           }
           l.appendChild(LI(T(content)));
           endList = false;
+          break;
+        case '>':
+          top.appendChild(E('PRE', T(content)));
           break;
         case 'H1':
         case 'H2':
@@ -756,7 +767,7 @@ Slides = Klass({
           if (!acc.top.title)
             acc.top.title = e.textContent;
           node = self.makeH1(e.textContent);
-          acc.offset += sz*2;
+          acc.offset += sz*3.5;
           break;
         case "H2":
           sz = self.h2FontSize;
@@ -774,9 +785,17 @@ Slides = Klass({
           break;
         case "P":
           sz = self.pFontSize;
-          node = new Magi.Text(e.textContent, self.pFontSize, self.pColor, self.pFont);
+          node = new Magi.MeshText(e.textContent, self.pFontSize, self.pColor, self.pFont);
           node.setVAlign(node.topAlign);
+          self.addWaveShader(node);
           acc.offset += sz*1.3;
+          break;
+        case "PRE":
+          sz = self.pFontSize;
+          node = new Magi.MeshText(e.textContent, self.pFontSize, self.pColor, self.preFont);
+          node.setAlign(node.leftAlign, node.topAlign);
+          acc.offset += self.listFontSize*1.25;
+          left = -450;
           break;
         case "UL":
         case "OL":
@@ -793,8 +812,9 @@ Slides = Klass({
           break;
         case "LI":
           var prefix = acc.listType == "OL" ? (acc.counter++)+"." : self.listBullet;
-          node = new Magi.Text(prefix + " " + e.textContent, self.listFontSize, self.listColor, self.listFont);
+          node = new Magi.MeshText(prefix + " " + e.textContent, self.listFontSize, self.listColor, self.listFont);
           node.setAlign(node.leftAlign, node.topAlign);
+          self.addWaveShader(node);
           acc.offset += self.listFontSize*1.25;
           break;
         case "IMG":
@@ -963,6 +983,7 @@ Slides = Klass({
 
   makeCube : function() {
     var cb = new Magi.Cube();
+    cb.setY(-0.2);
     cb.setAxis(0.4, 0.6, -1);
     cb.rotationSpeed = 1;
     cb.addFrameListener(function(t,dt) {
@@ -1018,10 +1039,11 @@ Slides = Klass({
       "void main()"+
       "{"+
       "  vec4 v = vec4(Vertex, 1.0);"+
-      "  float dx = xScale*0.03*(TexCoord.s);"+
-      "  float dy = yScale*0.03*(TexCoord.t-0.5);"+
-      "  float d = sqrt(dx*dx + dy*dy);"+
-      "  v.z += magnitude * (2.0*cos(time+3.14*0.1*TexCoord.s*xScale*0.03))*yScale*0.03;"+
+      "  float dx = ((xScale/800.0)*(TexCoord.s-0.2));"+
+      //"  float dy = yScale*0.03*(TexCoord.t-0.5);"+
+      //"  float d = sqrt(dx*dx + dy*dy);"+
+      //"  v.z += magnitude * (2.0*cos(time+3.14*0.1*TexCoord.s*xScale*0.03))*yScale*0.03;"+
+      "  v.z += 350.0*dx*dx;"+
       "  texCoord0 = vec2(TexCoord.s, 1.0-TexCoord.t);"+
       "  vec4 worldPos = MVMatrix * v;"+
       "  gl_Position = PMatrix * worldPos;"+
