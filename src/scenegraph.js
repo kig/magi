@@ -321,6 +321,9 @@ Magi.Node = Klass(Magi.Motion, {
 });
 
 Magi.Material = Klass({
+
+  isMaterial : true,
+
   initialize : function(shader) {
     this.shader = shader;
     this.textures = {};
